@@ -1,7 +1,7 @@
 import Appointment from "../models/appointmentModel.js";
 import User from "../models/User.js";
 import Service from "../models/serviceModel.js";
-import Promotion from "../models/promotion.js";
+// import Promotion from "../models/promotion.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
