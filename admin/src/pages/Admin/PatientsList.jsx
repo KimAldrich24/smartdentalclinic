@@ -50,9 +50,7 @@ const PatientsList = () => {
               <td className="border p-2">{user.phone || "N/A"}</td>
               <td className="border p-2">
                 <button
-                  onClick={() =>
-                    navigate(`/admin/patient-history/${user._id}`)
-                  }
+                  onClick={() => navigate(`/patient-history/${user._id}`)}
                   className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                 >
                   View History

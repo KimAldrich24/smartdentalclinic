@@ -14,7 +14,7 @@ const MyProfile = () => {
   const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
   const [prescriptionsError, setPrescriptionsError] = useState("");
 
-  // ✅ Load user data from localStorage or backend
+  // ✅ Load user data
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -25,11 +25,9 @@ const MyProfile = () => {
           return;
         }
 
-        console.log("🔍 Fetching user profile...");
         const { data } = await axios.get(`${backendUrl}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log("📦 User profile fetched:", data);
 
         if (data.success) {
           setUserData(data.user);
@@ -43,44 +41,49 @@ const MyProfile = () => {
     };
 
     if (token) fetchProfile();
-    else {
-      console.warn("⚠️ Token not available yet");
-      setLoading(false);
-    }
+    else setLoading(false);
   }, [token, backendUrl]);
 
-  // ✅ Fetch appointments
   useEffect(() => {
     if (!token) return;
-
+  
     const fetchAppointments = async () => {
       try {
+        console.log("📞 Fetching appointments from:", `${backendUrl}/api/appointments/my`);
+        console.log("🔑 Using token:", token);
+        
         const { data } = await axios.get(`${backendUrl}/api/appointments/my`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+  
+        console.log("📦 Full appointments response:", data);
+        console.log("✅ Success status:", data.success);
+        console.log("📋 All appointments:", data.appointments);
+  
         if (data.success) {
           const completed = data.appointments.filter((a) => a.status === "completed");
+          console.log("✔️ Completed appointments:", completed);
+          console.log("📊 Completed count:", completed.length);
           setRecords(completed);
         }
       } catch (err) {
         console.error("❌ Error fetching appointments:", err.response?.data || err.message);
       }
     };
-
+  
     fetchAppointments();
   }, [token, backendUrl]);
 
-  // ✅ Fetch prescriptions when userData is ready
+  // ✅ Fetch prescriptions
   useEffect(() => {
-    if (!token || !userData || !userData._id) return;
+    if (!token) return;
 
     const fetchPrescriptions = async () => {
       setPrescriptionsLoading(true);
       setPrescriptionsError("");
 
       try {
-        const url = `${backendUrl}/api/prescriptions/patient/${userData._id}`;
+        const url = `${backendUrl}/api/prescriptions/my`;
         const { data } = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -100,9 +103,9 @@ const MyProfile = () => {
     };
 
     fetchPrescriptions();
-  }, [userData, token, backendUrl]);
+  }, [token, backendUrl]);
 
-  // ✅ Save profile updates
+  // ✅ Save updated profile info
   const saveProfile = async () => {
     try {
       const { data } = await axios.put(
@@ -113,7 +116,7 @@ const MyProfile = () => {
 
       if (data.success) {
         setUserData(data.user);
-        localStorage.setItem("user", JSON.stringify(data.user)); // ✅ persist update
+        localStorage.setItem("user", JSON.stringify(data.user));
         setIsEdit(false);
         alert("Profile updated successfully!");
       }
@@ -123,6 +126,7 @@ const MyProfile = () => {
     }
   };
 
+  // 🕒 Loading states
   if (loading) {
     return <p className="text-center text-gray-500 mt-10">Loading profile...</p>;
   }
@@ -131,9 +135,10 @@ const MyProfile = () => {
     return <p className="text-center text-red-500 mt-10">No user profile found.</p>;
   }
 
+  // ✅ Render UI
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-lg space-y-8">
-      {/* Profile */}
+      {/* Profile Header */}
       <div className="flex items-center gap-6">
         <img
           src={userData.image || "/default-avatar.png"}
@@ -161,13 +166,16 @@ const MyProfile = () => {
       {/* Contact Info */}
       <div>
         <p className="text-lg font-semibold text-gray-700 mb-3">
-          CONTACT INFORMATION
+          PERSONAL INFORMATION
         </p>
         <div className="space-y-4">
+          {/* Email */}
           <div>
             <p className="font-medium text-gray-600">Email:</p>
             <p className="text-gray-500">{userData.email}</p>
           </div>
+
+          {/* Phone */}
           <div>
             <p className="font-medium text-gray-600">Phone:</p>
             {isEdit ? (
@@ -181,6 +189,47 @@ const MyProfile = () => {
               />
             ) : (
               <p className="text-gray-500">{userData.phone || "Not set"}</p>
+            )}
+          </div>
+
+          {/* Gender */}
+          <div>
+            <p className="font-medium text-gray-600">Gender:</p>
+            {isEdit ? (
+              <select
+                value={userData.gender || ""}
+                onChange={(e) =>
+                  setUserData((prev) => ({ ...prev, gender: e.target.value }))
+                }
+                className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            ) : (
+              <p className="text-gray-500">{userData.gender || "Not set"}</p>
+            )}
+          </div>
+
+          {/* Date of Birth */}
+          <div>
+            <p className="font-medium text-gray-600">Date of Birth:</p>
+            {isEdit ? (
+              <input
+                type="date"
+                value={userData.dateOfBirth || ""}
+                onChange={(e) =>
+                  setUserData((prev) => ({ ...prev, dateOfBirth: e.target.value }))
+                }
+                className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
+              />
+            ) : (
+              <p className="text-gray-500">
+                {userData.dateOfBirth
+                  ? new Date(userData.dateOfBirth).toLocaleDateString()
+                  : "Not set"}
+              </p>
             )}
           </div>
         </div>

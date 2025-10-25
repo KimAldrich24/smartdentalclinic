@@ -85,6 +85,7 @@ const DoctorContextProvider = ({ children }) => {
       {children}
     </DoctorContext.Provider>
   );
+  
 };
 
 export default DoctorContextProvider;

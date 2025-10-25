@@ -1,10 +1,9 @@
 import React, { useContext, useState } from 'react';
-import { assets } from '../../assets/assets';
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
+import { Eye, EyeOff } from 'lucide-react';
 
 const AddDoctor = () => {
-  const [docImg, setDocImg] = useState(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,24 +13,30 @@ const AddDoctor = () => {
   const [degree, setDegree] = useState('');
   const [address1, setAddress1] = useState('');
   const [address2, setAddress2] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const { backendUrl, aToken } = useContext(AdminContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
+    console.log("🔑 Creating doctor with password:", password); // ✅ ADD THIS
+  
     try {
       const doctorData = {
         name,
         email,
-        password, // plain text for demo
+        password,
         experience,
         fees: Number(fees),
         about,
         degree,
+        speciality: degree,
         address: { line1: address1, line2: address2 },
       };
-
+  
+      console.log("📤 Sending doctor data:", doctorData); // ✅ ADD THIS
+  
       const res = await fetch(`${backendUrl}/api/doctors`, {
         method: 'POST',
         headers: {
@@ -40,13 +45,13 @@ const AddDoctor = () => {
         },
         body: JSON.stringify(doctorData),
       });
-
+  
       const data = await res.json();
-
+  
       if (res.ok) {
         toast.success('Doctor added successfully!');
         console.log('Response:', data);
-
+  
         // Reset form
         setName('');
         setEmail('');
@@ -57,7 +62,6 @@ const AddDoctor = () => {
         setDegree('');
         setAddress1('');
         setAddress2('');
-        setDocImg(null);
       } else {
         toast.error(data.message || 'Failed to add doctor');
       }
@@ -95,14 +99,26 @@ const AddDoctor = () => {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
           />
-          <input
-            type="password"
-            placeholder="Password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
-          />
+          
+          {/* Password with Eye Icon */}
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 pr-12 outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+
           <input
             type="number"
             placeholder="Fees"
@@ -115,6 +131,7 @@ const AddDoctor = () => {
             value={experience}
             onChange={(e) => setExperience(e.target.value)}
             className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
+            required
           >
             <option value="">Select Experience</option>
             {Array.from({ length: 10 }, (_, i) => (
@@ -145,7 +162,6 @@ const AddDoctor = () => {
           <input
             type="text"
             placeholder="Address Line 2"
-            required
             value={address2}
             onChange={(e) => setAddress2(e.target.value)}
             className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"

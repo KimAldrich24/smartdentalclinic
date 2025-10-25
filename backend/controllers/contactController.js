@@ -15,6 +15,7 @@ export const getContact = async (req, res) => {
         email: "",
         address: "",
         active: true, // default: hiring ON
+        businessHours: "", // ✅ Added default
       });
       return res.json(contact);
     }
@@ -26,6 +27,7 @@ export const getContact = async (req, res) => {
         email: contact.email,
         address: contact.address,
         active: false,
+        businessHours: contact.businessHours || "", // ✅ still return hours if needed
         message: "We are currently not hiring.",
       });
     }
@@ -46,7 +48,7 @@ export const getContact = async (req, res) => {
 // =============================
 export const updateContact = async (req, res) => {
   try {
-    const { phone, email, address, active } = req.body;
+    const { phone, email, address, active, businessHours } = req.body; // ✅ Added businessHours
 
     let contact = await Contact.findOne();
 
@@ -55,7 +57,8 @@ export const updateContact = async (req, res) => {
       contact.phone = phone;
       contact.email = email;
       contact.address = address;
-      contact.active = active ?? true; // default to true if not provided
+      contact.active = active ?? true;
+      contact.businessHours = businessHours || ""; // ✅ update
       await contact.save();
     } else {
       contact = await Contact.create({
@@ -63,6 +66,7 @@ export const updateContact = async (req, res) => {
         email,
         address,
         active: active ?? true,
+        businessHours: businessHours || "", // ✅ create with hours
       });
     }
 

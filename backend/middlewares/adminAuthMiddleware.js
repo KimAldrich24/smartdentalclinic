@@ -1,29 +1,38 @@
 import jwt from "jsonwebtoken";
-import User from "../models/userModel.js";
 
 const adminAuthMiddleware = async (req, res, next) => {
   try {
-    const token = req.header("Authorization")?.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ message: "No token, authorization denied" });
+    console.log("🔐 adminAuthMiddleware - Checking authorization...");
+    
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("❌ No token provided");
+      return res.status(401).json({ success: false, message: "No token provided" });
     }
 
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // ✅ find by id instead of email
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    console.log("✅ Token decoded:", decoded);
+
+    // Check if admin or staff
+    if (!decoded.role || !["admin", "staff"].includes(decoded.role)) {
+      console.log("❌ Access denied - not admin/staff");
+      return res.status(403).json({ success: false, message: "Access denied - admin/staff only" });
     }
 
-    if (user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized as admin" });
-    }
+    // Attach user info to request
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+    };
 
-    req.admin = user;
+    console.log("✅ Admin auth passed, user:", req.user);
     next();
   } catch (err) {
-    res.status(401).json({ message: "Invalid token", error: err.message });
+    console.error("❌ adminAuthMiddleware error:", err.message);
+    return res.status(401).json({ success: false, message: "Invalid or expired token" });
   }
 };
 

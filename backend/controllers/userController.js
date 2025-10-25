@@ -2,11 +2,11 @@ import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Doctor from "../models/doctorModel.js"; // ✅ Add this import
-// Helper to generate JWT
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-};
 
+// Helper to generate JWT
+const generateToken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+};
 // ✅ Register user
 export const registerUser = async (req, res) => {
   try {
@@ -21,23 +21,23 @@ export const registerUser = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await User.create({ name, email, password: hashedPassword });
-
-    // Generate token
-    const token = generateToken(newUser._id);
+    // ✅ New users (patients) are auto-approved
+const newUser = await User.create({
+  name,
+  email,
+  password: hashedPassword,
+  role: "patient", // ✅ Explicitly set role
+  status: "active", // ✅ Auto-approve patients (was "pending")
+}); 
 
     res.status(201).json({
       success: true,
-      token,
+      message: "Account created. Waiting for admin approval.",
       user: {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        image: newUser.image,
-        gender: newUser.gender,
-        dob: newUser.dob,
-        phone: newUser.phone,
-        address: newUser.address,
+        status: newUser.status,
       },
     });
   } catch (error) {
@@ -53,11 +53,19 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ success: false, message: "Invalid credentials" });
 
+    // ✅ Block login if pending or rejected
+    if (user.status === "pending") {
+      return res.status(403).json({ success: false, message: "Your account is pending approval." });
+    }
+    if (user.status === "rejected") {
+      return res.status(403).json({ success: false, message: "Your account was rejected." });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ success: false, message: "Invalid credentials" });
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role);
 
     res.status(200).json({
       success: true,
@@ -71,6 +79,8 @@ export const loginUser = async (req, res) => {
         dob: user.dob,
         phone: user.phone,
         address: user.address,
+        role: user.role,
+        status: user.status,
       },
     });
   } catch (error) {
@@ -96,6 +106,8 @@ export const getCurrentUser = async (req, res) => {
         dob: req.user.dob,
         phone: req.user.phone,
         address: req.user.address,
+        role: req.user.role,
+        status: req.user.status,
       },
     });
   } catch (error) {
@@ -120,7 +132,7 @@ export const updateUserProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // ✅ Update fields safely
+    // Update fields safely
     user.name = req.body.name || user.name;
     user.phone = req.body.phone || user.phone;
     user.gender = req.body.gender || user.gender;
@@ -150,16 +162,17 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
+// ✅ Get all users
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}); // fetch all users
+    const users = await User.find({});
     res.json({ success: true, users });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// ✅ Add this
+// ✅ Delete user
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -169,9 +182,46 @@ export const deleteUser = async (req, res) => {
     }
 
     await user.remove();
-
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting user", error });
+  }
+};
+
+// ✅ Get all pending users
+export const getPendingUsers = async (req, res) => {
+  try {
+    const pendingUsers = await User.find({ status: "pending" });
+    res.status(200).json({ success: true, users: pendingUsers });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ✅ Approve user
+export const approveUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.status = "active"; // now they can log in
+    await user.save();
+    res.status(200).json({ success: true, message: "User approved successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ✅ Reject user
+export const rejectUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.status = "rejected";
+    await user.save();
+    res.status(200).json({ success: true, message: "User rejected successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };

@@ -1,177 +1,186 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
+import { DoctorContext } from "../context/DoctorContext";
+import { StaffContext } from "../context/StaffContext";
+import { toast } from "react-toastify";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
-  const [mode, setMode] = useState("login"); // "login" or "signup"
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("");
+  const [userType, setUserType] = useState("admin");
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { setAToken, backendUrl, getAllDoctors } = useContext(AdminContext);
-  const navigate = useNavigate(); // ✅ for navigation
+  const { setAToken, getAllDoctors, backendUrl } = useContext(AdminContext);
+  const { loginDoctor } = useContext(DoctorContext);
+  const { loginStaff } = useContext(StaffContext);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (mode === "signup") {
-      if (!name.trim() || !role) {
-        return alert("Please fill in your name and select a role.");
-      }
-    }
+    setLoading(true);
 
     try {
-      const endpoint =
-        mode === "login" ? "/api/auth/login" : "/api/auth/signup";
+      if (userType === "admin") {
+        // Admin login
+        const res = await fetch(`${backendUrl}/api/users/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
 
-      const payload =
-        mode === "login"
-          ? { email, password }
-          : { name, email, password, role };
-
-      const response = await fetch(`${backendUrl}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        if (data.token) {
-          localStorage.setItem("aToken", data.token);
+        if (data.success && data.token) {
           setAToken(data.token);
+          localStorage.setItem("aToken", data.token);
+          localStorage.setItem("admin", JSON.stringify(data.user));
           await getAllDoctors();
+          toast.success("Admin login successful!");
+          navigate("/dashboard");
+        } else {
+          toast.error(data.message || "Login failed");
         }
-        alert(`${mode === "login" ? "Login" : "Sign up"} successful!`);
-      } else {
-        alert(data.message || "Something went wrong");
+      } else if (userType === "doctor") {
+        // Doctor login
+        const result = await loginDoctor(email, password);
+        
+        if (result.success) {
+          toast.success("Doctor login successful!");
+          navigate("/doctor-dashboard");
+        } else {
+          toast.error(result.message || "Login failed");
+        }
+      } else if (userType === "staff") {
+        // Staff login
+        const result = await loginStaff(email, password);
+        
+        if (result.success) {
+          toast.success("Staff login successful!");
+          navigate("/staff-dashboard");
+        } else {
+          toast.error(result.message || "Login failed");
+        }
       }
-    } catch (error) {
-      console.error(`${mode} error:`, error);
-      alert("Something went wrong. Please try again.");
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error("Login error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  // 🩵 Switch to Doctor Login Panel
-  const handleSwitchToDoctor = () => {
-    localStorage.removeItem("aToken"); // clear admin token
-    setAToken("");
-    navigate("/doctor-login"); // redirect
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="min-h-[80vh] flex items-center justify-center bg-gray-100"
-    >
-      <div className="bg-white shadow-md rounded-2xl p-8 w-96 flex flex-col gap-6">
-        {/* Form title */}
-        <p className="text-2xl font-semibold text-center">
-          <span className="text-blue-600">
-            {mode === "login" ? "Admin Login" : "Admin Sign up"}
-          </span>
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md"
+      >
+        <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
+          Dental Clinic Login
+        </h2>
 
-        {/* Name */}
-        {mode === "signup" && (
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Name</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border rounded-lg px-3 py-2 outline-none focus:border-blue-500"
-            />
-          </div>
-        )}
+        {/* User Type Toggle - NOW WITH 3 BUTTONS */}
+        <div className="flex gap-2 mb-6">
+          <button
+            type="button"
+            onClick={() => setUserType("admin")}
+            className={`flex-1 py-2 rounded-lg font-medium transition text-sm ${
+              userType === "admin"
+                ? "bg-blue-500 text-white shadow-md"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            👨‍💼 Admin
+          </button>
+          <button
+            type="button"
+            onClick={() => setUserType("doctor")}
+            className={`flex-1 py-2 rounded-lg font-medium transition text-sm ${
+              userType === "doctor"
+                ? "bg-green-500 text-white shadow-md"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            👨‍⚕️ Doctor
+          </button>
+          <button
+            type="button"
+            onClick={() => setUserType("staff")}
+            className={`flex-1 py-2 rounded-lg font-medium transition text-sm ${
+              userType === "staff"
+                ? "bg-purple-500 text-white shadow-md"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            👔 Staff
+          </button>
+        </div>
 
-        {/* Email */}
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Email</label>
+        {/* Email Input */}
+        <div className="mb-4">
+          <label className="block mb-2 font-medium text-gray-700">Email</label>
           <input
             type="email"
-            required
+            placeholder={`${userType}@example.com`}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="border rounded-lg px-3 py-2 outline-none focus:border-blue-500"
-          />
-        </div>
-
-        {/* Password */}
-        <div className="flex flex-col gap-2 relative">
-          <label className="text-sm font-medium">Password</label>
-          <input
-            type={showPassword ? "text" : "password"}
             required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border rounded-lg px-3 py-2 outline-none focus:border-blue-500 pr-10"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 outline-none"
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-9 text-sm text-gray-500"
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
         </div>
 
-        {/* Role */}
-        {mode === "signup" && (
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="border rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+        {/* Password Input with Eye Icon */}
+        <div className="mb-6">
+          <label className="block mb-2 font-medium text-gray-700">Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-400 outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition"
             >
-              <option value="">Select Role</option>
-              <option value="admin">Admin</option>
-              <option value="staff">Staff</option>
-            </select>
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* Submit */}
+        {/* Submit Button - NOW WITH 3 COLORS */}
         <button
           type="submit"
-          className="bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+          disabled={loading}
+          className={`w-full py-3 rounded-lg text-white font-semibold transition shadow-md ${
+            loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : userType === "admin"
+              ? "bg-blue-600 hover:bg-blue-700"
+              : userType === "doctor"
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-purple-600 hover:bg-purple-700"
+          }`}
         >
-          {mode === "login" ? "Log in" : "Sign up"}
+          {loading ? "Logging in..." : `Login as ${userType.charAt(0).toUpperCase() + userType.slice(1)}`}
         </button>
 
-        {/* Toggle login/signup */}
-        <p className="text-sm text-center">
-          {mode === "login"
-            ? "Don't have an account?"
-            : "Already have an account?"}{" "}
-          <button
-            type="button"
-            className="text-blue-600 underline"
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-          >
-            {mode === "login" ? "Sign up" : "Log in"}
-          </button>
-        </p>
-
-        {/* 🩵 Switch to Doctor Login */}
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-500 mb-2">Are you a Doctor?</p>
-          <button
-            type="button"
-            onClick={handleSwitchToDoctor}
-            className="text-blue-600 underline font-medium"
-          >
-            Go to Doctor Login →
-          </button>
+        {/* Patient Login Link */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Are you a patient?{" "}
+            <a href="/patient-login" className="text-blue-500 hover:underline font-medium">
+              Login here
+            </a>
+          </p>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 

@@ -6,6 +6,7 @@ const contactSchema = new mongoose.Schema(
     email: { type: String, default: "" },
     address: { type: String, default: "" },
     active: { type: Boolean, default: true }, // ✅ add this
+    businessHours: { type: String, default: "" }, // ✅ Add this line
   },
   { timestamps: true }
 );

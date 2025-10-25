@@ -9,7 +9,9 @@ const Contact = () => {
     email: "",
     address: "",
     active: true, // ✅ hiring toggle
+    businessHours: "", // ✅ new field
   });
+
   const navigate = useNavigate();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -22,7 +24,8 @@ const Contact = () => {
           phone: data.phone || "",
           email: data.email || "",
           address: data.address || "",
-          active: data.active ?? true, // ✅ default to true if missing
+          active: data.active ?? true,
+          businessHours: data.businessHours || "Not specified", // ✅ added
         });
       } catch (error) {
         console.error("Failed to fetch contact info:", error);
@@ -35,6 +38,12 @@ const Contact = () => {
   const phoneNumbers =
     contact.phone && typeof contact.phone === "string"
       ? contact.phone.split(",").map((num) => num.trim()).filter(Boolean)
+      : [];
+
+  // ✅ Convert business hours into multiple lines (if using newline-separated format)
+  const businessHoursLines =
+    contact.businessHours && typeof contact.businessHours === "string"
+      ? contact.businessHours.split("\n").filter(Boolean)
       : [];
 
   return (
@@ -65,6 +74,20 @@ const Contact = () => {
             <p className="text-gray-600 mt-1">
               {contact.address || "Not available"}
             </p>
+          </div>
+
+          {/* Business Hours */}
+          <div>
+            <p className="font-medium text-gray-800">Business Hours:</p>
+            {businessHoursLines.length > 0 ? (
+              <ul className="text-gray-600 mt-1 space-y-1">
+                {businessHoursLines.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-600 mt-1">Not available</p>
+            )}
           </div>
 
           {/* Phone */}

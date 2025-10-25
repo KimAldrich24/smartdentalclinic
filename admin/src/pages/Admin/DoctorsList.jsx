@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 
 const DoctorsList = () => {
   const { doctors, getAllDoctors, removeDoctor } = useContext(AdminContext);
+  
+  
 
   useEffect(() => {
     getAllDoctors();

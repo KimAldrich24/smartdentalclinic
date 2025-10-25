@@ -11,10 +11,10 @@ const Navbar = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  // ✅ safer check: must have both token + user
+  // ✅ must have both token + user to be considered logged in
   const isLoggedIn = Boolean(token && user);
 
-  // Auto-close mobile menu when resizing to desktop
+  // ✅ Auto-close mobile menu when resizing to desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) setShowMenu(false);
@@ -23,7 +23,7 @@ const Navbar = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Close dropdown when clicking outside
+  // ✅ Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -34,7 +34,7 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Logout function
+  // ✅ Logout
   const handleLogout = () => {
     logout();
     setShowDropdown(false);
@@ -43,8 +43,8 @@ const Navbar = () => {
   };
 
   return (
-    <div className="w-full flex items-center justify-between text-sm py-4 mb-5 border-b border-gray-300 relative px-4 md:px-10 z-30">
-      {/* Logo */}
+    <div className="w-full flex items-center justify-between text-sm py-4 mb-5 border-b border-gray-300 relative px-4 md:px-10 z-30 bg-white">
+      {/* 🦷 Logo */}
       <img
         className="w-24 sm:w-28 md:w-32 cursor-pointer"
         src={assets.logo2}
@@ -52,7 +52,7 @@ const Navbar = () => {
         onClick={() => navigate("/")}
       />
 
-      {/* Nav Links (Desktop) */}
+      {/* 🧭 Desktop Navigation Links */}
       <ul className="hidden md:flex items-center gap-6 font-medium text-gray-700">
         <li>
           <NavLink
@@ -108,7 +108,7 @@ const Navbar = () => {
         </li>
       </ul>
 
-      {/* Right Side */}
+      {/* ⚙️ Right Side */}
       <div className="flex items-center gap-4 relative">
         {isLoggedIn ? (
           <div
@@ -123,7 +123,7 @@ const Navbar = () => {
             />
             <img className="w-2.5" src={assets.dropdown_icon} alt="dropdown" />
 
-            {/* Dropdown */}
+            {/* 🧾 Dropdown Menu */}
             {showDropdown && (
               <div className="absolute top-10 right-0 text-base font-medium text-gray-600 z-50">
                 <div className="min-w-48 bg-white rounded shadow-md flex flex-col gap-4 p-4">
@@ -146,6 +146,15 @@ const Navbar = () => {
                     My Appointments
                   </p>
                   <p
+                    onClick={() => {
+                      navigate("/settings");
+                      setShowDropdown(false);
+                    }}
+                    className="hover:text-black cursor-pointer"
+                  >
+                    Settings
+                  </p>
+                  <p
                     onClick={handleLogout}
                     className="hover:text-black cursor-pointer"
                   >
@@ -164,7 +173,7 @@ const Navbar = () => {
           </button>
         )}
 
-        {/* Hamburger Menu (Mobile) */}
+        {/* 🍔 Mobile Hamburger Menu */}
         <button
           className="md:hidden flex flex-col gap-1"
           onClick={() => setShowMenu(!showMenu)}
@@ -175,7 +184,7 @@ const Navbar = () => {
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* 📱 Mobile Menu */}
       {showMenu && (
         <div className="absolute top-full left-0 w-full bg-white shadow-md md:hidden z-40">
           <ul className="flex flex-col items-start gap-2 p-5 font-medium text-gray-700">
@@ -244,20 +253,8 @@ const Navbar = () => {
                 FAQ
               </NavLink>
             </li>
-            {!isLoggedIn && (
-              <li className="w-full">
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    navigate("/login");
-                  }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-medium transition"
-                >
-                  Create Account / Login
-                </button>
-              </li>
-            )}
-            {isLoggedIn && (
+
+            {isLoggedIn ? (
               <li className="w-full flex flex-col gap-2">
                 <button
                   onClick={() => {
@@ -278,10 +275,31 @@ const Navbar = () => {
                   My Appointments
                 </button>
                 <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    navigate("/settings");
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                >
+                  Settings
+                </button>
+                <button
                   onClick={handleLogout}
                   className="w-full text-left px-3 py-2 hover:bg-gray-100"
                 >
                   Logout
+                </button>
+              </li>
+            ) : (
+              <li className="w-full">
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    navigate("/login");
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-medium transition"
+                >
+                  Create Account / Login
                 </button>
               </li>
             )}

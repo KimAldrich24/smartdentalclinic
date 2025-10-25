@@ -11,17 +11,27 @@ const MyAppointments = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
+        console.log("🔍 FETCHING MY APPOINTMENTS:");
+        console.log("  URL:", `${backendUrl}/api/appointments/my`);
+        console.log("  Token:", token);
+        
         const { data } = await axios.get(`${backendUrl}/api/appointments/my`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        
+        console.log("📥 MY APPOINTMENTS RESPONSE:");
+        console.log("  Success:", data.success);
+        console.log("  Appointments:", data.appointments);
+        console.log("  Count:", data.appointments?.length);
+        
         if (data.success) setAppointments(data.appointments);
       } catch (err) {
-        console.error("Error fetching appointments:", err);
+        console.error("❌ FETCH APPOINTMENTS ERROR:", err);
+        console.error("  Response:", err.response?.data);
       }
     };
     if (token) fetchAppointments();
   }, [token, backendUrl]);
-
   // ✅ Cancel appointment
   const handleCancel = async (id) => {
     try {

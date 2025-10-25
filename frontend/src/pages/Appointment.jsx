@@ -11,8 +11,8 @@ const Appointment = () => {
   const { token } = useContext(AuthContext);
 
   const [docInfo, setDocInfo] = useState(null);
-  const [slots, setSlots] = useState([]);
-  const [services, setServices] = useState([]);
+  const [doctorServices, setDoctorServices] = useState([]); // ✅ Services selected by doctor
+  const [doctorSchedule, setDoctorSchedule] = useState([]); // ✅ Schedule added by doctor
   const [promotions, setPromotions] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
   const [selectedPromotion, setSelectedPromotion] = useState("");
@@ -23,38 +23,42 @@ const Appointment = () => {
   const [booking, setBooking] = useState(false);
   const [successAnim, setSuccessAnim] = useState(false);
 
-  // Fetch doctor info
-  const fetchDoctor = async () => {
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}`);
-      if (data.success) setDocInfo(data.doctor);
-      else toast.error("Doctor not found");
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message);
+  // ✅ Fetch doctor info with services and schedule
+  // ✅ Fetch doctor info with services and schedule
+const fetchDoctor = async () => {
+  try {
+    const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}`);
+    if (data.success) {
+      setDocInfo(data.doctor);
+      
+      // ✅ Debug what we're getting
+      console.log("🔍 FULL DOCTOR DATA:", data.doctor);
+      console.log("🔍 Doctor services RAW:", data.doctor.services);
+      console.log("🔍 Doctor schedule RAW:", data.doctor.schedule);
+      
+      // Check if services are populated or just IDs
+      if (data.doctor.services && data.doctor.services.length > 0) {
+        console.log("🔍 First service:", data.doctor.services[0]);
+        console.log("🔍 Is it an ID or object?", typeof data.doctor.services[0]);
+      }
+      
+      // ✅ Set doctor's services and schedule
+      setDoctorServices(data.doctor.services || []);
+      setDoctorSchedule(data.doctor.schedule || []);
+      
+      console.log("✅ Doctor loaded:", data.doctor.name);
+      console.log("📋 Services:", data.doctor.services?.length || 0);
+      console.log("📅 Schedule:", data.doctor.schedule?.length || 0);
+    } else {
+      toast.error("Doctor not found");
     }
-  };
-
-  // Fetch slots
-  const fetchSlots = async () => {
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}/slots`);
-      if (data.success) setSlots(data.slots);
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch services
-  const fetchServices = async () => {
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/services`);
-      if (data.success) setServices(data.services);
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message);
-    }
-  };
+  } catch (err) {
+    console.error("❌ Error fetching doctor:", err);
+    toast.error(err.response?.data?.message || err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Fetch promotions
   const fetchPromotions = async () => {
@@ -68,8 +72,6 @@ const Appointment = () => {
 
   useEffect(() => {
     fetchDoctor();
-    fetchSlots();
-    fetchServices();
     fetchPromotions();
   }, [docId]);
 
@@ -86,26 +88,41 @@ const Appointment = () => {
     return (service.price * (1 - promo.discountPercentage / 100)).toFixed(2);
   };
 
+  // ✅ Get available time slots for selected date
+  const getAvailableSlots = () => {
+    if (!selectedDate || !doctorSchedule.length) return [];
+    
+    const scheduleForDate = doctorSchedule.find(s => s.date === selectedDate);
+    return scheduleForDate?.slots || [];
+  };
+
   const handleBooking = async () => {
     if (!token) {
       toast.error("You must be logged in to book an appointment");
       navigate("/login");
       return;
     }
-
+  
     if (!selectedService) {
       toast.error("⚠️ Please select a service before booking");
       setServiceError(true);
       return;
     }
-
+  
     if (!selectedDate || !selectedTime) {
       toast.error("Please select date & time slot first");
       return;
     }
-
+  
     try {
       setBooking(true);
+      
+      console.log("📤 BOOKING REQUEST:");
+      console.log("  Doctor ID:", docId);
+      console.log("  Service ID:", selectedService);
+      console.log("  Date:", selectedDate);
+      console.log("  Time:", selectedTime);
+      
       const { data } = await axios.post(
         `${backendUrl}/api/appointments/book`,
         {
@@ -117,7 +134,9 @@ const Appointment = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+  
+      console.log("📥 BOOKING RESPONSE:", data);
+  
       if (data.success) {
         toast.success("✅ Appointment booked successfully!");
         setSelectedService(null);
@@ -126,11 +145,14 @@ const Appointment = () => {
         setSelectedPromotion("");
         setSuccessAnim(true);
         setTimeout(() => setSuccessAnim(false), 2000);
-        fetchSlots();
+        
+        // ✅ Refresh doctor data to update available slots
+        fetchDoctor();
       } else {
         toast.error(data.message);
       }
     } catch (err) {
+      console.error("❌ BOOKING ERROR:", err);
       toast.error(err.response?.data?.message || err.message);
     } finally {
       setBooking(false);
@@ -160,128 +182,173 @@ const Appointment = () => {
         <div className="flex-1">
           <h2 className="text-2xl font-bold">{docInfo.name}</h2>
           <p className="text-gray-600 mt-1">{docInfo.degree} • {docInfo.speciality}</p>
-          <p className="mt-3 text-gray-500">Experience: {docInfo.experience} years</p>
+          <p className="mt-3 text-gray-500">Experience: {docInfo.experience}</p>
           <p className="mt-1 text-gray-500">Fee: ₱{docInfo.fees}</p>
           <p className="mt-3 text-gray-700">{docInfo.about}</p>
         </div>
       </div>
 
-      {/* Services */}
+      {/* ✅ Services offered by THIS doctor */}
       <div className="mt-6">
         <h3 className="text-xl font-semibold mb-4">Select Service</h3>
-        <div
-          className={`grid grid-cols-1 md:grid-cols-2 gap-4 p-2 rounded-lg ${
-            serviceError && !selectedService ? "border-2 border-red-500" : ""
-          }`}
-        >
-          {services.map((service) => {
-            const discountedPrice = getDiscountedPrice(service);
-            const isDiscounted = discountedPrice !== service.price;
-            return (
-              <button
-                key={service._id}
-                onClick={() => {
-                  setSelectedService(service._id);
-                  setSelectedPromotion(""); // reset promotion when switching services
-                  setServiceError(false);
-                }}
-                className={`p-4 border rounded-lg text-left ${
-                  selectedService === service._id ? "bg-blue-500 text-white" : "bg-gray-100"
-                }`}
-              >
-                <h4 className="font-semibold">{service.name}</h4>
-                <p className="text-sm text-gray-600">{service.description}</p>
-                <p className="text-sm text-gray-700 mt-1">
-                  ₱{discountedPrice}
-                  {isDiscounted && (
-                    <span className="text-red-500 ml-2 line-through text-sm">₱{service.price}</span>
-                  )}{" "}
-                  • {service.duration}
-                </p>
-              </button>
-            );
-          })}
-        </div>
+        
+        {doctorServices.length === 0 ? (
+          <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+            <p className="text-yellow-700">⚠️ This doctor hasn't added any services yet.</p>
+          </div>
+        ) : (
+          <div
+            className={`grid grid-cols-1 md:grid-cols-2 gap-4 p-2 rounded-lg ${
+              serviceError && !selectedService ? "border-2 border-red-500" : ""
+            }`}
+          >
+            {doctorServices.map((service) => {
+              const discountedPrice = getDiscountedPrice(service);
+              const isDiscounted = discountedPrice !== service.price;
+              return (
+                <button
+                  key={service._id}
+                  onClick={() => {
+                    setSelectedService(service._id);
+                    setSelectedPromotion("");
+                    setServiceError(false);
+                  }}
+                  className={`p-4 border rounded-lg text-left transition ${
+                    selectedService === service._id 
+                      ? "bg-blue-500 text-white border-blue-600" 
+                      : "bg-gray-100 hover:bg-gray-200"
+                  }`}
+                >
+                  <h4 className="font-semibold">{service.name}</h4>
+                  {service.description && (
+                    <p className={`text-sm mt-1 ${selectedService === service._id ? 'text-white' : 'text-gray-600'}`}>
+                      {service.description}
+                    </p>
+                  )}
+                  <p className={`text-sm mt-2 ${selectedService === service._id ? 'text-white' : 'text-gray-700'}`}>
+                    ₱{discountedPrice}
+                    {isDiscounted && (
+                      <span className="text-red-500 ml-2 line-through text-sm">₱{service.price}</span>
+                    )}{" "}
+                    • {service.duration}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        
         {serviceError && !selectedService && (
           <p className="text-red-500 text-sm mt-2">⚠️ You must select a service before booking.</p>
         )}
       </div>
 
       {/* Promotions */}
-      <div className="mt-6">
-        <h3 className="text-xl font-semibold mb-2">Select Promotion</h3>
-        <select
-          value={selectedPromotion}
-          onChange={(e) => setSelectedPromotion(e.target.value)}
-          className="border p-2 rounded-lg w-full md:w-1/2"
-        >
-          <option value="">-- No Promotion --</option>
-          {promotions.map((promo) => (
-            <option
-              key={promo._id}
-              value={promo._id}
-              disabled={
-                selectedService &&
-                (!Array.isArray(promo.serviceIds) || !promo.serviceIds.includes(selectedService))
-              }
-            >
-              {promo.title} ({promo.discountPercentage}% off)
-            </option>
-          ))}
-        </select>
-      </div>
+      {promotions.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-xl font-semibold mb-2">Select Promotion</h3>
+          <select
+            value={selectedPromotion}
+            onChange={(e) => setSelectedPromotion(e.target.value)}
+            className="border p-2 rounded-lg w-full md:w-1/2"
+          >
+            <option value="">-- No Promotion --</option>
+            {promotions.map((promo) => (
+              <option
+                key={promo._id}
+                value={promo._id}
+                disabled={
+                  selectedService &&
+                  (!Array.isArray(promo.serviceIds) || !promo.serviceIds.includes(selectedService))
+                }
+              >
+                {promo.title} ({promo.discountPercentage}% off)
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-      {/* Slots */}
+      {/* ✅ Available Slots from Doctor's Schedule */}
       <div className="mt-6">
         <h3 className="text-xl font-semibold mb-4">Available Slots</h3>
-        <div className="flex gap-3 overflow-x-auto">
-          {slots.map((day, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                setSelectedDate(day.date);
-                setSelectedTime(null);
-              }}
-              className={`px-4 py-2 rounded-lg border ${
-                selectedDate === day.date ? "bg-blue-500 text-white" : "bg-gray-100"
-              }`}
-            >
-              {day.date}
-            </button>
-          ))}
-        </div>
-
-        {selectedDate && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-            {slots
-              .find((s) => s.date === selectedDate)
-              ?.availableSlots.map((time, i) => (
+        
+        {doctorSchedule.length === 0 ? (
+          <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+            <p className="text-yellow-700">⚠️ This doctor hasn't set up their schedule yet.</p>
+          </div>
+        ) : (
+          <>
+            {/* Date Selection */}
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {doctorSchedule.map((scheduleDay, i) => (
                 <button
                   key={i}
-                  onClick={() => setSelectedTime(time)}
-                  className={`px-3 py-2 border rounded-lg ${
-                    selectedTime === time ? "bg-blue-500 text-white" : "bg-gray-100"
+                  onClick={() => {
+                    setSelectedDate(scheduleDay.date);
+                    setSelectedTime(null);
+                  }}
+                  className={`px-4 py-2 rounded-lg border whitespace-nowrap transition ${
+                    selectedDate === scheduleDay.date 
+                      ? "bg-blue-500 text-white border-blue-600" 
+                      : "bg-gray-100 hover:bg-gray-200"
                   }`}
                 >
-                  {time}
+                  {new Date(scheduleDay.date).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
                 </button>
               ))}
-          </div>
+            </div>
+
+            {/* Time Selection */}
+            {selectedDate && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-600 mb-2">Select Time:</p>
+                {getAvailableSlots().length === 0 ? (
+                  <p className="text-gray-500">No time slots available for this date.</p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {getAvailableSlots().map((time, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedTime(time)}
+                        className={`px-3 py-2 border rounded-lg transition ${
+                          selectedTime === time 
+                            ? "bg-blue-500 text-white border-blue-600" 
+                            : "bg-gray-100 hover:bg-gray-200"
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {/* Final Price */}
-        {selectedService && (
-          <p className="mt-4 font-semibold">
-            Final Price: ₱{getDiscountedPrice(services.find((s) => s._id === selectedService))}
-          </p>
+        {selectedService && doctorServices.length > 0 && (
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="font-semibold text-lg">
+              Final Price: ₱{getDiscountedPrice(doctorServices.find((s) => s._id === selectedService))}
+            </p>
+          </div>
         )}
 
+        {/* Book Button */}
         <div className="mt-6 text-center">
           <button
             onClick={handleBooking}
-            disabled={booking}
-            className={`px-6 py-3 text-lg font-semibold rounded-full shadow-md transition ${
-              booking ? "bg-gray-400 cursor-not-allowed text-white" : "bg-green-500 hover:bg-green-600 text-white"
+            disabled={booking || doctorServices.length === 0 || doctorSchedule.length === 0}
+            className={`px-8 py-3 text-lg font-semibold rounded-full shadow-md transition ${
+              booking || doctorServices.length === 0 || doctorSchedule.length === 0
+                ? "bg-gray-400 cursor-not-allowed text-white" 
+                : "bg-green-500 hover:bg-green-600 text-white"
             }`}
           >
             {booking ? "Booking..." : "Book Appointment"}

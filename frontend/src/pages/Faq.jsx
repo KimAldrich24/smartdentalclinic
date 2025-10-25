@@ -1,21 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import { AdminContext } from "../context/AdminContext.jsx"; // correct relative path
+
 
 const Faq = () => {
   const [faqs, setFaqs] = useState([]);
   const [openIndex, setOpenIndex] = useState(null);
+  const { aToken } = useContext(AdminContext); // get admin token from context
 
   useEffect(() => {
     const fetchFaqs = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/faqs`);
-        setFaqs(res.data.faqs || []); // ✅ access faqs array
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/faqs`,
+          {
+            headers: {
+              Authorization: `Bearer ${aToken}`, // include JWT token
+            },
+          }
+        );
+
+        // Ensure we have an array
+        setFaqs(res.data.faqs || []);
       } catch (error) {
         console.error("Failed to fetch FAQs:", error);
       }
     };
+
     fetchFaqs();
-  }, []);
+  }, [aToken]);
 
   const toggleFaq = (index) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -41,9 +54,7 @@ const Faq = () => {
                 className="w-full flex justify-between items-center p-4 text-left font-medium text-gray-700 hover:bg-gray-50"
               >
                 {faq.question}
-                <span className="text-xl">
-                  {openIndex === index ? "−" : "+"}
-                </span>
+                <span className="text-xl">{openIndex === index ? "−" : "+"}</span>
               </button>
               {openIndex === index && (
                 <div className="px-4 pb-4 text-gray-600">{faq.answer}</div>

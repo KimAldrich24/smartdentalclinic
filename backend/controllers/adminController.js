@@ -162,14 +162,23 @@ export const createAdmin = async (req, res) => {
     });
   }
 };
+  
+//  export const getAllDoctors = async () => {
+//   if (!aToken || userRole !== "admin") return; // ✅ Guard
 
-export const getAllDoctors = async (req, res) => {
-  try {
-    const doctors = await Doctor.find().select("-password");
-    res.json({ success: true, doctors });
-  } catch (error) {
-    console.error("Error fetching doctors:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch doctors" });
-  }
-};
+//   try {
+//     const res = await axios.get(`${backendUrl}/api/admin/all-doctors`, {
+//       headers: { Authorization: `Bearer ${aToken}` },
+//     });
+//     setDoctors(res.data.doctors || []);
+//   } catch (err) {
+//     console.error("Get doctors error:", err);
+//     if (err.response?.status === 401) {
+//       setAToken(null);
+//       setUserRole(null);
+//       toast.error("Session expired. Please log in again.");
+//     }
+//     setDoctors([]);
+//   }
+// };
 

@@ -9,38 +9,66 @@ const addressSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// ✅ Schema for doctor schedules
-const slotSchema = new mongoose.Schema(
+// ✅ Available time slots for each date
+const scheduleSchema = new mongoose.Schema(
   {
-    date: { type: String, required: true }, // e.g. "2025-10-15"
-    availableSlots: [{ type: String }],     // e.g. ["09:00 AM", "10:30 AM"]
+    date: { type: String, required: true }, // "2025-10-24"
+    slots: [{ type: String }], // ["09:00 AM", "10:00 AM", "02:00 PM"]
   },
   { _id: false }
 );
 
-const doctorSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  degree: String,
-  experience: String,
-  about: String,
-  fees: Number,
-  address: { type: addressSchema, default: () => ({}) },
-  image: String,
-  available: { type: Boolean, default: true },
-  date: { type: Date, default: Date.now },
+const doctorSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String, required: true },
 
-  // ✅ Doctors’ booked slots (used to track which times are unavailable)
-  slots_book: {
-    type: Map,
-    of: [String],
-    default: {},
+    degree: String,
+    experience: String,
+    about: String,
+    fees: Number,
+    address: { type: addressSchema, default: () => ({}) },
+    image: String,
+    available: { type: Boolean, default: true },
+    date: { type: Date, default: Date.now },
+
+    // ✅ Services that this doctor offers (references to Service model)
+    services: {
+      type: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Service'
+      }],
+      default: [] // ✅ Initialize as empty array
+    },
+
+    // ✅ Doctor's schedule (available time slots per date)
+    schedule: {
+      type: [scheduleSchema],
+      default: [] // ✅ Initialize as empty array
+    },
+
+    // ✅ Booked slots (for tracking unavailable times)
+    slots_book: {
+      type: Map,
+      of: [String],
+      default: {},
+    },
+
+    role: {
+      type: String,
+      enum: ["doctor", "staff", "admin"],
+      default: "doctor",
+    },
+
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
   },
-
-  // ✅ Doctors’ available schedules (for patients to book)
-  slots_available: [slotSchema],
-});
+  { timestamps: true }
+);
 
 // ✅ Hash password before saving
 doctorSchema.pre("save", async function (next) {
@@ -50,10 +78,10 @@ doctorSchema.pre("save", async function (next) {
   next();
 });
 
-// ✅ Compare entered password to stored hash
 doctorSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
 const Doctor = mongoose.models.Doctor || mongoose.model("Doctor", doctorSchema);
+
 export default Doctor;

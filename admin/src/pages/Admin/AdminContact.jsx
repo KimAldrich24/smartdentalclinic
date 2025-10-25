@@ -4,16 +4,19 @@ import { AdminContext } from "../../context/AdminContext";
 
 const AdminContact = () => {
   const { aToken, backendUrl } = useContext(AdminContext);
+
   const [contact, setContact] = useState({
     phone: [""],
     email: "",
     address: "",
-    active: true, // ✅ hiring toggle
+    businessHours: "", // ✅ new field
+    active: true,
   });
+
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // ✅ Fetch contact data
+  // ✅ Fetch contact info from backend
   useEffect(() => {
     const fetchContact = async () => {
       try {
@@ -22,11 +25,12 @@ const AdminContact = () => {
           phone: data.phone
             ? Array.isArray(data.phone)
               ? data.phone
-              : data.phone.split(",").map((p) => p.trim())
+              : data.phone.split(",").map((num) => num.trim())
             : [""],
           email: data.email || "",
           address: data.address || "",
-          active: data.active ?? true, // ✅ include active status
+          businessHours: data.businessHours || "", // ✅ include
+          active: data.active ?? true,
         });
       } catch (error) {
         console.error("Error fetching contact info:", error);
@@ -35,27 +39,27 @@ const AdminContact = () => {
     fetchContact();
   }, [backendUrl]);
 
-  // ✅ Handle phone input changes
+  // ✅ Handle phone number changes
   const handlePhoneChange = (index, value) => {
-    const updatedPhones = [...contact.phone];
-    updatedPhones[index] = value;
-    setContact((prev) => ({ ...prev, phone: updatedPhones }));
+    const updated = [...contact.phone];
+    updated[index] = value;
+    setContact((prev) => ({ ...prev, phone: updated }));
   };
 
-  // ✅ Add phone field
-  const addPhoneField = () => {
+  // ✅ Add or remove phone fields
+  const addPhoneField = () =>
     setContact((prev) => ({ ...prev, phone: [...prev.phone, ""] }));
-  };
 
-  // ✅ Remove phone field
-  const removePhoneField = (index) => {
-    const updatedPhones = contact.phone.filter((_, i) => i !== index);
-    setContact((prev) => ({ ...prev, phone: updatedPhones }));
-  };
+  const removePhoneField = (index) =>
+    setContact((prev) => ({
+      ...prev,
+      phone: prev.phone.filter((_, i) => i !== index),
+    }));
 
-  // ✅ Validate before saving
+  // ✅ Validation
   const validate = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!contact.email || !emailRegex.test(contact.email)) {
       alert("❌ Please enter a valid email address.");
       return false;
@@ -68,11 +72,10 @@ const AdminContact = () => {
         return false;
       }
     }
-
     return true;
   };
 
-  // ✅ Save updates
+  // ✅ Save changes
   const handleSave = async () => {
     if (!validate()) return;
 
@@ -89,8 +92,8 @@ const AdminContact = () => {
       alert("✅ Contact info updated successfully!");
       setIsEditing(false);
     } catch (error) {
-      console.error(error);
-      alert("❌ Failed to update contact info");
+      console.error("Error saving contact info:", error);
+      alert("❌ Failed to update contact info. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -98,7 +101,8 @@ const AdminContact = () => {
 
   return (
     <div className="p-6 bg-white rounded-2xl shadow-md max-w-3xl mx-auto mt-10 border border-gray-200">
-      <div className="flex items-center justify-between border-b pb-2 mb-6">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b pb-3 mb-6">
         <h2 className="text-2xl font-semibold text-gray-700">
           📞 Manage Contact Information
         </h2>
@@ -114,8 +118,9 @@ const AdminContact = () => {
         </button>
       </div>
 
+      {/* Body */}
       <div className="space-y-6">
-        {/* ✅ Hiring Toggle */}
+        {/* Hiring toggle */}
         <div className="flex items-center justify-between border p-3 rounded-lg">
           <p className="text-gray-700 font-medium">
             {contact.active ? "✅ Hiring is ON" : "🚫 Hiring is OFF"}
@@ -135,9 +140,11 @@ const AdminContact = () => {
           )}
         </div>
 
-        {/* ✅ Multiple Phone Fields */}
+        {/* Phone numbers */}
         <div>
-          <label className="block text-gray-600 font-medium mb-2">Phone Numbers</label>
+          <label className="block text-gray-600 font-medium mb-2">
+            Phone Numbers
+          </label>
           {contact.phone.map((num, index) => (
             <div key={index} className="flex items-center gap-2 mb-2">
               <input
@@ -146,7 +153,7 @@ const AdminContact = () => {
                 onChange={(e) => handlePhoneChange(index, e.target.value)}
                 placeholder="e.g. 09123456789"
                 disabled={!isEditing}
-                className={`flex-1 p-3 border rounded-lg placeholder-gray-400 ${
+                className={`flex-1 p-3 border rounded-lg ${
                   isEditing
                     ? "bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                     : "bg-gray-100 text-gray-500 cursor-not-allowed"
@@ -172,19 +179,18 @@ const AdminContact = () => {
           )}
         </div>
 
-        {/* ✅ Email Field */}
+        {/* Email */}
         <div>
           <label className="block text-gray-600 font-medium mb-1">Email</label>
           <input
             type="email"
-            name="email"
             value={contact.email}
             onChange={(e) =>
               setContact((prev) => ({ ...prev, email: e.target.value }))
             }
             placeholder="example@domain.com"
             disabled={!isEditing}
-            className={`w-full p-3 border rounded-lg placeholder-gray-400 ${
+            className={`w-full p-3 border rounded-lg ${
               isEditing
                 ? "bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                 : "bg-gray-100 text-gray-500 cursor-not-allowed"
@@ -192,27 +198,52 @@ const AdminContact = () => {
           />
         </div>
 
-        {/* ✅ Address Field */}
+        {/* Address */}
         <div>
-          <label className="block text-gray-600 font-medium mb-1">Address</label>
+          <label className="block text-gray-600 font-medium mb-1">
+            Address
+          </label>
           <textarea
-            name="address"
             value={contact.address}
             onChange={(e) =>
               setContact((prev) => ({ ...prev, address: e.target.value }))
             }
             placeholder="Enter full address here..."
             disabled={!isEditing}
-            className={`w-full p-3 border rounded-lg placeholder-gray-400 ${
+            className={`w-full p-3 border rounded-lg ${
               isEditing
                 ? "bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                 : "bg-gray-100 text-gray-500 cursor-not-allowed"
             }`}
             rows="3"
-          ></textarea>
+          />
         </div>
 
-        {/* ✅ Save Button */}
+        {/* ✅ Business Hours */}
+        <div>
+          <label className="block text-gray-600 font-medium mb-1">
+            Business Hours
+          </label>
+          <input
+            type="text"
+            value={contact.businessHours}
+            onChange={(e) =>
+              setContact((prev) => ({
+                ...prev,
+                businessHours: e.target.value,
+              }))
+            }
+            placeholder="e.g. Mon–Fri: 9AM–6PM"
+            disabled={!isEditing}
+            className={`w-full p-3 border rounded-lg ${
+              isEditing
+                ? "bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                : "bg-gray-100 text-gray-500 cursor-not-allowed"
+            }`}
+          />
+        </div>
+
+        {/* Save button */}
         {isEditing && (
           <button
             onClick={handleSave}

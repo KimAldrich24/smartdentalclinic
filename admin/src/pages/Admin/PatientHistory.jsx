@@ -1,64 +1,75 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
+import { useParams } from "react-router-dom"; // ✅ ADD THIS
+import { AuthContext } from "../../context/AuthContext";
+import { AdminContext } from "../../context/AdminContext"; // ✅ ADD THIS
 
 const PatientHistory = () => {
-  const { id } = useParams(); // dynamic patient ID
-  const [history, setHistory] = useState([]);
+  const { user, token } = useContext(AuthContext); // patient context
+  const { aToken } = useContext(AdminContext); // ✅ admin context
+  const { id } = useParams(); // ✅ get patient ID from URL
+  
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  // ✅ Determine which ID and token to use
+  const patientId = id || user?._id; // URL param takes priority
+  const authToken = aToken || token; // admin token or patient token
 
+  console.log("🔍 PatientHistory component loaded");
+  console.log("👤 Patient ID from URL:", id);
+  console.log("👤 Patient ID from context:", user?._id);
+  console.log("📍 Using Patient ID:", patientId);
+  console.log("🔑 Using Token:", authToken);
+  
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchRecords = async () => {
+      if (!patientId) {
+        console.log("❌ No patient ID available");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const { data } = await axios.get(`${backendUrl}/api/patient-records/${id}`);
-        if (data.success) {
-          setHistory(data.records);
-        } else {
-          setError("No history found.");
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || err.message);
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/patient-records/${patientId}`,
+          {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }
+        );
+
+        console.log("📦 Patient Records Response:", res.data);
+        setRecords(res.data.records || []);
+      } catch (error) {
+        console.error("❌ Error fetching records:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchHistory();
-  }, [id]);
 
-  if (loading) return <p className="text-center mt-10">Loading patient history...</p>;
-  if (error) return <p className="text-center mt-10 text-red-500">{error}</p>;
+    fetchRecords();
+  }, [patientId, authToken]);
+
+  if (loading) return <p>Loading records...</p>;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Patient Dental History</h2>
-      {history.length === 0 ? (
-        <p className="text-gray-500">No dental records found.</p>
+    <div className="p-6">
+      <h2 className="text-xl font-semibold mb-4">🦷 Tooth History</h2>
+      {records.length === 0 ? (
+        <p>No completed dental history found.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-200 text-left">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border p-2">Date</th>
-                <th className="border p-2">Service</th>
-                <th className="border p-2">Doctor</th>
-                <th className="border p-2">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((record) => (
-                <tr key={record._id} className="hover:bg-gray-50">
-                  <td className="border p-2">{new Date(record.date).toLocaleDateString()}</td>
-                  <td className="border p-2">{record.service?.name || "N/A"}</td>
-                  <td className="border p-2">{record.doctor?.name || "N/A"}</td>
-                  <td className="border p-2">{record.notes || "N/A"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="space-y-4">
+          {records.map((record) => (
+            <li
+              key={record._id}
+              className="p-4 border rounded-lg shadow-sm bg-white"
+            >
+              <p><strong>Date:</strong> {new Date(record.date).toLocaleDateString()}</p>
+              <p><strong>Doctor:</strong> {record.doctor?.name || "N/A"}</p>
+              <p><strong>Notes:</strong> {record.notes}</p>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
