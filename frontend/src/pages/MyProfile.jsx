@@ -13,6 +13,7 @@ const MyProfile = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
   const [prescriptionsError, setPrescriptionsError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // ✅ Load user data
   useEffect(() => {
@@ -31,7 +32,7 @@ const MyProfile = () => {
 
         if (data.success) {
           setUserData(data.user);
-          localStorage.setItem("user", JSON.stringify(data.user));
+          localStorage.setItem("user", JSON.stringify(data.user)); // update cache
         }
       } catch (err) {
         console.error("❌ Error fetching profile:", err.response?.data || err.message);
@@ -105,26 +106,60 @@ const MyProfile = () => {
     fetchPrescriptions();
   }, [token, backendUrl]);
 
-  // ✅ Save updated profile info
   const saveProfile = async () => {
+    if (!token) return alert("No auth token found");
+  
+    setSaving(true);
+  
     try {
-      const { data } = await axios.put(
-        `${backendUrl}/api/users/me`,
-        userData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      // Prepare payload
+      const payload = {
+        name: userData.name,
+        phone: userData.phone,
+        gender: userData.gender || "male",
+        dob: userData.dateOfBirth || undefined, // undefined if empty
+        image: userData.image,
+      };
+  
+      console.log("📤 Sending payload:", payload);
+  
+      // Send update to backend
+      const { data } = await axios.put(`${backendUrl}/api/users/me`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      console.log("📥 Response from server:", data);
+  
       if (data.success) {
-        setUserData(data.user);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        // Build the updated state from backend response
+        const updated = {
+          name: data.user.name,
+          phone: data.user.phone,
+          gender: data.user.gender,
+          dateOfBirth: data.user.dob
+            ? new Date(data.user.dob).toISOString().split("T")[0]
+            : "",
+          image: data.user.image,
+        };
+  
+        // Update React state & localStorage
+        setUserData(updated);
+        localStorage.setItem("user", JSON.stringify(updated));
+  
         setIsEdit(false);
         alert("Profile updated successfully!");
+      } else {
+        alert(data.message || "Failed to update profile.");
       }
     } catch (err) {
       console.error("❌ Error saving profile:", err.response?.data || err.message);
-      alert("Failed to save profile.");
+      alert(err.response?.data?.message || "Failed to save profile.");
+    } finally {
+      setSaving(false);
+      console.log("✅ saveProfile finished, button reset");
     }
   };
+  
 
   // 🕒 Loading states
   if (loading) {
@@ -296,12 +331,14 @@ const MyProfile = () => {
       {/* Save/Edit Button */}
       <div className="flex justify-end">
         {isEdit ? (
-          <button
-            onClick={saveProfile}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md"
-          >
-            Save Information
-          </button>
+         <button
+         onClick={saveProfile}
+         className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md"
+         disabled={saving}
+       >
+         {saving ? "Saving..." : "Save Information"}
+       </button>
+       
         ) : (
           <button
             onClick={() => setIsEdit(true)}

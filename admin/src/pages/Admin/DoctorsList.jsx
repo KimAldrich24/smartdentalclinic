@@ -35,7 +35,7 @@ const DoctorsList = () => {
             <tr className="bg-gray-100">
               <th className="border p-2">Name</th>
               <th className="border p-2">Email</th>
-              <th className="border p-2">Fees</th>
+             
               <th className="border p-2">Actions</th>
             </tr>
           </thead>
@@ -44,7 +44,7 @@ const DoctorsList = () => {
               <tr key={doc._id}>
                 <td className="border p-2">{doc.name}</td>
                 <td className="border p-2">{doc.email}</td>
-                <td className="border p-2">{doc.fees}</td>
+               
                 <td className="border p-2">
                   <button
                     onClick={() => handleRemove(doc._id)}

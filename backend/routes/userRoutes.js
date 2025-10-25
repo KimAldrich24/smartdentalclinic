@@ -21,7 +21,7 @@ router.post("/login", loginUser);
 
 // Authenticated routes (all users)
 router.get("/me", protect, getCurrentUser);
-router.put("/me", protect, updateUserProfile);
+router.put("/me", protect(), updateUserProfile);
 
 // Admin-only routes
 router.get("/", adminAuthMiddleware, getAllUsers);

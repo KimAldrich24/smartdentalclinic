@@ -118,13 +118,13 @@ export const getCurrentUser = async (req, res) => {
 // ✅ Update user profile (works for both users and doctors)
 export const updateUserProfile = async (req, res) => {
   try {
-    // Try finding in User collection
-    let user = await User.findById(req.user.id);
+    console.log("➡️ Updating user:", req.user._id);
+    console.log("➡️ Payload received:", req.body);
+    let user = await User.findById(req.user._id);
     let userType = "user";
 
-    // If not found, try Doctor
     if (!user) {
-      user = await Doctor.findById(req.user.id);
+      user = await Doctor.findById(req.user._id);
       userType = "doctor";
     }
 
@@ -132,28 +132,26 @@ export const updateUserProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Update fields safely
-    user.name = req.body.name || user.name;
-    user.phone = req.body.phone || user.phone;
-    user.gender = req.body.gender || user.gender;
-    user.dob = req.body.dob || user.dob;
-    user.address = req.body.address || user.address;
-    user.image = req.body.image || user.image;
+    // Always update fields
+    if (req.body.name !== undefined) user.name = req.body.name;
+    if (req.body.phone !== undefined) user.phone = req.body.phone;
+    if (req.body.gender !== undefined) user.gender = req.body.gender;
+    if (req.body.dob !== undefined) user.dob = new Date(req.body.dob);
+    if (req.body.image !== undefined) user.image = req.body.image;
 
-    await user.save();
+    const updatedUser = await user.save();
 
     res.status(200).json({
       success: true,
       message: `${userType} profile updated successfully`,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
-        gender: user.gender,
-        dob: user.dob,
-        phone: user.phone,
-        address: user.address,
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        gender: updatedUser.gender,
+        dob: updatedUser.dob,
+        image: updatedUser.image,
       },
     });
   } catch (error) {
@@ -161,6 +159,7 @@ export const updateUserProfile = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // ✅ Get all users
 export const getAllUsers = async (req, res) => {

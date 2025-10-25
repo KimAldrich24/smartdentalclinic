@@ -96,16 +96,31 @@ const Dashboard = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th>Patient</th><th>Doctor</th><th>Date</th><th>Status</th>
+                <th className="border p-2">Patient</th>
+                <th className="border p-2">Doctor</th>
+                <th className="border p-2">Date</th>
+                <th className="border p-2">Status</th>
+                <th className="border p-2">Payment</th>
               </tr>
             </thead>
             <tbody>
               {recentAppointments.map(a => (
                 <tr key={a._id}>
-                  <td>{a.user?.name || "N/A"}</td>
-                  <td>{a.doctor?.name || "N/A"}</td>
-                  <td>{a.date ? new Date(a.date).toLocaleString() : "Unknown"}</td>
-                  <td>{a.status || "Unknown"}</td>
+                  <td className="border p-2">{a.user?.name || "N/A"}</td>
+                  <td className="border p-2">{a.doctor?.name || "N/A"}</td>
+                  <td className="border p-2">{a.date ? new Date(a.date).toLocaleString() : "Unknown"}</td>
+                  <td className="border p-2">
+                    <span className={`px-2 py-1 rounded ${
+                      a.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      a.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {a.status || "Unknown"}
+                    </span>
+                  </td>
+                  <td className="border p-2 font-semibold">
+                    ₱{a.finalPrice?.toLocaleString() || a.service?.price?.toLocaleString() || 0}
+                  </td>
                 </tr>
               ))}
             </tbody>

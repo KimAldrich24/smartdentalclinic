@@ -6,7 +6,8 @@ import Promotion from "../models/promotion.js";
 export const getDashboardStats = async (req, res) => {
   try {
     const totalAppointments = await Appointment.countDocuments();
-    const totalPatients = await User.countDocuments(); // ✅ works with user.js
+    const totalPatients = await User.countDocuments();
+    
     // Monthly appointments
     const monthlyAppointments = await Appointment.aggregate([
       {
@@ -18,33 +19,16 @@ export const getDashboardStats = async (req, res) => {
       { $sort: { "_id": 1 } },
     ]);
 
-    // ✅ Calculate revenue from completed appointments
-    const appointments = await Appointment.find({ status: "completed" })
-      .populate("service", "price")
-      .populate("service", "_id");
-
+    // ✅ Calculate revenue from completed appointments using finalPrice
+    const completedAppointments = await Appointment.find({ status: "completed" });
+    
     let revenue = 0;
-
-    for (let appt of appointments) {
-      if (appt.service) {
-        let finalPrice = appt.service.price || 0;
-
-        // Check for active promotions for this service
-        const now = new Date();
-        const promotion = await Promotion.findOne({
-          serviceIds: appt.service._id,
-          isActive: true,
-          startDate: { $lte: now },
-          endDate: { $gte: now },
-        });
-
-        if (promotion) {
-          finalPrice = finalPrice - (finalPrice * promotion.discountPercentage) / 100;
-        }
-
-        revenue += finalPrice;
-      }
+    for (let appt of completedAppointments) {
+      // Use the finalPrice that was calculated when booking (includes discounts)
+      revenue += appt.finalPrice || 0;
     }
+
+    console.log(`💰 Total revenue calculated: ₱${revenue} from ${completedAppointments.length} completed appointments`);
 
     res.json({
       totalAppointments,
@@ -57,6 +41,7 @@ export const getDashboardStats = async (req, res) => {
       ],
     });
   } catch (err) {
+    console.error("Dashboard stats error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -72,6 +57,7 @@ export const getRecentAppointments = async (req, res) => {
 
     res.json(recent);
   } catch (err) {
+    console.error("Recent appointments error:", err);
     res.status(500).json({ message: err.message });
   }
 };

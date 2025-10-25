@@ -8,8 +8,17 @@ const appointmentSchema = new mongoose.Schema({
   time: { type: String, required: true },
   status: { type: String, enum: ["booked", "completed", "cancelled"], default: "booked" },
   finalPrice: { type: Number, required: true },
+  additionalPayment: { type: Number, default: 0 },
+  additionalPaymentNote: { type: String },
+  totalPrice: { type: Number },
   createdAt: { type: Date, default: Date.now },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" } // admin ID
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+});
+
+// Calculate total price before saving
+appointmentSchema.pre('save', function(next) {
+  this.totalPrice = this.finalPrice + (this.additionalPayment || 0);
+  next();
 });
 
 export default mongoose.model("Appointment", appointmentSchema);

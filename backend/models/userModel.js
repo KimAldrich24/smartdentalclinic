@@ -21,17 +21,14 @@ const userSchema = new mongoose.Schema(
     },
     address: { type: addressSchema, default: () => ({}) },
     gender: { type: String, default: "Not Selected" },
-    dob: { type: String, default: "Not Selected" },
-    phone: { type: String, default: "000000000" },
+    dob: { type: Date }, // ✅ store as Date
+    phone: { type: String, default: " " },
     role: { type: String, enum: ["admin", "staff", "patient"], default: "patient" },
-
-    // ✅ Approval workflow
-    status: { type: String, enum: ["pending", "active", "rejected"], default: "active" }, // Changed from "pending"
+    status: { type: String, enum: ["pending", "active", "rejected"], default: "active" },
   },
   { timestamps: true }
 );
 
-// Create model
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default User;

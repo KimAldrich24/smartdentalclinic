@@ -212,7 +212,7 @@ const Sidebar = () => {
           <p>Equipment Maintenance</p>
         </NavLink>
 
-        <NavLink
+        {/* <NavLink
           className={({ isActive }) =>
             `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
               isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
@@ -222,7 +222,7 @@ const Sidebar = () => {
         >
           <img src={assets.pending_icon || assets.add_icon} alt="Pending Users" />
           <p>Pending Users</p>
-        </NavLink>
+        </NavLink> */}
 
 <NavLink
           className={({ isActive }) =>

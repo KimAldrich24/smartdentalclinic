@@ -2,9 +2,10 @@ import Appointment from "../models/appointmentModel.js";
 import Doctor from "../models/doctorModel.js";
 import Service from "../models/serviceModel.js";
 import Promotion from "../models/Promotion.js";
-import PatientRecord from "../models/patientRecordModel.js"; // make sure this exists
+import PatientRecord from "../models/patientRecordModel.js";
+import fetch from 'node-fetch'; // ✅ Add this import at the top
 
-// ✅ Book an appointment (with service price + promotions)
+// ✅ Book an appointment (with service price + promotions + SMS)
 export const bookAppointment = async (req, res) => {
   console.log("\n🎯 ====== BOOKING ENDPOINT HIT ======");
   console.log("📥 Request body:", req.body);
@@ -89,6 +90,32 @@ export const bookAppointment = async (req, res) => {
     });
     console.log("✅ Appointment created:", appointment._id);
 
+    // ✅ Send SMS notification
+    try {
+      const userPhone = req.user.phone;
+      if (userPhone) {
+        const smsMessage = `Your appointment with Dr. ${doctor.name} for ${service.name} on ${date} at ${time} has been confirmed. Price: ₱${finalPrice}`;
+        
+        const smsResponse = await fetch('http://localhost:4000/api/send-sms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: userPhone,
+            message: smsMessage
+          })
+        });
+        
+        const smsData = await smsResponse.json();
+        console.log("📱 SMS sent to:", userPhone);
+        console.log("📱 SMS response:", smsData);
+      } else {
+        console.log("⚠️ User has no phone number, skipping SMS");
+      }
+    } catch (smsErr) {
+      console.error("❌ SMS Error:", smsErr.message);
+      // Don't fail the booking if SMS fails
+    }
+
     // Block the slot in doctor document
     console.log("🔒 Blocking slot in doctor's schedule...");
     doctor.slots_book[date] = [...bookedSlots, time];
@@ -153,7 +180,7 @@ export const getAllAppointments = async (req, res) => {
       date: appt.date,
       time: appt.time,
       status: appt.status,
-      finalPrice: appt.finalPrice || 0, // add final price
+      finalPrice: appt.finalPrice || 0,
     }));
 
     res.json({ success: true, appointments: safeAppointments });
@@ -260,11 +287,10 @@ export const cancelAppointment = async (req, res) => {
 // Get appointments for a specific doctor
 export const getDoctorAppointments = async (req, res) => {
   try {
-    const doctorId = req.doctor.id; // From doctorAuthMiddleware
+    const doctorId = req.doctor.id;
     
     console.log("📋 Fetching appointments for doctor:", doctorId);
     
-    // ✅ Use 'doctor' field, not 'docId'
     const appointments = await Appointment.find({ doctor: doctorId })
       .populate('user', 'name email phone')
       .populate('doctor', 'name degree speciality')
@@ -288,9 +314,3 @@ export const getDoctorAppointments = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-
-
-
-
-

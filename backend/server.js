@@ -39,7 +39,7 @@ connectDB()
 connectCloudinary()
 
 // middlewares
-app.use(express.json())
+app.use(express.json());
 app.use(cors({
     origin: function(origin, callback) {
       const allowedOrigins = [
@@ -93,7 +93,7 @@ app.get('/', (req, res) => {
 })
 
 /* ==========================
-   🔹 SEMAPHORE SMS ROUTE
+   🔹 IPROGTECH SMS ROUTE
 =========================== */
 app.post('/api/send-sms', async (req, res) => {
     const { phone, message } = req.body
@@ -103,20 +103,21 @@ app.post('/api/send-sms', async (req, res) => {
     }
 
     try {
-        const response = await fetch('https://api.semaphore.co/api/v4/messages', {
+        const response = await fetch('https://sms.iprogtech.com/api/v1/sms_messages/send_bulk', {
             method: 'POST',
-            body: new URLSearchParams({
-                apikey: process.env.SEMAPHORE_API_KEY, // store your API key in .env
-                number: phone,
-                message: message,
-                sendername: 'MyWebsite' // optional
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                api_token: process.env.IPROGTECH_API_KEY, // Your iprogtech API key
+                phone_number: phone,
+                message: message
             })
         })
 
         const data = await response.json()
+        console.log('📱 iprogtech SMS response:', data)
         res.json({ success: true, data })
     } catch (err) {
-        console.error(err)
+        console.error('❌ SMS Error:', err)
         res.status(500).json({ success: false, error: err.message })
     }
 })
