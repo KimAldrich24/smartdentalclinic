@@ -12,8 +12,8 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Faq from "./pages/Faq";
 import PatientPrescriptions from "./pages/PatientPrescriptions";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsAndConditions from "./pages/TermsAndConditions";
+  import PrivacyPolicy from "./pages/PrivacyPolicy";
+  import TermsAndConditions from "./pages/TermsAndConditions";
 import JobApplication from "./pages/JobApplication";
 import Settings from "./pages/Settings";
 

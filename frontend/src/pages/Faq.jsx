@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../context/AdminContext.jsx"; // correct relative path
-
+import { PatientContext } from "../context/PatientContext";
 
 const Faq = () => {
   const [faqs, setFaqs] = useState([]);
   const [openIndex, setOpenIndex] = useState(null);
-  const { aToken } = useContext(AdminContext); // get admin token from context
+  const { aToken, backendUrl } = useContext(PatientContext);
 
   useEffect(() => {
     const fetchFaqs = async () => {

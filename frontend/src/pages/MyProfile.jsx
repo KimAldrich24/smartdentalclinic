@@ -9,6 +9,7 @@ const MyProfile = () => {
   const [userData, setUserData] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [records, setRecords] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
@@ -18,31 +19,51 @@ const MyProfile = () => {
   // ✅ Load user data
   useEffect(() => {
     const fetchProfile = async () => {
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          setUserData(JSON.parse(storedUser));
-          setLoading(false);
-          return;
-        }
+      if (!token) {
+        setError("No authentication token found");
+        setLoading(false);
+        return;
+      }
 
+      try {
+        console.log("🔄 Fetching user profile...");
         const { data } = await axios.get(`${backendUrl}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        console.log("📥 User data from backend:", data);
+
         if (data.success) {
-          setUserData(data.user);
-          localStorage.setItem("user", JSON.stringify(data.user)); // update cache
+          // Format the user data properly
+          const formattedUser = {
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            phone: data.user.phone,
+            gender: data.user.gender,
+            image: data.user.image,
+            role: data.user.role,
+            status: data.user.status,
+            dob: data.user.dob 
+              ? new Date(data.user.dob).toISOString().split("T")[0] 
+              : "",
+          };
+          
+          console.log("✅ Formatted user data:", formattedUser);
+          setUserData(formattedUser);
+          setError("");
+        } else {
+          setError(data.message || "Failed to load profile");
         }
       } catch (err) {
-        console.error("❌ Error fetching profile:", err.response?.data || err.message);
+        console.error("❌ Error fetching profile:", err);
+        setError(err.response?.data?.message || "Failed to load profile");
       } finally {
         setLoading(false);
       }
     };
 
-    if (token) fetchProfile();
-    else setLoading(false);
+    fetchProfile();
   }, [token, backendUrl]);
 
   useEffect(() => {
@@ -50,21 +71,17 @@ const MyProfile = () => {
   
     const fetchAppointments = async () => {
       try {
-        console.log("📞 Fetching appointments from:", `${backendUrl}/api/appointments/my`);
-        console.log("🔑 Using token:", token);
+        console.log("📞 Fetching appointments...");
         
         const { data } = await axios.get(`${backendUrl}/api/appointments/my`, {
           headers: { Authorization: `Bearer ${token}` },
         });
   
-        console.log("📦 Full appointments response:", data);
-        console.log("✅ Success status:", data.success);
-        console.log("📋 All appointments:", data.appointments);
+        console.log("📦 Appointments response:", data);
   
         if (data.success) {
           const completed = data.appointments.filter((a) => a.status === "completed");
-          console.log("✔️ Completed appointments:", completed);
-          console.log("📊 Completed count:", completed.length);
+          console.log("✔️ Completed appointments:", completed.length);
           setRecords(completed);
         }
       } catch (err) {
@@ -112,12 +129,12 @@ const MyProfile = () => {
     setSaving(true);
   
     try {
-      // Prepare payload
+      // Prepare payload with correct field name
       const payload = {
         name: userData.name,
         phone: userData.phone,
-        gender: userData.gender || "male",
-        dob: userData.dateOfBirth || undefined, // undefined if empty
+        gender: userData.gender || "Not Selected",
+        dob: userData.dob || undefined,
         image: userData.image,
       };
   
@@ -133,18 +150,18 @@ const MyProfile = () => {
       if (data.success) {
         // Build the updated state from backend response
         const updated = {
+          ...userData,
           name: data.user.name,
           phone: data.user.phone,
           gender: data.user.gender,
-          dateOfBirth: data.user.dob
+          image: data.user.image,
+          dob: data.user.dob
             ? new Date(data.user.dob).toISOString().split("T")[0]
             : "",
-          image: data.user.image,
         };
   
-        // Update React state & localStorage
+        // Update React state
         setUserData(updated);
-        localStorage.setItem("user", JSON.stringify(updated));
   
         setIsEdit(false);
         alert("Profile updated successfully!");
@@ -156,14 +173,31 @@ const MyProfile = () => {
       alert(err.response?.data?.message || "Failed to save profile.");
     } finally {
       setSaving(false);
-      console.log("✅ saveProfile finished, button reset");
     }
   };
-  
 
   // 🕒 Loading states
   if (loading) {
-    return <p className="text-center text-gray-500 mt-10">Loading profile...</p>;
+    return (
+      <div className="text-center mt-10">
+        <p className="text-gray-500">Loading profile...</p>
+        <p className="text-sm text-gray-400 mt-2">If this takes too long, check your internet connection</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center mt-10">
+        <p className="text-red-500">{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (!userData) {
@@ -180,11 +214,11 @@ const MyProfile = () => {
           alt="profile"
           className="w-24 h-24 rounded-full border-4 border-blue-100 object-cover shadow-sm"
         />
-        <div>
+        <div className="flex-1">
           {isEdit ? (
             <input
               type="text"
-              value={userData.name}
+              value={userData.name || ""}
               onChange={(e) =>
                 setUserData((prev) => ({ ...prev, name: e.target.value }))
               }
@@ -232,13 +266,13 @@ const MyProfile = () => {
             <p className="font-medium text-gray-600">Gender:</p>
             {isEdit ? (
               <select
-                value={userData.gender || ""}
+                value={userData.gender || "Not Selected"}
                 onChange={(e) =>
                   setUserData((prev) => ({ ...prev, gender: e.target.value }))
                 }
                 className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
               >
-                <option value="">Select Gender</option>
+                <option value="Not Selected">Not Selected</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
@@ -253,16 +287,16 @@ const MyProfile = () => {
             {isEdit ? (
               <input
                 type="date"
-                value={userData.dateOfBirth || ""}
+                value={userData.dob || ""}
                 onChange={(e) =>
-                  setUserData((prev) => ({ ...prev, dateOfBirth: e.target.value }))
+                  setUserData((prev) => ({ ...prev, dob: e.target.value }))
                 }
                 className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
               />
             ) : (
               <p className="text-gray-500">
-                {userData.dateOfBirth
-                  ? new Date(userData.dateOfBirth).toLocaleDateString()
+                {userData.dob
+                  ? new Date(userData.dob).toLocaleDateString()
                   : "Not set"}
               </p>
             )}
@@ -329,16 +363,26 @@ const MyProfile = () => {
       </div>
 
       {/* Save/Edit Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
         {isEdit ? (
-         <button
-         onClick={saveProfile}
-         className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md"
-         disabled={saving}
-       >
-         {saving ? "Saving..." : "Save Information"}
-       </button>
-       
+          <>
+            <button
+              onClick={() => {
+                setIsEdit(false);
+                window.location.reload(); // Reset to original data
+              }}
+              className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg shadow-md"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveProfile}
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save Information"}
+            </button>
+          </>
         ) : (
           <button
             onClick={() => setIsEdit(true)}

@@ -1,5 +1,8 @@
 import express from "express";
 import {
+  sendOtp,
+  sendEmailOtp,
+  verifyAndRegister,
   registerUser,
   loginUser,
   getCurrentUser,
@@ -16,11 +19,14 @@ import protect from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 // Public routes
+router.post("/send-otp", sendOtp);
+router.post("/send-email-otp", sendEmailOtp);
+router.post("/verify-and-register", verifyAndRegister);
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 
 // Authenticated routes (all users)
-router.get("/me", protect, getCurrentUser);
+router.get("/me", protect(), getCurrentUser);
 router.put("/me", protect(), updateUserProfile);
 
 // Admin-only routes

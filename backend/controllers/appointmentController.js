@@ -4,141 +4,130 @@ import Service from "../models/serviceModel.js";
 import Promotion from "../models/Promotion.js";
 import PatientRecord from "../models/patientRecordModel.js";
 import fetch from 'node-fetch'; // ✅ Add this import at the top
+import { sendSMS, formatAppointmentConfirmationSMS } from "../utils/smsHelper.js"; // ✅ use your
 
 // ✅ Book an appointment (with service price + promotions + SMS)
 export const bookAppointment = async (req, res) => {
   console.log("\n🎯 ====== BOOKING ENDPOINT HIT ======");
   console.log("📥 Request body:", req.body);
   console.log("👤 User from auth middleware:", req.user);
-  console.log("🔑 User ID:", req.user?.id);
-  
+
   try {
-    const { doctorId, serviceId, date, time } = req.body;
+    const { doctorId, serviceId, date, time, promotionId } = req.body; // ✅ includes promotionId
     const userId = req.user._id;
 
-    console.log("📋 Extracted booking data:");
-    console.log("  Doctor ID:", doctorId);
-    console.log("  Service ID:", serviceId);
-    console.log("  Date:", date);
-    console.log("  Time:", time);
-    console.log("  User ID:", userId);
-
     if (!doctorId || !serviceId || !date || !time) {
-      console.log("❌ Validation failed - missing required fields");
       return res.status(400).json({
         success: false,
         message: "Doctor, service, date, and time are required",
       });
     }
 
-    console.log("🔍 Looking up doctor...");
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) {
-      console.log("❌ Doctor not found");
-      return res.status(404).json({ success: false, message: "Doctor not found" });
-    }
-    console.log("✅ Doctor found:", doctor.name);
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
 
-    console.log("🔍 Looking up service...");
     const service = await Service.findById(serviceId);
-    if (!service) {
-      console.log("❌ Service not found");
-      return res.status(404).json({ success: false, message: "Service not found" });
-    }
-    console.log("✅ Service found:", service.name);
+    if (!service) return res.status(404).json({ success: false, message: "Service not found" });
 
-    // Check if slot already booked
     const bookedSlots = doctor.slots_book[date] || [];
-    console.log("📅 Booked slots for", date, ":", bookedSlots);
-    
     if (bookedSlots.includes(time)) {
-      console.log("❌ Slot already booked");
-      return res.status(400).json({
-        success: false,
-        message: "This slot is already booked",
-      });
+      return res.status(400).json({ success: false, message: "This slot is already booked" });
     }
-    console.log("✅ Slot is available");
 
-    // Check active promotions for this service
-    console.log("🔍 Checking for promotions...");
-    const promo = await Promotion.findOne({
-      serviceIds: serviceId,
-      isActive: true,
-      startDate: { $lte: new Date() },
-      endDate: { $gte: new Date() }
-    });
-
+    // ✅ Determine final price (service price or discounted)
     let finalPrice = service.price;
-    if (promo) {
-      finalPrice = service.price - (service.price * promo.discountPercentage / 100);
-      console.log("🎉 Promotion applied:", promo.title, "- Final price:", finalPrice);
-    } else {
-      console.log("💵 No promotion - using base price:", finalPrice);
-    }
+    let appliedPromo = null;
 
-    // Create appointment record
-    console.log("💾 Creating appointment...");
+    if (promotionId) {
+      const promo = await Promotion.findById(promotionId);
+    
+      if (!promo) {
+        console.log("⚠️ Promotion not found.");
+      } else {
+        const serviceMatch = promo.serviceIds.some(
+          id => id.toString() === serviceId.toString()
+        );
+        const now = new Date();
+        const withinDateRange =
+          new Date(promo.startDate) <= now && new Date(promo.endDate) >= now;
+    
+        console.log("🔍 Promo debug:", {
+          promoTitle: promo.title,
+          isActive: promo.isActive,
+          serviceMatch,
+          withinDateRange,
+          discount: promo.discountPercentage,
+        });
+    
+        if (promo.isActive && serviceMatch && withinDateRange) {
+          appliedPromo = promo;
+          finalPrice = service.price * (1 - promo.discountPercentage / 100);
+          console.log(
+            `🎉 Promotion applied: ${promo.title} (${promo.discountPercentage}% OFF)`
+          );
+        } else {
+          console.log("⚠️ Promotion conditions not met.");
+        }
+      }
+    }
+    
+
+    // ✅ Create appointment record
     const appointment = await Appointment.create({
       user: userId,
       doctor: doctor._id,
-      service: serviceId,
+      service: service._id,
       date,
       time,
       finalPrice,
+      promotion: appliedPromo?._id || null,
       status: "booked",
     });
-    console.log("✅ Appointment created:", appointment._id);
 
-    // ✅ Send SMS notification
-    try {
-      const userPhone = req.user.phone;
-      if (userPhone) {
-        const smsMessage = `Your appointment with Dr. ${doctor.name} for ${service.name} on ${date} at ${time} has been confirmed. Price: ₱${finalPrice}`;
-        
-        const smsResponse = await fetch('http://localhost:4000/api/send-sms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: userPhone,
-            message: smsMessage
-          })
-        });
-        
-        const smsData = await smsResponse.json();
-        console.log("📱 SMS sent to:", userPhone);
-        console.log("📱 SMS response:", smsData);
-      } else {
-        console.log("⚠️ User has no phone number, skipping SMS");
-      }
-    } catch (smsErr) {
-      console.error("❌ SMS Error:", smsErr.message);
-      // Don't fail the booking if SMS fails
-    }
-
-    // Block the slot in doctor document
-    console.log("🔒 Blocking slot in doctor's schedule...");
+    // ✅ Block the slot
     doctor.slots_book[date] = [...bookedSlots, time];
     await doctor.save();
-    console.log("✅ Doctor schedule updated");
 
-    console.log("📤 Sending success response...");
+    // ✅ Send SMS confirmation (using your helper)
+    try {
+      const patientName = req.user.name || "Patient";
+      const doctorName = doctor.name;
+      const serviceName = service.name;
+      const formattedDate = new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const smsMessage = formatAppointmentConfirmationSMS(
+        patientName,
+        doctorName,
+        appliedPromo
+          ? `${serviceName} (${appliedPromo.title} ${appliedPromo.discountPercentage}% off)`
+          : serviceName,
+        formattedDate,
+        time,
+        finalPrice.toFixed(2)
+      );
+
+      if (req.user.phone) {
+        await sendSMS(req.user.phone, smsMessage);
+        console.log("📱 SMS sent successfully to:", req.user.phone);
+      } else {
+        console.log("⚠️ No phone number found, skipping SMS");
+      }
+    } catch (smsErr) {
+      console.error("❌ SMS sending error:", smsErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: "Appointment booked successfully",
       appointment,
     });
-    console.log("✅ Response sent successfully!\n");
-    
+
   } catch (err) {
-    console.error("❌ ====== BOOKING ERROR ======");
-    console.error("Error message:", err.message);
-    console.error("Error stack:", err.stack);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: err.message,
-    });
+    console.error("❌ BOOKING ERROR:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
