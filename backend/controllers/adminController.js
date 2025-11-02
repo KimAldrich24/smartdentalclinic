@@ -66,16 +66,40 @@ export const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-      const token = jwt.sign(
-        { id: "admin-id", email, role: "admin" },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-      );
-      return res.json({ success: true, token });
+    const admin = await User.findOne({ email, role: "admin" });
+    
+    if (!admin) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    res.status(401).json({ success: false, message: "Invalid credentials" });
+    const isMatch = await bcrypt.compare(password, admin.password);
+    
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    // ✅ CREATE AUDIT LOG DIRECTLY - NO HELPER FUNCTION
+    try {
+      const AuditTrail = (await import("../models/auditModel.js")).default;
+      await AuditTrail.create({
+        userId: admin._id,
+        role: "admin",
+        action: "LOGIN",
+        module: "AUTH",
+        ipAddress: req.ip || "unknown",
+      });
+      console.log("✅ Audit log created for:", admin.email);
+    } catch (auditErr) {
+      console.error("⚠️ Audit log failed:", auditErr.message);
+    }
+
+    const token = jwt.sign(
+      { id: admin._id, email: admin.email, role: "admin" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({ success: true, token });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -108,54 +132,84 @@ export const removeDoctor = async (req, res) => {
   }
 };
 
+// ✅ Check if admin exists
+export const checkAdminExists = async (req, res) => {
+  try {
+    const admin = await User.findOne({ role: "admin" });
+    res.json({ exists: !!admin });
+  } catch (error) {
+    res.status(500).json({ exists: false, message: error.message });
+  }
+};
+
+// ✅ Create first admin account (ONE-TIME REGISTRATION)
 export const createAdmin = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!name || !email || !password || !role) {
+    console.log("📝 Admin registration attempt:", { name, email });
+
+    // Check if admin already exists
+    const existingAdmin = await User.findOne({ role: "admin" });
+    
+    if (existingAdmin) {
+      console.log("❌ Admin already exists");
+      return res.status(403).json({
+        success: false,
+        message: "Admin account already exists. Registration is disabled.",
+      });
+    }
+
+    // Validate inputs
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
     }
 
-    const existing = await User.findOne({ email });
-    if (existing) {
+    // Check if email already in use
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
       return res.status(400).json({
         success: false,
-        message: "Account already exists",
+        message: "Email already in use",
       });
     }
 
+    // Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({
+    // Create admin
+    const admin = new User({
       name,
       email,
       password: hashedPassword,
-      role,
+      role: "admin",
+      phone: "000000000",
+      gender: "Not Selected",
+      dob: "Not Selected",
+      address: { line1: "", line2: "" },
     });
 
-    await user.save();
+    await admin.save();
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    console.log("✅ Admin created successfully:", admin.email);
 
     res.status(201).json({
       success: true,
-      token,
-      role: user.role,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-      message: `${role} account created successfully`,
+      message: "Admin account created successfully! You can now log in.",
     });
   } catch (error) {
+    console.error("❌ Create admin error:", error);
     res.status(500).json({
       success: false,
       message: error.message,

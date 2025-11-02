@@ -4,7 +4,7 @@ import { AdminContext } from "../context/AdminContext";
 import { DoctorContext } from "../context/DoctorContext";
 import { StaffContext } from "../context/StaffContext";
 import { toast } from "react-toastify";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Shield } from "lucide-react"; // ✅ Added Shield icon
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -21,21 +21,20 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     try {
       if (userType === "admin") {
-        // Admin login
-        const res = await fetch(`${backendUrl}/api/users/login`, {
+        // ✅ FIXED: Use correct admin login endpoint
+        const res = await fetch(`${backendUrl}/api/admin/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
         const data = await res.json();
-
+  
         if (data.success && data.token) {
           setAToken(data.token);
           localStorage.setItem("aToken", data.token);
-          localStorage.setItem("admin", JSON.stringify(data.user));
           await getAllDoctors();
           toast.success("Admin login successful!");
           navigate("/dashboard");
@@ -77,8 +76,17 @@ const Login = () => {
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md"
       >
-        <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
-          Dental Clinic Login
+        {/* ✅ LOGO SECTION - Added */}
+        <div className="text-center mb-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Shield size={40} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800">Smart Dental Clinic</h1>
+          <p className="text-sm text-gray-500 mt-1">Management System</p>
+        </div>
+
+        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+          Login to Your Account
         </h2>
 
         {/* User Type Toggle - NOW WITH 3 BUTTONS */}
@@ -153,7 +161,7 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Submit Button - NOW WITH 3 COLORS */}
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
@@ -177,6 +185,13 @@ const Login = () => {
             <a href="/patient-login" className="text-blue-500 hover:underline font-medium">
               Login here
             </a>
+          </p>
+        </div>
+
+        {/* ✅ Footer - Added */}
+        <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+          <p className="text-xs text-gray-400">
+            © 2025 Smart Dental Clinic. All rights reserved.
           </p>
         </div>
       </form>

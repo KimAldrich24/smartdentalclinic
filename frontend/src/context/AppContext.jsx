@@ -14,19 +14,24 @@ const AppContextProvider = ({ children }) => {
   const fetchDoctors = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/doctors`);
+      
       if (data.success) {
-        // 🔥 If your API only returns filename for image, prepend full path
+        // ✅ Fixed: Handle null/undefined images
         const updatedDoctors = data.doctors.map((doc) => ({
           ...doc,
-          image: doc.image.startsWith("http")
+          image: doc.image && doc.image.startsWith("http")
             ? doc.image
-            : `${backendUrl}/images/${doc.image}`, // adjust if your backend serves images differently
+            : doc.image
+            ? `${backendUrl}/images/${doc.image}`
+            : "/default-doctor.png", // ✅ Fallback if no image
         }));
+        
         setDoctors(updatedDoctors);
       } else {
         toast.error(data.message || "Failed to fetch doctors");
       }
     } catch (err) {
+      console.error("Failed to fetch doctors:", err);
       toast.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
