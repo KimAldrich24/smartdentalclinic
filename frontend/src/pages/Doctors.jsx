@@ -70,9 +70,6 @@ const Doctors = () => {
                     Experience: {doc.experience} yrs
                   </p>
                 )}
-                {doc.fees && (
-                  <p className="text-gray-500 text-sm">Fees: ₱{doc.fees}</p>
-                )}
                 {doc.degree && (
                   <p className="text-gray-500 text-sm">Degree: {doc.degree}</p>
                 )}

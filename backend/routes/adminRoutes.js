@@ -1,17 +1,16 @@
 import express from "express";
 import { addDoctor, loginAdmin, allDoctors, removeDoctor, createAdmin } from "../controllers/adminController.js";
-import upload from "../middlewares/multer.js";
-import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
+import { uploadDoctorImage } from "../middlewares/multer.js";
+import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js"; // ✅ FIXED - default import
 import { getAllPrescriptions } from "../controllers/prescriptionController.js";
 import User from "../models/userModel.js";
-import AuditTrail from "../models/auditModel.js"; // ✅ ADD THIS
+import AuditTrail from "../models/auditModel.js";
 
 const router = express.Router();
 
 router.post("/login", loginAdmin);
 router.post("/register", createAdmin);
 
-// ✅ ADD THIS: Check if admin exists
 router.get("/check-admin", async (req, res) => {
   try {
     const admin = await User.findOne({ role: "admin" });
@@ -21,12 +20,12 @@ router.get("/check-admin", async (req, res) => {
   }
 });
 
-router.post("/add-doctor", adminAuthMiddleware, upload.single("image"), addDoctor);
+// ✅ FIXED - changed upload to uploadDoctorImage
+router.post("/add-doctor", adminAuthMiddleware, uploadDoctorImage.single("image"), addDoctor);
 router.get("/all-doctors", adminAuthMiddleware, allDoctors);
 router.delete("/remove-doctor/:id", adminAuthMiddleware, removeDoctor);
 router.get("/prescriptions", getAllPrescriptions);
 
-// ✅ ADD THIS: Get admin profile
 router.get("/profile", adminAuthMiddleware, async (req, res) => {
   try {
     const admin = await User.findById(req.userId).select("-password");
@@ -41,7 +40,6 @@ router.get("/profile", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// ✅ ADD THIS: Update admin profile
 router.put("/profile", adminAuthMiddleware, async (req, res) => {
   try {
     const { name, phone } = req.body;
@@ -56,7 +54,6 @@ router.put("/profile", adminAuthMiddleware, async (req, res) => {
       return res.json({ success: false, message: "Admin not found" });
     }
 
-    // ✅ Log the update
     await AuditTrail.create({
       userId: admin._id,
       role: "admin",

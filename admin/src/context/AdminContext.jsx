@@ -36,27 +36,38 @@ const AdminContextProvider = ({ children }) => {
     }
   }, [aToken]);
 
-  // ✅ Fetch admin profile data
-  const getAdminProfile = async () => {
-    if (!aToken || userRole !== "admin") return;
+// ✅ Fetch admin profile data
+const getAdminProfile = async () => {
+  console.log("🔍 getAdminProfile called", { aToken, userRole }); // ✅ DEBUG
+  
+  if (!aToken || userRole !== "admin") {
+    console.log("❌ Blocked: No token or not admin"); // ✅ DEBUG
+    return;
+  }
 
-    try {
-      const res = await axios.get(`${backendUrl}/api/admin/profile`, {
-        headers: { Authorization: `Bearer ${aToken}` },
-      });
-      
-      if (res.data.success) {
-        setAdmin(res.data.admin);
-      }
-    } catch (err) {
-      console.error("Get admin profile error:", err);
-      if (err.response?.status === 401) {
-        setAToken(null);
-        setUserRole(null);
-      }
+  console.log("📡 Fetching admin profile from:", `${backendUrl}/api/admin/profile`); // ✅ DEBUG
+
+  try {
+    const res = await axios.get(`${backendUrl}/api/admin/profile`, {
+      headers: { Authorization: `Bearer ${aToken}` },
+    });
+    
+    console.log("✅ Profile response:", res.data); // ✅ DEBUG
+    
+    if (res.data.success) {
+      setAdmin(res.data.admin);
+      console.log("✅ Admin state updated:", res.data.admin); // ✅ DEBUG
+    } else {
+      console.log("⚠️ Profile fetch failed:", res.data.message); // ✅ DEBUG
     }
-  };
-
+  } catch (err) {
+    console.error("❌ Get admin profile error:", err.response?.data || err.message);
+    if (err.response?.status === 401) {
+      setAToken(null);
+      setUserRole(null);
+    }
+  }
+};
   // ✅ Protected fetch for doctors
   const getAllDoctors = async () => {
     if (!aToken || userRole !== "admin") return;

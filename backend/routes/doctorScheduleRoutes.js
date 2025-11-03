@@ -9,20 +9,29 @@ const router = express.Router();
 ========================= */
 router.post("/", doctorAuthMiddleware, async (req, res) => {
   try {
-    const { date, timeSlots } = req.body;
+    const { date, slots } = req.body;
     const doctorId = req.doctorId;
 
+    console.log("📝 Saving schedule:", { doctorId, date, slots });
+
+    // Check if schedule exists
     const existing = await DoctorSchedule.findOne({ doctorId, date });
     if (existing) {
-      return res.json({ success: false, message: "Schedule already exists for this date" });
+      // Update existing schedule
+      existing.slots = slots;
+      await existing.save();
+      console.log("✅ Schedule updated");
+      return res.json({ success: true, schedule: existing });
     }
 
-    const schedule = new DoctorSchedule({ doctorId, date, timeSlots });
+    // Create new schedule
+    const schedule = new DoctorSchedule({ doctorId, date, slots });
     await schedule.save();
+    console.log("✅ Schedule created");
 
     res.json({ success: true, schedule });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Error saving schedule:", error);
     res.status(500).json({ success: false, message: "Error saving schedule" });
   }
 });
@@ -33,9 +42,14 @@ router.post("/", doctorAuthMiddleware, async (req, res) => {
 router.get("/", doctorAuthMiddleware, async (req, res) => {
   try {
     const doctorId = req.doctorId;
+    console.log("🔍 Fetching schedules for doctor:", doctorId);
+    
     const schedules = await DoctorSchedule.find({ doctorId }).sort({ date: 1 });
+    console.log("📥 Found schedules:", schedules.length);
+    
     res.json({ success: true, schedules });
   } catch (error) {
+    console.error("❌ Error fetching schedules:", error);
     res.status(500).json({ success: false, message: "Error fetching schedules" });
   }
 });
@@ -56,37 +70,14 @@ router.delete("/:id", doctorAuthMiddleware, async (req, res) => {
    🔹 PUBLIC — get all available schedules (for patients)
 ========================= */
 router.get("/available", async (req, res) => {
-    try {
-      const schedules = await DoctorSchedule.find()
-        .populate("doctorId", "name degree image")
-        .sort({ date: 1 });
-      res.json({ success: true, schedules });
-    } catch (error) {
-      res.status(500).json({ success: false, message: "Error fetching available schedules" });
-    }
-  });
-  
-  /* =========================
-     🔹 PATIENT BOOKING — mark slot as booked
-  ========================= */
-  router.post("/:id/book", async (req, res) => {
-    try {
-      const { slotIndex, patientName } = req.body;
-      const schedule = await DoctorSchedule.findById(req.params.id);
-      if (!schedule) return res.json({ success: false, message: "Schedule not found" });
-  
-      if (schedule.timeSlots[slotIndex].booked)
-        return res.json({ success: false, message: "Slot already booked" });
-  
-      schedule.timeSlots[slotIndex].booked = true;
-      await schedule.save();
-  
-      // Optionally: create an Appointment model here later
-      res.json({ success: true, message: `Slot booked for ${patientName}` });
-    } catch (error) {
-      res.status(500).json({ success: false, message: "Booking failed" });
-    }
-  });
-
+  try {
+    const schedules = await DoctorSchedule.find()
+      .populate("doctorId", "name degree image")
+      .sort({ date: 1 });
+    res.json({ success: true, schedules });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching available schedules" });
+  }
+});
 
 export default router;

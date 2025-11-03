@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
     },
     address: { type: addressSchema, default: () => ({}) },
     gender: { type: String, default: "Not Selected" },
-    dob: { type: Date }, // ✅ store as Date
+    dob: { type: Date, default: null }, // ✅ FIXED: Allow null for admins
     phone: { type: String, default: " " },
     role: { type: String, enum: ["admin", "staff", "patient"], default: "patient" },
     status: { type: String, enum: ["pending", "active", "rejected"], default: "active" },

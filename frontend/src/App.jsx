@@ -16,6 +16,7 @@ import PatientPrescriptions from "./pages/PatientPrescriptions";
   import TermsAndConditions from "./pages/TermsAndConditions";
 import JobApplication from "./pages/JobApplication";
 import Settings from "./pages/Settings";
+import PatientGCashPayment from './pages/PatientGCashPayment';
 
 const App = () => {
   return (
@@ -39,6 +40,7 @@ const App = () => {
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           <Route path="/apply" element={<JobApplication />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/payment/gcash/:appointmentId" element={<PatientGCashPayment />} />
         </Routes>
 
         <Footer />

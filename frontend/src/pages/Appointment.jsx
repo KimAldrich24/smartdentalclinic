@@ -24,41 +24,40 @@ const Appointment = () => {
   const [successAnim, setSuccessAnim] = useState(false);
 
   // ✅ Fetch doctor info with services and schedule
-  // ✅ Fetch doctor info with services and schedule
-const fetchDoctor = async () => {
-  try {
-    const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}`);
-    if (data.success) {
-      setDocInfo(data.doctor);
-      
-      // ✅ Debug what we're getting
-      console.log("🔍 FULL DOCTOR DATA:", data.doctor);
-      console.log("🔍 Doctor services RAW:", data.doctor.services);
-      console.log("🔍 Doctor schedule RAW:", data.doctor.schedule);
-      
-      // Check if services are populated or just IDs
-      if (data.doctor.services && data.doctor.services.length > 0) {
-        console.log("🔍 First service:", data.doctor.services[0]);
-        console.log("🔍 Is it an ID or object?", typeof data.doctor.services[0]);
+  const fetchDoctor = async () => {
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}`);
+      if (data.success) {
+        setDocInfo(data.doctor);
+        
+        // ✅ Debug what we're getting
+        console.log("🔍 FULL DOCTOR DATA:", data.doctor);
+        console.log("🔍 Doctor services RAW:", data.doctor.services);
+        console.log("🔍 Doctor schedule RAW:", data.doctor.schedule);
+        
+        // Check if services are populated or just IDs
+        if (data.doctor.services && data.doctor.services.length > 0) {
+          console.log("🔍 First service:", data.doctor.services[0]);
+          console.log("🔍 Is it an ID or object?", typeof data.doctor.services[0]);
+        }
+        
+        // ✅ Set doctor's services and schedule
+        setDoctorServices(data.doctor.services || []);
+        setDoctorSchedule(data.doctor.schedule || []);
+        
+        console.log("✅ Doctor loaded:", data.doctor.name);
+        console.log("📋 Services:", data.doctor.services?.length || 0);
+        console.log("📅 Schedule:", data.doctor.schedule?.length || 0);
+      } else {
+        toast.error("Doctor not found");
       }
-      
-      // ✅ Set doctor's services and schedule
-      setDoctorServices(data.doctor.services || []);
-      setDoctorSchedule(data.doctor.schedule || []);
-      
-      console.log("✅ Doctor loaded:", data.doctor.name);
-      console.log("📋 Services:", data.doctor.services?.length || 0);
-      console.log("📅 Schedule:", data.doctor.schedule?.length || 0);
-    } else {
-      toast.error("Doctor not found");
+    } catch (err) {
+      console.error("❌ Error fetching doctor:", err);
+      toast.error(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("❌ Error fetching doctor:", err);
-    toast.error(err.response?.data?.message || err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Fetch promotions
   const fetchPromotions = async () => {
@@ -183,7 +182,6 @@ const fetchDoctor = async () => {
           <h2 className="text-2xl font-bold">{docInfo.name}</h2>
           <p className="text-gray-600 mt-1">{docInfo.degree} • {docInfo.speciality}</p>
           <p className="mt-3 text-gray-500">Experience: {docInfo.experience}</p>
-          <p className="mt-1 text-gray-500">Fee: ₱{docInfo.fees}</p>
           <p className="mt-3 text-gray-700">{docInfo.about}</p>
         </div>
       </div>
@@ -330,31 +328,20 @@ const fetchDoctor = async () => {
             )}
           </>
         )}
-
-        {/* Final Price */}
-        {selectedService && doctorServices.length > 0 && (
-          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="font-semibold text-lg">
-              Final Price: ₱{getDiscountedPrice(doctorServices.find((s) => s._id === selectedService))}
-            </p>
-          </div>
-        )}
-
-        {/* Book Button */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={handleBooking}
-            disabled={booking || doctorServices.length === 0 || doctorSchedule.length === 0}
-            className={`px-8 py-3 text-lg font-semibold rounded-full shadow-md transition ${
-              booking || doctorServices.length === 0 || doctorSchedule.length === 0
-                ? "bg-gray-400 cursor-not-allowed text-white" 
-                : "bg-green-500 hover:bg-green-600 text-white"
-            }`}
-          >
-            {booking ? "Booking..." : "Book Appointment"}
-          </button>
-        </div>
       </div>
+
+      {/* Book Button */}
+      <button
+        onClick={handleBooking}
+        disabled={!selectedService || !selectedDate || !selectedTime || booking}
+        className={`mt-6 w-full py-3 rounded-lg font-semibold transition ${
+          !selectedService || !selectedDate || !selectedTime || booking
+            ? "bg-gray-300 cursor-not-allowed"
+            : "bg-blue-500 text-white hover:bg-blue-600"
+        }`}
+      >
+        {booking ? "Booking..." : "Book Appointment"}
+      </button>
     </div>
   );
 };

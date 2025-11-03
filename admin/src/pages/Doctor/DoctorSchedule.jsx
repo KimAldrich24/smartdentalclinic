@@ -8,22 +8,24 @@ const DoctorSchedule = () => {
   const { dToken } = useContext(DoctorContext);
   const { backendUrl } = useContext(AdminContext);
 
-  // All available services from admin
   const [allServices, setAllServices] = useState([]);
-  
-  // Doctor's selected services
   const [myServices, setMyServices] = useState([]);
-  
-  // Schedule state
   const [schedule, setSchedule] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [timeSlots, setTimeSlots] = useState([]);
   const [newSlot, setNewSlot] = useState('');
 
-  // Fetch all services and doctor's data
+  // ✅ Helper function to check if date is in the past
+  const isPastDate = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    date.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
   const fetchData = async () => {
     try {
-      // Get all services
       const servicesRes = await fetch(`${backendUrl}/api/doctors/services/all`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
@@ -32,7 +34,6 @@ const DoctorSchedule = () => {
         setAllServices(servicesData.services);
       }
 
-      // Get doctor's services and schedule
       const myDataRes = await fetch(`${backendUrl}/api/doctors/my-data`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
@@ -51,7 +52,6 @@ const DoctorSchedule = () => {
     if (dToken) fetchData();
   }, [dToken]);
 
-  // Add service to doctor's profile
   const handleAddService = async (serviceId) => {
     try {
       const res = await fetch(`${backendUrl}/api/doctors/my-services`, {
@@ -76,7 +76,6 @@ const DoctorSchedule = () => {
     }
   };
 
-  // Remove service from doctor's profile
   const handleRemoveService = async (serviceId) => {
     try {
       const res = await fetch(`${backendUrl}/api/doctors/my-services/${serviceId}`, {
@@ -95,7 +94,6 @@ const DoctorSchedule = () => {
     }
   };
 
-  // Add time slot
   const handleAddSlot = () => {
     if (newSlot && !timeSlots.includes(newSlot)) {
       setTimeSlots([...timeSlots, newSlot]);
@@ -103,15 +101,20 @@ const DoctorSchedule = () => {
     }
   };
 
-  // Remove time slot
   const handleRemoveSlot = (slot) => {
     setTimeSlots(timeSlots.filter(s => s !== slot));
   };
 
-  // Save schedule
+  // ✅ UPDATED: Save schedule with past date validation
   const handleSaveSchedule = async () => {
     if (!selectedDate || timeSlots.length === 0) {
       toast.error('Please select a date and add time slots');
+      return;
+    }
+
+    // ✅ Prevent saving schedules for past dates
+    if (isPastDate(selectedDate)) {
+      toast.error('Cannot create schedule for past dates');
       return;
     }
 
@@ -140,7 +143,6 @@ const DoctorSchedule = () => {
     }
   };
 
-  // Check if service is already added
   const isServiceAdded = (serviceId) => {
     return myServices.some(s => s._id === serviceId);
   };

@@ -27,6 +27,8 @@ import auditRoutes from "./routes/auditRoutes.js";
 import equipmentRoutes from "./routes/equipmentRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js"
 import adminStaffRoutes from "./routes/adminStaffRoutes.js"
+import { startScheduleCleanup } from './utils/scheduleCleanup.js' // ✅ ADD THIS
+import paymentProofRoutes from './routes/paymentProofRoutes.js';
 // Node Fetch for SMS
 import fetch from 'node-fetch'
 
@@ -78,13 +80,15 @@ app.use("/api/prescriptions", prescriptionRoutes)
 app.use("/api/contact", contactRoutes)
 app.use("/api/doctors/auth", doctorAuthRoutes)
 app.use("/api/job-applications", jobApplicationRoutes)
-app.use("/api/doctor-schedules", doctorScheduleRoutes)
+app.use("/api/doctor-schedule", doctorScheduleRoutes)
 app.use("/api/admin/appointments", adminAppointmentRoutes)
 app.use("/api/sales", salesRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/staff", staffRoutes)
 app.use("/api/admin/staff", adminStaffRoutes)
+app.use('/api/payment-proofs', paymentProofRoutes);
+app.use('/uploads', express.static('uploads'));
 // root endpoint
 app.get('/', (req, res) => {
     res.send('API WORKING')
@@ -119,6 +123,7 @@ app.post('/api/send-sms', async (req, res) => {
         res.status(500).json({ success: false, error: err.message })
     }
 })
-
+// ✅ ADD THIS before app.listen()
+startScheduleCleanup();
 // start server
 app.listen(port, () => console.log(`Server Started on port ${port}`))

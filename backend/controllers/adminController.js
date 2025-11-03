@@ -143,11 +143,13 @@ export const checkAdminExists = async (req, res) => {
 };
 
 // ✅ Create first admin account (ONE-TIME REGISTRATION)
+// ✅ Create first admin account (ONE-TIME REGISTRATION)
 export const createAdmin = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
     console.log("📝 Admin registration attempt:", { name, email });
+    console.log("📦 Full request body:", JSON.stringify(req.body, null, 2)); // ✅ DEBUG
 
     // Check if admin already exists
     const existingAdmin = await User.findOne({ role: "admin" });
@@ -188,17 +190,22 @@ export const createAdmin = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create admin
-    const admin = new User({
+    // ✅ Create admin object
+    const adminData = {
       name,
       email,
       password: hashedPassword,
       role: "admin",
       phone: "000000000",
       gender: "Not Selected",
-      dob: "Not Selected",
       address: { line1: "", line2: "" },
-    });
+    };
+
+    console.log("🔨 Creating admin with data:", JSON.stringify(adminData, null, 2)); // ✅ DEBUG
+
+    const admin = new User(adminData);
+
+    console.log("👤 Admin object BEFORE save:", JSON.stringify(admin.toObject(), null, 2)); // ✅ DEBUG
 
     await admin.save();
 

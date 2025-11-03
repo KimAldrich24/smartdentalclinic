@@ -8,7 +8,6 @@ const AddDoctor = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [experience, setExperience] = useState('');
-  const [fees, setFees] = useState('');
   const [about, setAbout] = useState('');
   const [degree, setDegree] = useState('');
   const [address1, setAddress1] = useState('');
@@ -20,7 +19,7 @@ const AddDoctor = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
   
-    console.log("🔑 Creating doctor with password:", password); // ✅ ADD THIS
+    console.log("🔑 Creating doctor with password:", password);
   
     try {
       const doctorData = {
@@ -28,14 +27,13 @@ const AddDoctor = () => {
         email,
         password,
         experience,
-        fees: Number(fees),
         about,
         degree,
         speciality: degree,
         address: { line1: address1, line2: address2 },
       };
   
-      console.log("📤 Sending doctor data:", doctorData); // ✅ ADD THIS
+      console.log("📤 Sending doctor data:", doctorData);
   
       const res = await fetch(`${backendUrl}/api/doctors`, {
         method: 'POST',
@@ -57,7 +55,6 @@ const AddDoctor = () => {
         setEmail('');
         setPassword('');
         setExperience('');
-        setFees('');
         setAbout('');
         setDegree('');
         setAddress1('');
@@ -119,14 +116,6 @@ const AddDoctor = () => {
             </button>
           </div>
 
-          <input
-            type="number"
-            placeholder="Fees"
-            required
-            value={fees}
-            onChange={(e) => setFees(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
-          />
           <select
             value={experience}
             onChange={(e) => setExperience(e.target.value)}

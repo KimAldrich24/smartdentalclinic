@@ -27,7 +27,6 @@ const doctorSchema = new mongoose.Schema(
     degree: String,
     experience: String,
     about: String,
-    fees: Number,
     address: { type: addressSchema, default: () => ({}) },
     image: String,
     available: { type: Boolean, default: true },

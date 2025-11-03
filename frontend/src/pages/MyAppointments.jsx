@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
 const MyAppointments = () => {
   const { token } = useContext(AuthContext);
+  const navigate = useNavigate();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [appointments, setAppointments] = useState([]);
 
@@ -32,6 +34,7 @@ const MyAppointments = () => {
     };
     if (token) fetchAppointments();
   }, [token, backendUrl]);
+
   // ✅ Cancel appointment
   const handleCancel = async (id) => {
     try {
@@ -101,11 +104,26 @@ const MyAppointments = () => {
                   {appt.date} | {appt.time}
                 </p>
                 <p className="text-sm text-gray-500">Status: {appt.status}</p>
+
+                {/* Payment Status */}
+                {appt.paymentStatus === 'paid_online' && (
+                  <p className="text-green-600 font-semibold">✓ Paid Online</p>
+                )}
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-3 mt-4 md:mt-0">
-                
+                {/* Pay by GCash Button */}
+                {appt.paymentStatus === 'pending' && (
+                  <button
+                    onClick={() => navigate(`/payment/gcash/${appt._id}`)}
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-sm"
+                  >
+                    Pay by GCash
+                  </button>
+                )}
+
+                {/* Cancel Button */}
                 {appt.status === "booked" && (
                   <button
                     onClick={() => handleCancel(appt._id)}

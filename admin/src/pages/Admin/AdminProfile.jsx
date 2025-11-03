@@ -1,19 +1,88 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { User, Mail, Calendar, Shield, Phone, Edit2, X, Check } from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
 
 const AdminProfile = () => {
-  const { admin, aToken } = useContext(AdminContext) || {};
+  const { aToken } = useContext(AdminContext) || {};
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+  const [admin, setAdmin] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: admin?.name || "",
-    phone: admin?.phone || "",
+    name: "",
+    phone: "",
   });
+
+  // ✅ Decode token to get admin info
+  useEffect(() => {
+    if (aToken) {
+      try {
+        const decoded = JSON.parse(atob(aToken.split('.')[1]));
+        
+        // Fetch full admin data from backend
+        fetchAdminProfile(decoded.id);
+      } catch (err) {
+        console.error("Token decode error:", err);
+      }
+    }
+  }, [aToken]);
+
+  // ✅ Fetch admin profile
+const fetchAdminProfile = async (adminId) => {
+  console.log("🔍 Fetching profile for admin ID:", adminId); // ✅ DEBUG
+  
+  try {
+    const res = await axios.get(`${backendUrl}/api/admin/profile`, {
+      headers: { Authorization: `Bearer ${aToken}` },
+    });
+
+    console.log("📡 Backend response:", res.data); // ✅ DEBUG
+
+    if (res.data.success) {
+      console.log("✅ Setting admin from backend:", res.data.admin); // ✅ DEBUG
+      setAdmin(res.data.admin);
+      setFormData({
+        name: res.data.admin.name || "",
+        phone: res.data.admin.phone || "",
+      });
+    } else {
+      console.log("⚠️ Backend failed, using fallback..."); // ✅ DEBUG
+      throw new Error(res.data.message); // ✅ Force fallback
+    }
+  } catch (err) {
+    console.error("❌ Fetch profile error:", err); // ✅ DEBUG
+    
+    // ✅ FALLBACK: Use token data if backend fails
+    console.log("🔄 Attempting fallback with token data..."); // ✅ DEBUG
+    
+    try {
+      const decoded = JSON.parse(atob(aToken.split('.')[1]));
+      console.log("🔓 Decoded token:", decoded); // ✅ DEBUG
+      
+      const fallbackAdmin = {
+        id: decoded.id,
+        name: decoded.name || "Admin User",
+        email: decoded.email,
+        role: decoded.role,
+        phone: "Not set",
+        gender: "Not Selected",
+        status: "active",
+      };
+      
+      console.log("✅ Fallback admin created:", fallbackAdmin); // ✅ DEBUG
+      setAdmin(fallbackAdmin);
+      setFormData({
+        name: fallbackAdmin.name,
+        phone: fallbackAdmin.phone,
+      });
+    } catch (decodeErr) {
+      console.error("💥 Fallback failed:", decodeErr); // ✅ DEBUG
+    }
+  }
+};
 
   // Handle input change
   const handleChange = (e) => {
@@ -34,8 +103,8 @@ const AdminProfile = () => {
 
       if (res.data.success) {
         toast.success("Profile updated successfully!");
+        setAdmin(res.data.admin);
         setIsEdit(false);
-        // You might want to refresh admin data here
       } else {
         toast.error(res.data.message || "Failed to update profile");
       }
@@ -54,6 +123,17 @@ const AdminProfile = () => {
     });
     setIsEdit(false);
   };
+
+  if (!admin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4 md:p-8">
@@ -108,7 +188,7 @@ const AdminProfile = () => {
             />
           ) : (
             <h2 className="text-3xl font-bold text-gray-800">
-              {admin?.name || "Admin User"}
+              {admin.name}
             </h2>
           )}
 
@@ -126,9 +206,7 @@ const AdminProfile = () => {
             </div>
             <div className="flex-1">
               <p className="text-sm text-gray-500 font-medium">Email Address</p>
-              <p className="text-gray-800 font-semibold">
-                {admin?.email || "admin@smartdental.com"}
-              </p>
+              <p className="text-gray-800 font-semibold">{admin.email}</p>
             </div>
           </div>
 
@@ -150,7 +228,7 @@ const AdminProfile = () => {
                 />
               ) : (
                 <p className="text-gray-800 font-semibold">
-                  {admin?.phone || "Not set"}
+                  {admin.phone || "Not set"}
                 </p>
               )}
             </div>
@@ -164,7 +242,7 @@ const AdminProfile = () => {
             <div className="flex-1">
               <p className="text-sm text-gray-500 font-medium">Role</p>
               <p className="text-gray-800 font-semibold">
-                {admin?.role?.toUpperCase() || "ADMIN"}
+                {admin.role?.toUpperCase()}
               </p>
             </div>
           </div>
@@ -177,33 +255,10 @@ const AdminProfile = () => {
             <div className="flex-1">
               <p className="text-sm text-gray-500 font-medium">Account Status</p>
               <p className="text-gray-800 font-semibold">
-                {admin?.status === "active" ? (
-                  <span className="text-green-600">● Active</span>
-                ) : (
-                  <span className="text-red-600">● Inactive</span>
-                )}
+                <span className="text-green-600">● Active</span>
               </p>
             </div>
           </div>
-
-          {/* Created At */}
-          {admin?.createdAt && (
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="bg-indigo-100 p-3 rounded-full">
-                <Calendar className="text-indigo-600" size={24} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-500 font-medium">Member Since</p>
-                <p className="text-gray-800 font-semibold">
-                  {new Date(admin.createdAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Additional Info */}

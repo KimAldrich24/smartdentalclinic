@@ -306,11 +306,24 @@ export const removeDoctorService = async (req, res) => {
   }
 };
 
-// Add/Update schedule (available slots for a date)
+// Add/Update schedule (available slots for a date) - UPDATED VERSION
 export const addDoctorSchedule = async (req, res) => {
   try {
     const { date, slots } = req.body;
     const doctorId = req.doctor.id;
+
+    // ✅ Check if date is in the past
+    const scheduleDate = new Date(date);
+    const today = new Date();
+    scheduleDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    if (scheduleDate < today) {
+      return res.json({ 
+        success: false, 
+        message: 'Cannot create schedule for past dates' 
+      });
+    }
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
@@ -326,16 +339,22 @@ export const addDoctorSchedule = async (req, res) => {
 
     await doctor.save();
 
+    // ✅ Return only active (non-expired) schedules
+    const activeSchedule = doctor.schedule.filter(sch => {
+      const schDate = new Date(sch.date);
+      schDate.setHours(0, 0, 0, 0);
+      return schDate >= today;
+    });
+
     console.log("✅ Schedule added for date:", date);
-    res.json({ success: true, message: 'Schedule updated successfully', schedule: doctor.schedule });
+    res.json({ success: true, message: 'Schedule updated successfully', schedule: activeSchedule });
   } catch (err) {
     console.error("❌ Error adding schedule:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// Get doctor's services and schedule
-// Get doctor's services and schedule
+// Get doctor's services and schedule - UPDATED VERSION
 export const getDoctorServicesAndSchedule = async (req, res) => {
   try {
     const doctorId = req.doctor.id;
@@ -343,14 +362,24 @@ export const getDoctorServicesAndSchedule = async (req, res) => {
     const doctor = await Doctor.findById(doctorId).populate('services');
     if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
 
+    // ✅ Filter out past schedules
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const activeSchedule = doctor.schedule.filter(sch => {
+      const scheduleDate = new Date(sch.date);
+      scheduleDate.setHours(0, 0, 0, 0);
+      return scheduleDate >= today;
+    });
+
     console.log("✅ Fetched doctor data:", { 
       services: doctor.services.length, 
-      schedules: doctor.schedule.length 
+      activeSchedules: activeSchedule.length 
     });
 
     res.json({ 
       success: true, 
-      schedule: doctor.schedule || [], 
+      schedule: activeSchedule, 
       services: doctor.services || []
     });
   } catch (err) {
