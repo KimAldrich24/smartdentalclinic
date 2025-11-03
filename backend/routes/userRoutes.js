@@ -3,7 +3,6 @@ import {
   sendOtp,
   sendEmailOtp,
   verifyAndRegister,
-  registerUser,
   loginUser,
   getCurrentUser,
   updateUserProfile,
@@ -22,7 +21,6 @@ const router = express.Router();
 router.post("/send-otp", sendOtp);
 router.post("/send-email-otp", sendEmailOtp);
 router.post("/verify-and-register", verifyAndRegister);
-router.post("/register", registerUser);
 router.post("/login", loginUser);
 
 // Authenticated routes (all users)
