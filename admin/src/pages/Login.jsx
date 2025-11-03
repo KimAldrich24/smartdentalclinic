@@ -178,15 +178,6 @@ const Login = () => {
           {loading ? "Logging in..." : `Login as ${userType.charAt(0).toUpperCase() + userType.slice(1)}`}
         </button>
 
-        {/* Patient Login Link */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Are you a patient?{" "}
-            <a href="/patient-login" className="text-blue-500 hover:underline font-medium">
-              Login here
-            </a>
-          </p>
-        </div>
 
         {/* ✅ Footer - Added */}
         <div className="mt-6 pt-6 border-t border-gray-200 text-center">
