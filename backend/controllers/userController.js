@@ -177,17 +177,25 @@ export const sendEmailOtp = async (req, res) => {
 };
 
 // ✅ Verify Both OTPs and Register
-// ✅ Verify Phone OTP ONLY and Register (EMAIL OTP REMOVED)
 export const verifyAndRegister = async (req, res) => {
   try { 
     const { name, email, password, phone, dob, phoneOtp } = req.body;
 
     console.log("[DEBUG] verifyAndRegister received:", { name, email, phone, phoneOtp, dob });
 
-    if (!phone || !phoneOtp || !password || !email || !name || !dob) {
+    // ✅ IMPROVED ERROR MESSAGE - SHOWS WHICH FIELDS ARE MISSING
+    const missingFields = [];
+    if (!phone) missingFields.push('phone');
+    if (!phoneOtp) missingFields.push('phoneOtp');
+    if (!password) missingFields.push('password');
+    if (!email) missingFields.push('email');
+    if (!name) missingFields.push('name');
+    if (!dob) missingFields.push('dob');
+
+    if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: `Missing required fields: ${missingFields.join(', ')}`,
       });
     }
 

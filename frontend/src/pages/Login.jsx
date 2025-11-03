@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -25,6 +25,19 @@ const Login = () => {
     phone: "",
     dob: "",
   });
+
+  // ✅ LOAD SAVED REGISTRATION DATA ON COMPONENT MOUNT
+  useEffect(() => {
+    const savedData = sessionStorage.getItem('registrationData');
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      setFormData(parsed);
+      // If OTP was already sent, restore that state too
+      if (sessionStorage.getItem('phoneOtpSent') === 'true') {
+        setPhoneOtpSent(true);
+      }
+    }
+  }, []);
 
   const handleChange = (e) => {
     if (e.target.name === 'phone') {
@@ -64,6 +77,9 @@ const Login = () => {
     setLoading(true);
 
     try {
+      // ✅ SAVE FORM DATA TO SESSIONSTORAGE BEFORE SENDING OTP
+      sessionStorage.setItem('registrationData', JSON.stringify(formData));
+      
       const res = await axios.post(
         `${API_URL}/api/users/send-otp`,
         { phone: formData.phone }
@@ -73,6 +89,7 @@ const Login = () => {
 
       if (res.data.success) {
         setPhoneOtpSent(true);
+        sessionStorage.setItem('phoneOtpSent', 'true'); // ✅ Save OTP sent status
         setSuccess("OTP sent to your phone! Check your SMS.");
       } else {
         setError(res.data.message || "Failed to send OTP");
@@ -98,14 +115,20 @@ const Login = () => {
     setLoading(true);
 
     try {
+      // ✅ RETRIEVE DATA FROM SESSIONSTORAGE IN CASE STATE WAS LOST
+      const savedData = sessionStorage.getItem('registrationData');
+      const dataToSend = savedData ? JSON.parse(savedData) : formData;
+
+      console.log("[DEBUG] Sending registration data:", dataToSend);
+
       const res = await axios.post(
         `${API_URL}/api/users/verify-and-register`,
         {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone,
-          dob: formData.dob,
+          name: dataToSend.name,
+          email: dataToSend.email,
+          password: dataToSend.password,
+          phone: dataToSend.phone,
+          dob: dataToSend.dob,
           phoneOtp: phoneOtp,
         }
       );
@@ -114,11 +137,15 @@ const Login = () => {
 
       if (res.data.success) {
         setSuccess("Registration successful! Signing in...");
-        // Store token if provided
+        
+        // ✅ CLEAR SESSIONSTORAGE AFTER SUCCESSFUL REGISTRATION
+        sessionStorage.removeItem('registrationData');
+        sessionStorage.removeItem('phoneOtpSent');
+        
         if (res.data.token) {
           localStorage.setItem("token", res.data.token);
         }
-        await login(formData.email, formData.password);
+        await login(dataToSend.email, dataToSend.password);
         navigate("/");
       } else {
         setError(res.data.message || "Invalid OTP or registration failed.");
@@ -282,6 +309,9 @@ const Login = () => {
                 setPhoneOtp("");
                 setError("");
                 setSuccess("");
+                // ✅ CLEAR SESSIONSTORAGE WHEN STARTING OVER
+                sessionStorage.removeItem('registrationData');
+                sessionStorage.removeItem('phoneOtpSent');
               }}
               className="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-300 transition-all text-sm"
             >
