@@ -2,38 +2,38 @@ import Appointment from "../models/appointmentModel.js";
 
 export const getSalesReport = async (req, res) => {
   try {
-    const appointments = await Appointment.find({ status: "completed" })
+    const { startDate, endDate } = req.query;
+    // Build filter
+    const filter = { status: "completed" };
+    if (startDate && endDate) {
+      filter.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
+    const appointments = await Appointment.find(filter)
+      .populate("patient", "name")
       .populate("doctor", "name")
       .populate("service", "name price");
-
-    // Group revenue by month
-    const monthlyRevenue = {};
-    const serviceRevenue = {};
-    const doctorRevenue = {};
-
-    appointments.forEach((appt) => {
-      const date = new Date(appt.date);
-      const month = date.toLocaleString("default", { month: "short", year: "numeric" });
-
-      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + appt.totalAmount;
-
-      // Per service
-      const serviceName = appt.service?.name || "Unknown Service";
-      serviceRevenue[serviceName] = (serviceRevenue[serviceName] || 0) + appt.totalAmount;
-
-      // Per doctor
-      const doctorName = appt.doctor?.name || "Unknown Doctor";
-      doctorRevenue[doctorName] = (doctorRevenue[doctorName] || 0) + appt.totalAmount;
-    });
-
+    // Format for frontend
+    const salesData = appointments.map((appt) => ({
+      _id: appt._id,
+      date: appt.date,
+      patientName: appt.patient?.name || "Unknown",
+      serviceName: appt.service?.name || "Unknown Service",
+      dentistName: appt.doctor?.name || "Unknown Doctor",
+      amount: appt.totalAmount || 0,
+    }));
+    const totalRevenue = salesData.reduce((sum, s) => sum + s.amount, 0);
     res.json({
-      monthlyRevenue,
-      serviceRevenue,
-      doctorRevenue,
-      totalRevenue: appointments.reduce((sum, a) => sum + a.totalAmount, 0),
-      count: appointments.length,
+      success: true,
+      sales: salesData,
+      total: totalRevenue,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      success: false, 
+      message: err.message 
+    });
   }
 };
