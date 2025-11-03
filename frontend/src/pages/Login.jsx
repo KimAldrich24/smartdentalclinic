@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
+import { API_URL } from "../config";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -27,10 +28,8 @@ const Login = () => {
     dob: "",
   });
 
-  // ✅ Updated handleChange with phone number cleaning
   const handleChange = (e) => {
     if (e.target.name === 'phone') {
-      // Only allow digits
       const cleaned = e.target.value.replace(/\D/g, '');
       setFormData({ ...formData, phone: cleaned });
     } else {
@@ -38,32 +37,27 @@ const Login = () => {
     }
   };
 
-  // ✅ STEP 1: Send Phone OTP
   const handleSendPhoneOtp = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    // Validate all required fields
     if (!formData.name || !formData.email || !formData.phone || !formData.dob || !formData.password) {
       setError("Please fill in all fields");
       return;
     }
 
-    // Validate phone format
     if (!/^09\d{9}$/.test(formData.phone)) {
       setError("Please enter a valid 11-digit number starting with 09");
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Please enter a valid email address");
       return;
     }
 
-    // Validate password strength
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters long");
       return;
@@ -73,7 +67,7 @@ const Login = () => {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/send-otp`,
+        `${API_URL}/api/users/send-otp`,
         { phone: formData.phone }
       );
 
@@ -93,7 +87,6 @@ const Login = () => {
     }
   };
 
-  // ✅ STEP 2: Send Email OTP
   const handleSendEmailOtp = async (e) => {
     e.preventDefault();
     setError("");
@@ -102,7 +95,7 @@ const Login = () => {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/send-email-otp`,
+        `${API_URL}/api/users/send-email-otp`,
         { email: formData.email }
       );
 
@@ -122,7 +115,6 @@ const Login = () => {
     }
   };
 
-  // ✅ STEP 3: Verify Both OTPs and Register
   const handleVerifyAndRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -142,7 +134,7 @@ const Login = () => {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/verify-and-register`,
+        `${API_URL}/api/users/verify-and-register`,
         {
           name: formData.name,
           email: formData.email,
@@ -171,7 +163,6 @@ const Login = () => {
     }
   };
 
-  // ✅ STEP 4: Normal Login
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -216,7 +207,6 @@ const Login = () => {
           </p>
         )}
 
-        {/* ✅ Sign Up Form - Initial Details */}
         {mode === "signup" && !phoneOtpSent && (
           <form onSubmit={handleSendPhoneOtp} className="space-y-3">
             <input
@@ -261,7 +251,6 @@ const Login = () => {
               />
             </div>
 
-            {/* ✅ Password input with show/hide */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -291,7 +280,6 @@ const Login = () => {
           </form>
         )}
 
-        {/* ✅ Step 2: Send Email OTP */}
         {mode === "signup" && phoneOtpSent && !emailOtpSent && (
           <div className="space-y-4">
             <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
@@ -307,7 +295,6 @@ const Login = () => {
           </div>
         )}
 
-        {/* ✅ Step 3: Verify Both OTPs */}
         {mode === "signup" && phoneOtpSent && emailOtpSent && (
           <form onSubmit={handleVerifyAndRegister} className="space-y-4">
             <div className="bg-green-50 p-3 rounded-lg text-sm text-green-700 space-y-1">
@@ -363,16 +350,15 @@ const Login = () => {
                 setError("");
                 setSuccess("");
               }}
-              className="w-full text-blue-500 text-sm hover:underline"
+              className="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-300 transition-all text-sm"
             >
-              ← Start Over
+              Start Over
             </button>
           </form>
         )}
 
-        {/* ✅ Sign In Form */}
         {mode === "login" && (
-          <form onSubmit={handleLogin} className="space-y-3">
+          <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="email"
               name="email"
@@ -399,56 +385,34 @@ const Login = () => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </span>
             </div>
-
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Please wait..." : "Sign In"}
+              {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
         )}
 
-        <p className="text-center text-gray-600 text-sm mt-6">
-          {mode === "signup" ? (
-            <>
-              Already have an account?{" "}
-              <span
-                onClick={() => {
-                  setMode("login");
-                  setPhoneOtpSent(false);
-                  setEmailOtpSent(false);
-                  setPhoneOtp("");
-                  setEmailOtp("");
-                  setError("");
-                  setSuccess("");
-                }}
-                className="text-blue-500 hover:underline cursor-pointer font-medium"
-              >
-                Sign In
-              </span>
-            </>
-          ) : (
-            <>
-              Don't have an account?{" "}
-              <span
-                onClick={() => {
-                  setMode("signup");
-                  setPhoneOtpSent(false);
-                  setEmailOtpSent(false);
-                  setPhoneOtp("");
-                  setEmailOtp("");
-                  setError("");
-                  setSuccess("");
-                }}
-                className="text-blue-500 hover:underline cursor-pointer font-medium"
-              >
-                Sign Up
-              </span>
-            </>
-          )}
-        </p>
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              setMode(mode === "login" ? "signup" : "login");
+              setError("");
+              setSuccess("");
+              setPhoneOtpSent(false);
+              setEmailOtpSent(false);
+              setPhoneOtp("");
+              setEmailOtp("");
+            }}
+            className="text-blue-500 hover:underline text-sm font-medium"
+          >
+            {mode === "login"
+              ? "Don't have an account? Sign Up"
+              : "Already have an account? Sign In"}
+          </button>
+        </div>
       </div>
     </div>
   );
