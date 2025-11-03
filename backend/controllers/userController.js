@@ -177,13 +177,14 @@ export const sendEmailOtp = async (req, res) => {
 };
 
 // ✅ Verify Both OTPs and Register
+// ✅ Verify Phone OTP ONLY and Register (EMAIL OTP REMOVED)
 export const verifyAndRegister = async (req, res) => {
-  try {
-    const { name, email, password, phone, dob, phoneOtp, emailOtp } = req.body;
+  try { 
+    const { name, email, password, phone, dob, phoneOtp } = req.body;
 
-    console.log("[DEBUG] verifyAndRegister received:", { name, email, phone, phoneOtp, emailOtp, dob });
+    console.log("[DEBUG] verifyAndRegister received:", { name, email, phone, phoneOtp, dob });
 
-    if (!phone || !phoneOtp || !emailOtp || !password || !email || !name || !dob) {
+    if (!phone || !phoneOtp || !password || !email || !name || !dob) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
@@ -196,7 +197,7 @@ export const verifyAndRegister = async (req, res) => {
       formattedPhone = "0" + formattedPhone.slice(2);
     }
 
-    // === VERIFY PHONE OTP ===
+    // === VERIFY PHONE OTP ONLY ===
     if (!otpStorage.has(formattedPhone)) {
       return res.status(400).json({
         success: false,
@@ -218,7 +219,7 @@ export const verifyAndRegister = async (req, res) => {
       otpStorage.delete(formattedPhone);
       return res.status(400).json({
         success: false,
-        message: "Too many failed attempts for phone OTP. Please request a new one.",
+        message: "Too many failed attempts. Please request a new OTP.",
       });
     }
 
@@ -226,48 +227,13 @@ export const verifyAndRegister = async (req, res) => {
       phoneStored.attempts++;
       return res.status(400).json({
         success: false,
-        message: "Invalid phone OTP code. Please try again.",
+        message: "Invalid OTP code. Please try again.",
       });
     }
 
-    // === VERIFY EMAIL OTP ===
-    if (!otpStorage.has(email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Email OTP not found or expired. Please request a new one.",
-      });
-    }
-
-    const emailStored = otpStorage.get(email);
-
-    if (Date.now() > emailStored.expiresAt) {
-      otpStorage.delete(email);
-      return res.status(400).json({
-        success: false,
-        message: "Email OTP has expired. Please request a new one.",
-      });
-    }
-
-    if (emailStored.attempts >= 3) {
-      otpStorage.delete(email);
-      return res.status(400).json({
-        success: false,
-        message: "Too many failed attempts for email OTP. Please request a new one.",
-      });
-    }
-
-    if (emailStored.code !== emailOtp.trim()) {
-      emailStored.attempts++;
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email OTP code. Please try again.",
-      });
-    }
-
-    // Both OTPs verified - remove from storage
+    // Phone OTP verified - remove from storage
     otpStorage.delete(formattedPhone);
-    otpStorage.delete(email);
-    console.log("[DEBUG] Both OTPs verified successfully");
+    console.log("[DEBUG] Phone OTP verified successfully");
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -281,22 +247,26 @@ export const verifyAndRegister = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user with DOB
+    // Create new user
     const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
       phone: formattedPhone,
-      dob: new Date(dob), // Ensure DOB is saved as Date object
+      dob: new Date(dob),
       role: "patient",
       status: "active",
     });
 
     console.log("[DEBUG] User created successfully:", newUser._id, "with DOB:", newUser.dob);
 
+    // Generate token for auto-login
+    const token = generateToken(newUser._id, newUser.role);
+
     res.status(201).json({
       success: true,
       message: "Registration successful",
+      token,
       user: {
         id: newUser._id,
         name: newUser.name,
@@ -314,59 +284,6 @@ export const verifyAndRegister = async (req, res) => {
     });
   }
 };
-
-// ✅ Register (email OTP fallback)
-export const registerUser = async (req, res) => {
-  try {
-    const { name, email, password, phone, dob, otp } = req.body;
-
-    const otpRecord = await OTP.findOne({ email });
-    if (!otpRecord || otpRecord.otp !== otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid or expired OTP",
-      });
-    }
-
-    await OTP.deleteOne({ email });
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already registered",
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      phone,
-      dob,
-      role: "patient",
-      status: "active",
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Account created successfully",
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        dob: newUser.dob,
-      },
-    });
-  } catch (error) {
-    console.error("Registration error:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
 // ✅ Login
 export const loginUser = async (req, res) => {
   try {

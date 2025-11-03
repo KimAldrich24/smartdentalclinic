@@ -12,9 +12,7 @@ const Login = () => {
   const [mode, setMode] = useState("login");
   const [loading, setLoading] = useState(false);
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [phoneOtp, setPhoneOtp] = useState("");
-  const [emailOtp, setEmailOtp] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -87,34 +85,6 @@ const Login = () => {
     }
   };
 
-  const handleSendEmailOtp = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    setLoading(true);
-
-    try {
-      const res = await axios.post(
-        `${API_URL}/api/users/send-email-otp`,
-        { email: formData.email }
-      );
-
-      console.log("[DEBUG] send-email-otp:", res.data);
-
-      if (res.data.success) {
-        setEmailOtpSent(true);
-        setSuccess("OTP sent to your email! Check your inbox.");
-      } else {
-        setError(res.data.message || "Failed to send email OTP");
-      }
-    } catch (err) {
-      console.error("[ERROR] Email OTP send failed:", err);
-      setError(err.response?.data?.message || "Failed to send email OTP");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleVerifyAndRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -122,11 +92,6 @@ const Login = () => {
 
     if (!phoneOtp || phoneOtp.length !== 6) {
       setError("Please enter the 6-digit phone OTP");
-      return;
-    }
-
-    if (!emailOtp || emailOtp.length !== 6) {
-      setError("Please enter the 6-digit email OTP");
       return;
     }
 
@@ -142,7 +107,6 @@ const Login = () => {
           phone: formData.phone,
           dob: formData.dob,
           phoneOtp: phoneOtp,
-          emailOtp: emailOtp,
         }
       );
 
@@ -150,6 +114,10 @@ const Login = () => {
 
       if (res.data.success) {
         setSuccess("Registration successful! Signing in...");
+        // Store token if provided
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+        }
         await login(formData.email, formData.password);
         navigate("/");
       } else {
@@ -188,10 +156,8 @@ const Login = () => {
         </h2>
         <p className="text-center text-gray-500 mb-6 text-sm">
           {mode === "signup"
-            ? phoneOtpSent && emailOtpSent
-              ? "Enter the OTPs sent to your phone and email"
-              : phoneOtpSent
-              ? "Now verify your email address"
+            ? phoneOtpSent
+              ? "Enter the OTP sent to your phone"
               : "Fill in your details to get started"
             : "Sign in to continue"}
         </p>
@@ -280,62 +246,31 @@ const Login = () => {
           </form>
         )}
 
-        {mode === "signup" && phoneOtpSent && !emailOtpSent && (
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
-              ✓ Phone OTP sent to {formData.phone}
-            </div>
-            <button
-              onClick={handleSendEmailOtp}
-              disabled={loading}
-              className="w-full bg-green-500 text-white font-semibold py-3 rounded-lg hover:bg-green-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Sending..." : "Send Email OTP"}
-            </button>
-          </div>
-        )}
-
-        {mode === "signup" && phoneOtpSent && emailOtpSent && (
+        {mode === "signup" && phoneOtpSent && (
           <form onSubmit={handleVerifyAndRegister} className="space-y-4">
-            <div className="bg-green-50 p-3 rounded-lg text-sm text-green-700 space-y-1">
-              <div>✓ Phone OTP sent to {formData.phone}</div>
-              <div>✓ Email OTP sent to {formData.email}</div>
+            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+              ✓ OTP sent to {formData.phone}
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone OTP
+                Enter OTP Code
               </label>
               <input
                 type="text"
                 value={phoneOtp}
                 onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ''))}
-                placeholder="Enter 6-digit SMS OTP"
+                placeholder="Enter 6-digit OTP"
                 maxLength="6"
                 required
                 className="w-full border text-center text-lg tracking-widest rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email OTP
-              </label>
-              <input
-                type="text"
-                value={emailOtp}
-                onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))}
-                placeholder="Enter 6-digit Email OTP"
-                maxLength="6"
-                required
-                className="w-full border text-center text-lg tracking-widest rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-500 text-white font-semibold py-3 rounded-lg hover:bg-green-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Verifying..." : "Verify & Create Account"}
             </button>
@@ -344,9 +279,7 @@ const Login = () => {
               type="button"
               onClick={() => {
                 setPhoneOtpSent(false);
-                setEmailOtpSent(false);
                 setPhoneOtp("");
-                setEmailOtp("");
                 setError("");
                 setSuccess("");
               }}
@@ -402,9 +335,7 @@ const Login = () => {
               setError("");
               setSuccess("");
               setPhoneOtpSent(false);
-              setEmailOtpSent(false);
               setPhoneOtp("");
-              setEmailOtp("");
             }}
             className="text-blue-500 hover:underline text-sm font-medium"
           >
