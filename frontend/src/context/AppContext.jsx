@@ -8,6 +8,9 @@ const AppContextProvider = ({ children }) => {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  console.log("Backend URL:", import.meta.env.VITE_BACKEND_URL);
+
+
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   // Fetch doctors from backend
