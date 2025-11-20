@@ -47,6 +47,7 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
+    'https://www.smartdental.site',  // ✅ add www
     'https://smartdental.site',
     'https://admin.smartdental.site',
     'https://smartdentalclinic-1.onrender.com',
