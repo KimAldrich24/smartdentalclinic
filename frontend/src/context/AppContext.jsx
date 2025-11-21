@@ -10,7 +10,8 @@ const AppContextProvider = ({ children }) => {
 
   console.log("Backend URL:", import.meta.env.VITE_BACKEND_URL);
 
-  const backendUrl = "https://smartclinic-backend-1.onrender.com";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
 
   // Fetch doctors from backend
   const fetchDoctors = async () => {
