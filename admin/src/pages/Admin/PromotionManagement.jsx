@@ -53,6 +53,7 @@ const PromotionManagement = () => {
       } else {
         await axios.post(backendUrl, form);
       }
+
       setForm({
         title: "",
         description: "",
@@ -62,6 +63,7 @@ const PromotionManagement = () => {
         isActive: true,
         serviceIds: [],
       });
+
       fetchPromotions();
     } catch (err) {
       console.error("Error saving promotion:", err);
@@ -96,7 +98,10 @@ const PromotionManagement = () => {
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Promotion Management</h2>
 
-      <form onSubmit={handleSubmit} className="mb-6 flex flex-wrap gap-2 items-end">
+      <form
+        onSubmit={handleSubmit}
+        className="mb-6 flex flex-wrap gap-3 items-end"
+      >
         <input
           placeholder="Title"
           value={form.title}
@@ -104,6 +109,7 @@ const PromotionManagement = () => {
           className="border p-1"
           required
         />
+
         <input
           placeholder="Description"
           value={form.description}
@@ -111,16 +117,30 @@ const PromotionManagement = () => {
           className="border p-1"
           required
         />
-        <input
-          type="number"
-          placeholder="Discount %"
-          value={form.discountPercentage}
-          onChange={(e) => setForm({ ...form, discountPercentage: e.target.value })}
-          className="border p-1 w-24"
-          min={0}
-          max={100}
-          required
-        />
+
+        {/* Discount Input + Helper Text */}
+        <div className="flex flex-col">
+          <input
+            type="number"
+            placeholder="Discount %"
+            value={form.discountPercentage}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setForm({
+                ...form,
+                discountPercentage: Math.min(50, Math.max(0, value)),
+              });
+            }}
+            className="border p-1 w-24"
+            min={0}
+            max={50}
+            required
+          />
+          <p className="text-sm text-gray-500">
+            Maximum discount allowed is 50%
+          </p>
+        </div>
+
         <input
           type="date"
           value={form.startDate}
@@ -128,6 +148,7 @@ const PromotionManagement = () => {
           className="border p-1"
           required
         />
+
         <input
           type="date"
           value={form.endDate}
@@ -135,21 +156,27 @@ const PromotionManagement = () => {
           className="border p-1"
           required
         />
+
         <select
           value={form.isActive}
-          onChange={(e) => setForm({ ...form, isActive: e.target.value === "true" })}
+          onChange={(e) =>
+            setForm({ ...form, isActive: e.target.value === "true" })
+          }
           className="border p-1"
         >
           <option value="true">Active</option>
           <option value="false">Inactive</option>
         </select>
 
-        {/* Multi-select for services */}
+        {/* Multi-select services */}
         <select
           multiple
           value={form.serviceIds}
           onChange={(e) => {
-            const selected = Array.from(e.target.selectedOptions, (option) => option.value);
+            const selected = Array.from(
+              e.target.selectedOptions,
+              (option) => option.value
+            );
             setForm({ ...form, serviceIds: selected });
           }}
           className="border p-1 w-full md:w-1/2"
@@ -160,6 +187,7 @@ const PromotionManagement = () => {
             </option>
           ))}
         </select>
+
         <p className="text-sm text-gray-500">
           Hold Ctrl (Windows) or Cmd (Mac) to select multiple services
         </p>
@@ -188,15 +216,23 @@ const PromotionManagement = () => {
               <td className="border p-2">{p.title}</td>
               <td className="border p-2">{p.description}</td>
               <td className="border p-2">{p.discountPercentage}%</td>
-              <td className="border p-2">{p.startDate.split("T")[0]}</td>
-              <td className="border p-2">{p.endDate.split("T")[0]}</td>
-              <td className="border p-2">{p.isActive ? "Active" : "Inactive"}</td>
               <td className="border p-2">
-                {p.serviceIds && p.serviceIds.length > 0
-                  ? p.serviceIds.map((id) => {
-                      const svc = services.find((s) => s._id === id);
-                      return svc ? svc.name : id;
-                    }).join(", ")
+                {p.startDate.split("T")[0]}
+              </td>
+              <td className="border p-2">
+                {p.endDate.split("T")[0]}
+              </td>
+              <td className="border p-2">
+                {p.isActive ? "Active" : "Inactive"}
+              </td>
+              <td className="border p-2">
+                {p.serviceIds?.length
+                  ? p.serviceIds
+                      .map((id) => {
+                        const svc = services.find((s) => s._id === id);
+                        return svc ? svc.name : id;
+                      })
+                      .join(", ")
                   : "None"}
               </td>
               <td className="border p-2 flex gap-1">
