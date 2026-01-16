@@ -21,7 +21,7 @@ const Banner = () => {
       <div className="flex-1 py-8 sm:py-10 md:py-16 lg:py-24 lg:pl-5 z-10">
         <div className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold text-white">
           <p>Book Appointment</p>
-          <p className="mt-4">With 100+ Doctors</p>
+          <p className="mt-4">With 100+ Dentist</p>
         </div>
         
         {/* ✅ Improved button design */}

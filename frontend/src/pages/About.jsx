@@ -51,7 +51,7 @@ const About = () => {
           }}
         >
           <p style={{ marginBottom: '15px' }}>
-            Welcome to <strong>SMART DENTAl CLINIC</strong>, your trusted partner in managing
+            Welcome to <strong>SMART DENTAL CLINIC</strong>, your trusted partner in managing
             your healthcare needs conveniently and efficiently. At Smart dental, we
             understand the challenges individuals face when it comes to scheduling
             doctor appointments and managing health records.

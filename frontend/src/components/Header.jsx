@@ -11,13 +11,13 @@ const Header = () => {
       {/* Left side */}
       <div className='w-1/2 flex flex-col items-start gap-3'>
         <p className='text-2xl md:text-3xl lg:text-4xl text-white font-semibold leading-snug'>
-          Book Appointment <br/> With Trusted Doctors
+          Book Appointment <br/> With Trusted Dentist
         </p>
 
         <div className='flex items-center gap-3 text-white text-sm font-light'>
           <img className='w-20 md:w-24' src={assets["group_profiles"]} alt="" />
           <p className='max-w-xs md:max-w-sm'>
-            Simply browse through our list of trusted doctors, <br className='hidden sm:block'/> schedule your appointment hassle-free
+            Simply browse through our list of trusted Dentist, <br className='hidden sm:block'/> schedule your appointment hassle-free
           </p>
         </div>
 

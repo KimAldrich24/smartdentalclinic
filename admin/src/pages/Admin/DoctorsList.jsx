@@ -26,7 +26,7 @@ const DoctorsList = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Doctors List</h2>
+      <h2 className="text-xl font-bold mb-4">Dentist List</h2>
       {doctors.length === 0 ? (
         <p>No doctors found.</p>
       ) : (

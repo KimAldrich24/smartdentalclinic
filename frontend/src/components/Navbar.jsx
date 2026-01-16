@@ -73,7 +73,7 @@ const Navbar = () => {
               isActive ? "text-blue-600" : "hover:text-blue-500"
             }
           >
-            ALL DOCTORS
+            ALL DENTIST
           </NavLink>
         </li>
         <li>

@@ -45,7 +45,7 @@ const Sidebar = () => {
           to="/doctor-list"
         >
           <img src={assets.people_icon} alt="Doctors List" />
-          <p>Doctors List</p>
+          <p>Dentist List</p>
         </NavLink>
 
         <NavLink
@@ -134,7 +134,7 @@ const Sidebar = () => {
               to="/add-doctor"
             >
               <img src={assets.add_icon} alt="Add Doctor" />
-              <p>Add Doctor</p>
+              <p>Add Dentist</p>
             </NavLink>
 
             <NavLink
