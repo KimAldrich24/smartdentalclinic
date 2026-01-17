@@ -4,9 +4,12 @@ import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
 
 const AddDoctor = () => {
+  const { backendUrl, aToken } = useContext(AdminContext);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [experience, setExperience] = useState('');
   const [about, setAbout] = useState('');
   const [degree, setDegree] = useState('');
@@ -14,13 +17,46 @@ const AddDoctor = () => {
   const [address2, setAddress2] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const { backendUrl, aToken } = useContext(AdminContext);
+  const [passwordError, setPasswordError] = useState('');
+  const [strength, setStrength] = useState('');
 
+  // 🔐 Password validation
+  const validatePassword = (value) => {
+    if (value.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      setStrength('Weak');
+      return false;
+    }
+    if (!/[A-Z]/.test(value)) {
+      setPasswordError('Password must contain an uppercase letter');
+      setStrength('Medium');
+      return false;
+    }
+    if (!/[0-9]/.test(value)) {
+      setPasswordError('Password must contain a number');
+      setStrength('Medium');
+      return false;
+    }
+
+    setPasswordError('');
+    setStrength('Strong');
+    return true;
+  };
+
+  // 📤 Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    console.log("🔑 Creating doctor with password:", password);
-  
+
+    if (!validatePassword(password)) {
+      toast.error('Password does not meet requirements');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
     try {
       const doctorData = {
         name,
@@ -30,11 +66,12 @@ const AddDoctor = () => {
         about,
         degree,
         speciality: degree,
-        address: { line1: address1, line2: address2 },
+        address: {
+          line1: address1,
+          line2: address2,
+        },
       };
-  
-      console.log("📤 Sending doctor data:", doctorData);
-  
+
       const res = await fetch(`${backendUrl}/api/doctors`, {
         method: 'POST',
         headers: {
@@ -43,28 +80,28 @@ const AddDoctor = () => {
         },
         body: JSON.stringify(doctorData),
       });
-  
+
       const data = await res.json();
-  
+
       if (res.ok) {
         toast.success('Doctor added successfully!');
-        console.log('Response:', data);
-  
+
         // Reset form
         setName('');
         setEmail('');
         setPassword('');
+        setConfirmPassword('');
         setExperience('');
         setAbout('');
         setDegree('');
         setAddress1('');
         setAddress2('');
+        setStrength('');
       } else {
         toast.error(data.message || 'Failed to add doctor');
       }
     } catch (error) {
-      console.error('AddDoctor Error:', error);
-      toast.error('Something went wrong while adding the doctor');
+      toast.error('Something went wrong');
     }
   };
 
@@ -77,7 +114,6 @@ const AddDoctor = () => {
         Add Doctor
       </h2>
 
-      {/* Doctor Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <input
@@ -86,47 +122,86 @@ const AddDoctor = () => {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
           />
+
           <input
             type="email"
             placeholder="Email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
           />
-          
-          {/* Password with Eye Icon */}
+
+          {/* Password */}
           <div className="relative">
             <input
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               placeholder="Password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 pr-12 outline-none focus:ring-2 focus:ring-blue-400"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                validatePassword(e.target.value);
+              }}
+              className="w-full border rounded-lg px-3 py-2 pr-12 focus:ring-2 focus:ring-blue-400"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
 
+          {/* Strength Indicator */}
+          {strength && (
+            <p
+              className={`text-sm font-medium ${
+                strength === 'Weak'
+                  ? 'text-red-500'
+                  : strength === 'Medium'
+                  ? 'text-yellow-500'
+                  : 'text-green-600'
+              }`}
+            >
+              Password Strength: {strength}
+            </p>
+          )}
+
+          {passwordError && (
+            <p className="text-sm text-red-500">{passwordError}</p>
+          )}
+
+          {/* Confirm Password */}
+          <input
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Confirm Password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 ${
+              confirmPassword && password !== confirmPassword
+                ? 'border-red-500'
+                : ''
+            }`}
+          />
+
+          {confirmPassword && password !== confirmPassword && (
+            <p className="text-sm text-red-500">Passwords do not match</p>
+          )}
+
           <select
             value={experience}
             onChange={(e) => setExperience(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
             required
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
           >
             <option value="">Select Experience</option>
             {Array.from({ length: 10 }, (_, i) => (
-              <option key={i + 1} value={`${i + 1} Year`}>
-                {i + 1} Year
-              </option>
+              <option key={i + 1}>{i + 1} Year</option>
             ))}
           </select>
         </div>
@@ -138,40 +213,53 @@ const AddDoctor = () => {
             required
             value={degree}
             onChange={(e) => setDegree(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
           />
+
           <input
             type="text"
             placeholder="Address Line 1"
             required
             value={address1}
             onChange={(e) => setAddress1(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
           />
+
           <input
             type="text"
             placeholder="Address Line 2"
             value={address2}
             onChange={(e) => setAddress2(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
           />
         </div>
       </div>
 
       <textarea
-        placeholder="About Doctor"
         rows={5}
+        placeholder="About Doctor"
         required
         value={about}
         onChange={(e) => setAbout(e.target.value)}
-        className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
       />
 
       <button
         type="submit"
-        className="w-full bg-blue-500 text-white font-medium py-2 rounded-lg hover:bg-blue-600 transition"
+        disabled={
+          password !== confirmPassword ||
+          passwordError ||
+          strength !== 'Strong'
+        }
+        className={`w-full py-2 rounded-lg font-medium transition ${
+          password !== confirmPassword ||
+          passwordError ||
+          strength !== 'Strong'
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-blue-500 text-white hover:bg-blue-600'
+        }`}
       >
-        Add Doctor
+        Add Dentist
       </button>
     </form>
   );
