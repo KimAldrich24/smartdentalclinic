@@ -25,7 +25,7 @@ const doctorSchema = new mongoose.Schema(
     password: { type: String, required: true },
 
     degree: String,
-    experience: String,
+    experience: { type: Number, min: 0, max: 50 }, // ✅ Changed to Number to accept decimals
     about: String,
     address: { type: addressSchema, default: () => ({}) },
     image: String,

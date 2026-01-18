@@ -57,12 +57,18 @@ const AddDoctor = () => {
       return;
     }
 
+    // Validate experience
+    if (experience === '' || experience < 0 || experience > 50) {
+      toast.error('Experience must be between 0 and 50 years');
+      return;
+    }
+
     try {
       const doctorData = {
         name,
         email,
         password,
-        experience,
+        experience: parseFloat(experience), // ensure number
         about,
         degree,
         speciality: degree,
@@ -193,17 +199,23 @@ const AddDoctor = () => {
             <p className="text-sm text-red-500">Passwords do not match</p>
           )}
 
-          <select
-            value={experience}
-            onChange={(e) => setExperience(e.target.value)}
-            required
-            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
-          >
-            <option value="">Select Experience</option>
-            {Array.from({ length: 10 }, (_, i) => (
-              <option key={i + 1}>{i + 1} Year</option>
-            ))}
-          </select>
+          {/* Experience Input (Number with decimals) */}
+          <div>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="50"
+              placeholder="Experience in years (e.g., 0.5)"
+              value={experience}
+              onChange={(e) => setExperience(e.target.value)}
+              required
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Enter in years. Example: 0.5 = 6 months
+            </p>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -259,7 +271,7 @@ const AddDoctor = () => {
             : 'bg-blue-500 text-white hover:bg-blue-600'
         }`}
       >
-        Add Dentist
+        Add Doctor
       </button>
     </form>
   );
