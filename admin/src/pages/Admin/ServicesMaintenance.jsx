@@ -12,6 +12,7 @@ const ServicesMaintenance = () => {
   const [duration, setDuration] = useState("");
   const [editingId, setEditingId] = useState(null);
 
+  // Fetch all services from backend
   const fetchServices = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/services`, {
@@ -29,15 +30,41 @@ const ServicesMaintenance = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // --------------------------
+    // FRONTEND DUPLICATE CHECK
+    // --------------------------
+    const duplicate = services.find(
+      (s) =>
+        s.name.toLowerCase() === name.trim().toLowerCase() &&
+        s._id !== editingId // exclude the one being edited
+    );
+
+    if (duplicate) {
+      toast.error("Service with this name already exists");
+      return;
+    }
+
     try {
-      const payload = { name, description, price, duration };
+      const payload = {
+        name: name.trim(),
+        description,
+        price,
+        duration,
+      };
 
       let res;
       if (editingId) {
-        res = await axios.put(`${backendUrl}/api/services/${editingId}`, payload, {
-          headers: { Authorization: `Bearer ${aToken}` },
-        });
+        // Update existing service
+        res = await axios.put(
+          `${backendUrl}/api/services/${editingId}`,
+          payload,
+          {
+            headers: { Authorization: `Bearer ${aToken}` },
+          }
+        );
       } else {
+        // Add new service
         res = await axios.post(`${backendUrl}/api/services`, payload, {
           headers: { Authorization: `Bearer ${aToken}` },
         });
@@ -45,7 +72,12 @@ const ServicesMaintenance = () => {
 
       if (res.data.success) {
         toast.success(res.data.message);
-        setName(""); setDescription(""); setPrice(""); setDuration(""); setEditingId(null);
+        // Reset form
+        setName("");
+        setDescription("");
+        setPrice("");
+        setDuration("");
+        setEditingId(null);
         fetchServices();
       }
     } catch (error) {
@@ -80,22 +112,58 @@ const ServicesMaintenance = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Services Maintenance</h2>
 
-      <form onSubmit={handleSubmit} className="mb-6 space-y-4 bg-white p-4 shadow rounded-lg">
+      {/* Service Form */}
+      <form
+        onSubmit={handleSubmit}
+        className="mb-6 space-y-4 bg-white p-4 shadow rounded-lg"
+      >
         <div>
-          <input type="text" placeholder="Service Name" value={name} onChange={(e) => setName(e.target.value)} className="w-full border px-3 py-2 rounded" required />
+          <input
+            type="text"
+            placeholder="Service Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            required
+          />
         </div>
         <div>
-          <input type="text" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full border px-3 py-2 rounded" />
+          <input
+            type="text"
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          />
         </div>
         <div>
-          <input type="number" placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full border px-3 py-2 rounded" required />
+          <input
+            type="number"
+            placeholder="Price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            required
+          />
         </div>
         <div>
-          <input type="text" placeholder="Duration" value={duration} onChange={(e) => setDuration(e.target.value)} className="w-full border px-3 py-2 rounded" />
+          <input
+            type="text"
+            placeholder="Duration"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          />
         </div>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">{editingId ? "Update Service" : "Add Service"}</button>
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          {editingId ? "Update Service" : "Add Service"}
+        </button>
       </form>
 
+      {/* Services Table */}
       <table className="w-full border-collapse border border-gray-300 bg-white rounded-lg overflow-hidden">
         <thead>
           <tr className="bg-gray-100">
@@ -114,8 +182,18 @@ const ServicesMaintenance = () => {
               <td className="border p-2">{s.price}</td>
               <td className="border p-2">{s.duration}</td>
               <td className="border p-2 flex gap-2">
-                <button onClick={() => handleEdit(s)} className="bg-yellow-400 text-white px-2 py-1 rounded">Edit</button>
-                <button onClick={() => handleDelete(s._id)} className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                <button
+                  onClick={() => handleEdit(s)}
+                  className="bg-yellow-400 text-white px-2 py-1 rounded"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(s._id)}
+                  className="bg-red-500 text-white px-2 py-1 rounded"
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

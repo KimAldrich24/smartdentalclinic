@@ -9,15 +9,24 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
+  // Mode can be "login" or "signup"
   const [mode, setMode] = useState("login");
+
+  // Loading state for buttons
   const [loading, setLoading] = useState(false);
+
+  // OTP related states
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneOtp, setPhoneOtp] = useState("");
+
+  // Feedback messages
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const today = new Date().toISOString().split("T")[0];
 
+  // Show/hide password toggle
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Form data state
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -26,49 +35,83 @@ const Login = () => {
     dob: "",
   });
 
-  // ✅ LOAD SAVED REGISTRATION DATA ON COMPONENT MOUNT
+  // Age warning state
+  const [ageWarning, setAgeWarning] = useState("");
+
+  // Max date for DOB (18+)
+  const todayDate = new Date();
+  const eighteenYearsAgo = new Date(
+    todayDate.getFullYear() - 18,
+    todayDate.getMonth(),
+    todayDate.getDate()
+  );
+  const maxDob = eighteenYearsAgo.toISOString().split("T")[0]; // YYYY-MM-DD
+
+  // Load saved registration data from session storage on component mount
   useEffect(() => {
-    const savedData = sessionStorage.getItem('registrationData');
+    const savedData = sessionStorage.getItem("registrationData");
     if (savedData) {
       const parsed = JSON.parse(savedData);
       setFormData(parsed);
-      // If OTP was already sent, restore that state too
-      if (sessionStorage.getItem('phoneOtpSent') === 'true') {
+
+      // Restore OTP sent state if previously sent
+      if (sessionStorage.getItem("phoneOtpSent") === "true") {
         setPhoneOtpSent(true);
       }
     }
   }, []);
 
+  // Handle input change
   const handleChange = (e) => {
-    if (e.target.name === 'phone') {
-      const cleaned = e.target.value.replace(/\D/g, '');
+    if (e.target.name === "phone") {
+      // Only allow digits for phone
+      const cleaned = e.target.value.replace(/\D/g, "");
       setFormData({ ...formData, phone: cleaned });
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
     }
   };
 
+  // Handle sending phone OTP
   const handleSendPhoneOtp = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
+    // Validate all required fields
     if (!formData.name || !formData.email || !formData.phone || !formData.dob || !formData.password) {
       setError("Please fill in all fields");
       return;
     }
 
+    // Validate age 18+
+    const birthDate = new Date(formData.dob);
+    const todayDate = new Date();
+    let age = todayDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = todayDate.getMonth() - birthDate.getMonth();
+    const dayDiff = todayDate.getDate() - birthDate.getDate();
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      age--;
+    }
+    if (age < 18) {
+      setError("You must be at least 18 years old to create an account.");
+      return;
+    }
+
+    // Validate phone number
     if (!/^09\d{9}$/.test(formData.phone)) {
       setError("Please enter a valid 11-digit number starting with 09");
       return;
     }
 
+    // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Please enter a valid email address");
       return;
     }
 
+    // Validate password length
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters long");
       return;
@@ -77,19 +120,19 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // ✅ SAVE FORM DATA TO SESSIONSTORAGE BEFORE SENDING OTP
-      sessionStorage.setItem('registrationData', JSON.stringify(formData));
-      
-      const res = await axios.post(
-        `${API_URL}/api/users/send-otp`,
-        { phone: formData.phone }
-      );
+      // Save form data in session storage
+      sessionStorage.setItem("registrationData", JSON.stringify(formData));
+
+      // Send OTP request to backend
+      const res = await axios.post(`${API_URL}/api/users/send-otp`, {
+        phone: formData.phone,
+      });
 
       console.log("[DEBUG] send-otp:", res.data);
 
       if (res.data.success) {
         setPhoneOtpSent(true);
-        sessionStorage.setItem('phoneOtpSent', 'true'); // ✅ Save OTP sent status
+        sessionStorage.setItem("phoneOtpSent", "true");
         setSuccess("OTP sent to your phone! Check your SMS.");
       } else {
         setError(res.data.message || "Failed to send OTP");
@@ -102,11 +145,13 @@ const Login = () => {
     }
   };
 
+  // Handle verifying OTP and registering user
   const handleVerifyAndRegister = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
+    // Validate OTP input
     if (!phoneOtp || phoneOtp.length !== 6) {
       setError("Please enter the 6-digit phone OTP");
       return;
@@ -115,36 +160,37 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // ✅ RETRIEVE DATA FROM SESSIONSTORAGE IN CASE STATE WAS LOST
-      const savedData = sessionStorage.getItem('registrationData');
+      // Retrieve form data from session storage if available
+      const savedData = sessionStorage.getItem("registrationData");
       const dataToSend = savedData ? JSON.parse(savedData) : formData;
 
       console.log("[DEBUG] Sending registration data:", dataToSend);
 
-      const res = await axios.post(
-        `${API_URL}/api/users/verify-and-register`,
-        {
-          name: dataToSend.name,
-          email: dataToSend.email,
-          password: dataToSend.password,
-          phone: dataToSend.phone,
-          dob: dataToSend.dob,
-          phoneOtp: phoneOtp,
-        }
-      );
+      // Send registration request to backend
+      const res = await axios.post(`${API_URL}/api/users/verify-and-register`, {
+        name: dataToSend.name,
+        email: dataToSend.email,
+        password: dataToSend.password,
+        phone: dataToSend.phone,
+        dob: dataToSend.dob,
+        phoneOtp: phoneOtp,
+      });
 
       console.log("[DEBUG] verify-and-register response:", res.data);
 
       if (res.data.success) {
         setSuccess("Registration successful! Signing in...");
-        
-        // ✅ CLEAR SESSIONSTORAGE AFTER SUCCESSFUL REGISTRATION
-        sessionStorage.removeItem('registrationData');
-        sessionStorage.removeItem('phoneOtpSent');
-        
+
+        // Clear session storage after success
+        sessionStorage.removeItem("registrationData");
+        sessionStorage.removeItem("phoneOtpSent");
+
+        // Save token if returned
         if (res.data.token) {
           localStorage.setItem("token", res.data.token);
         }
+
+        // Automatically log in
         await login(dataToSend.email, dataToSend.password);
         navigate("/");
       } else {
@@ -158,6 +204,7 @@ const Login = () => {
     }
   };
 
+  // Handle login form submission
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -189,6 +236,7 @@ const Login = () => {
             : "Sign in to continue"}
         </p>
 
+        {/* ERROR & SUCCESS MESSAGES */}
         {error && (
           <p className="bg-red-100 text-red-700 text-center p-2 rounded mb-4 text-sm">
             {error}
@@ -200,6 +248,7 @@ const Login = () => {
           </p>
         )}
 
+        {/* SIGNUP FORM - STEP 1: SEND OTP */}
         {mode === "signup" && !phoneOtpSent && (
           <form onSubmit={handleSendPhoneOtp} className="space-y-3">
             <input
@@ -237,11 +286,30 @@ const Login = () => {
                 type="date"
                 name="dob"
                 value={formData.dob}
-                max={today}
-                onChange={handleChange}
+                max={maxDob} // ✅ Grey out dates under 18
+                onChange={(e) => {
+                  setFormData({ ...formData, dob: e.target.value });
+
+                  // Check age immediately
+                  const birthDate = new Date(e.target.value);
+                  const todayDate = new Date();
+                  let age = todayDate.getFullYear() - birthDate.getFullYear();
+                  const monthDiff = todayDate.getMonth() - birthDate.getMonth();
+                  const dayDiff = todayDate.getDate() - birthDate.getDate();
+                  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
+
+                  if (age < 18) {
+                    setAgeWarning("You must be at least 18 years old to create an account.");
+                  } else {
+                    setAgeWarning("");
+                  }
+                }}
                 required
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              {ageWarning && (
+                <p className="text-red-600 text-sm mt-1">{ageWarning}</p>
+              )}
             </div>
 
             <div className="relative">
@@ -273,12 +341,13 @@ const Login = () => {
           </form>
         )}
 
+        {/* SIGNUP FORM - STEP 2: VERIFY OTP */}
         {mode === "signup" && phoneOtpSent && (
           <form onSubmit={handleVerifyAndRegister} className="space-y-4">
             <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
               ✓ OTP sent to {formData.phone}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Enter OTP Code
@@ -286,7 +355,7 @@ const Login = () => {
               <input
                 type="text"
                 value={phoneOtp}
-                onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
                 placeholder="Enter 6-digit OTP"
                 maxLength="6"
                 required
@@ -309,9 +378,8 @@ const Login = () => {
                 setPhoneOtp("");
                 setError("");
                 setSuccess("");
-                // ✅ CLEAR SESSIONSTORAGE WHEN STARTING OVER
-                sessionStorage.removeItem('registrationData');
-                sessionStorage.removeItem('phoneOtpSent');
+                sessionStorage.removeItem("registrationData");
+                sessionStorage.removeItem("phoneOtpSent");
               }}
               className="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-300 transition-all text-sm"
             >
@@ -320,6 +388,7 @@ const Login = () => {
           </form>
         )}
 
+        {/* LOGIN FORM */}
         {mode === "login" && (
           <form onSubmit={handleLogin} className="space-y-4">
             <input
@@ -358,6 +427,7 @@ const Login = () => {
           </form>
         )}
 
+        {/* SWITCH MODE BUTTON */}
         <div className="mt-6 text-center">
           <button
             onClick={() => {

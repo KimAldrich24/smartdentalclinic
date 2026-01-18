@@ -19,46 +19,68 @@ export const addDoctor = async (req, res) => {
       address,
     } = req.body;
 
-    console.log("📝 Received doctor data:", { name, email, experience, fees, degree });
-    console.log("🔑 Received password (plain):", password); // ✅ ADD THIS
-
-    if (!password) return res.status(400).json({ success: false, message: 'Password is required' });
-
-    // Check if doctor exists
-    const existing = await Doctor.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ success: false, message: "Doctor already exists with this email" });
+    // ✅ 1. Password required
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is required",
+      });
     }
 
-    // ❌ REMOVE THIS - Let the model handle hashing!
-    // const hashedPassword = await bcrypt.hash(password, 10);
+    // ✅ 2. Password strength validation (BACKEND ENFORCED)
+    if (
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[0-9]/.test(password)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Password must be at least 8 characters long and include an uppercase letter and a number",
+      });
+    }
 
-    // Image from multer (optional)
+    // ✅ 3. Prevent duplicate email
+    const existing = await Doctor.findOne({ email });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Doctor already exists with this email",
+      });
+    }
+
     const image = req.file ? req.file.filename : null;
 
+    // ✅ 4. Create doctor (password hashed by model)
     const doctor = await Doctor.create({
       name,
       email,
-      password, // ✅ Use plain password - model will hash it
+      password,
       experience,
       fees,
       about,
       speciality: speciality || degree,
       degree,
-      address: typeof address === 'string' ? JSON.parse(address) : (address || {}),
+      address: typeof address === "string" ? JSON.parse(address) : address || {},
       image,
       available: true,
       date: Date.now(),
     });
 
-    console.log("✅ Doctor created successfully:", doctor._id);
-
-    res.status(201).json({ success: true, doctor, message: 'Doctor added successfully' });
+    res.status(201).json({
+      success: true,
+      message: "Doctor added successfully",
+      doctor,
+    });
   } catch (err) {
     console.error("❌ Error adding doctor:", err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
+
 
 /* --------------------------
    Doctor login
@@ -67,33 +89,27 @@ export const doctorLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("🔐 Doctor login attempt:", email);
-    console.log("🔑 Password received:", password);
-
     const doctor = await Doctor.findOne({ email });
     if (!doctor) {
-      console.log("❌ Doctor not found");
-      return res.status(404).json({ success: false, message: 'Doctor not found' });
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
     }
 
-    console.log("🔍 Doctor found:", doctor.email);
-    console.log("🔍 Stored password hash:", doctor.password);
-
     const isMatch = await bcrypt.compare(password, doctor.password);
-    console.log("✅ Password match result:", isMatch);
-
     if (!isMatch) {
-      console.log("❌ Invalid password");
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
     const token = jwt.sign(
       { id: doctor._id, role: "doctor" },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: "7d" }
     );
-
-    console.log("✅ Doctor logged in successfully:", doctor.name);
 
     res.json({
       success: true,
@@ -109,10 +125,14 @@ export const doctorLogin = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("❌ Error in doctor login:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("❌ Login error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
+
 /* --------------------------
    🔹 Get Doctor Profile (protected)
 --------------------------- */
