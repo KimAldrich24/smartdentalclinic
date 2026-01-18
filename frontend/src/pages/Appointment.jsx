@@ -11,8 +11,8 @@ const Appointment = () => {
   const { token } = useContext(AuthContext);
 
   const [docInfo, setDocInfo] = useState(null);
-  const [doctorServices, setDoctorServices] = useState([]); // ✅ Services selected by doctor
-  const [doctorSchedule, setDoctorSchedule] = useState([]); // ✅ Schedule added by doctor
+  const [doctorServices, setDoctorServices] = useState([]);
+  const [doctorSchedule, setDoctorSchedule] = useState([]);
   const [promotions, setPromotions] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
   const [selectedPromotion, setSelectedPromotion] = useState("");
@@ -23,36 +23,19 @@ const Appointment = () => {
   const [booking, setBooking] = useState(false);
   const [successAnim, setSuccessAnim] = useState(false);
 
-  // ✅ Fetch doctor info with services and schedule
+  // Fetch doctor info
   const fetchDoctor = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}`);
       if (data.success) {
         setDocInfo(data.doctor);
-        
-        // ✅ Debug what we're getting
-        console.log("🔍 FULL DOCTOR DATA:", data.doctor);
-        console.log("🔍 Doctor services RAW:", data.doctor.services);
-        console.log("🔍 Doctor schedule RAW:", data.doctor.schedule);
-        
-        // Check if services are populated or just IDs
-        if (data.doctor.services && data.doctor.services.length > 0) {
-          console.log("🔍 First service:", data.doctor.services[0]);
-          console.log("🔍 Is it an ID or object?", typeof data.doctor.services[0]);
-        }
-        
-        // ✅ Set doctor's services and schedule
         setDoctorServices(data.doctor.services || []);
         setDoctorSchedule(data.doctor.schedule || []);
-        
-        console.log("✅ Doctor loaded:", data.doctor.name);
-        console.log("📋 Services:", data.doctor.services?.length || 0);
-        console.log("📅 Schedule:", data.doctor.schedule?.length || 0);
       } else {
         toast.error("Doctor not found");
       }
     } catch (err) {
-      console.error("❌ Error fetching doctor:", err);
+      console.error("Error fetching doctor:", err);
       toast.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
@@ -74,7 +57,7 @@ const Appointment = () => {
     fetchPromotions();
   }, [docId]);
 
-  // Calculate discounted price safely
+  // Calculate discounted price
   const getDiscountedPrice = (service) => {
     if (!selectedPromotion) return service.price;
     const promo = promotions.find(
@@ -87,41 +70,43 @@ const Appointment = () => {
     return (service.price * (1 - promo.discountPercentage / 100)).toFixed(2);
   };
 
-  // ✅ Get available time slots for selected date
+  // Get available slots for selected date, excluding already booked
   const getAvailableSlots = () => {
-    if (!selectedDate || !doctorSchedule.length) return [];
-    
-    const scheduleForDate = doctorSchedule.find(s => s.date === selectedDate);
-    return scheduleForDate?.slots || [];
+    if (!selectedDate || !doctorSchedule.length || !docInfo) return [];
+
+    const scheduleForDate = doctorSchedule.find((s) => s.date === selectedDate);
+    if (!scheduleForDate || !scheduleForDate.slots.length) return [];
+
+    const bookedSlots = docInfo.slots_book?.[selectedDate] || [];
+    const availableSlots = scheduleForDate.slots.filter(
+      (slot) => !bookedSlots.includes(slot)
+    );
+
+    return availableSlots;
   };
 
+  // Handle booking
   const handleBooking = async () => {
     if (!token) {
       toast.error("You must be logged in to book an appointment");
       navigate("/login");
       return;
     }
-  
+
     if (!selectedService) {
-      toast.error("⚠️ Please select a service before booking");
+      toast.error("Please select a service before booking");
       setServiceError(true);
       return;
     }
-  
+
     if (!selectedDate || !selectedTime) {
       toast.error("Please select date & time slot first");
       return;
     }
-  
+
     try {
       setBooking(true);
-      
-      console.log("📤 BOOKING REQUEST:");
-      console.log("  Doctor ID:", docId);
-      console.log("  Service ID:", selectedService);
-      console.log("  Date:", selectedDate);
-      console.log("  Time:", selectedTime);
-      
+
       const { data } = await axios.post(
         `${backendUrl}/api/appointments/book`,
         {
@@ -133,25 +118,23 @@ const Appointment = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-  
-      console.log("📥 BOOKING RESPONSE:", data);
-  
+
       if (data.success) {
-        toast.success("✅ Appointment booked successfully!");
+        toast.success("Appointment booked successfully!");
         setSelectedService(null);
         setSelectedDate(null);
         setSelectedTime(null);
         setSelectedPromotion("");
         setSuccessAnim(true);
         setTimeout(() => setSuccessAnim(false), 2000);
-        
-        // ✅ Refresh doctor data to update available slots
+
+        // Refresh doctor data to remove booked slot
         fetchDoctor();
       } else {
         toast.error(data.message);
       }
     } catch (err) {
-      console.error("❌ BOOKING ERROR:", err);
+      console.error("Booking error:", err);
       toast.error(err.response?.data?.message || err.message);
     } finally {
       setBooking(false);
@@ -163,6 +146,7 @@ const Appointment = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 relative">
+      {/* Success Animation */}
       {successAnim && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-50 animate-fade">
           <div className="bg-green-500 text-white px-6 py-4 rounded-xl shadow-lg text-xl font-bold animate-bounce">
@@ -186,10 +170,9 @@ const Appointment = () => {
         </div>
       </div>
 
-      {/* ✅ Services offered by THIS doctor */}
+      {/* Services */}
       <div className="mt-6">
         <h3 className="text-xl font-semibold mb-4">Select Service</h3>
-        
         {doctorServices.length === 0 ? (
           <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
             <p className="text-yellow-700">⚠️ This doctor hasn't added any services yet.</p>
@@ -227,15 +210,13 @@ const Appointment = () => {
                     ₱{discountedPrice}
                     {isDiscounted && (
                       <span className="text-red-500 ml-2 line-through text-sm">₱{service.price}</span>
-                    )}{" "}
-                    • {service.duration}
+                    )} • {service.duration}
                   </p>
                 </button>
               );
             })}
           </div>
         )}
-        
         {serviceError && !selectedService && (
           <p className="text-red-500 text-sm mt-2">⚠️ You must select a service before booking.</p>
         )}
@@ -255,10 +236,7 @@ const Appointment = () => {
               <option
                 key={promo._id}
                 value={promo._id}
-                disabled={
-                  selectedService &&
-                  (!Array.isArray(promo.serviceIds) || !promo.serviceIds.includes(selectedService))
-                }
+                disabled={selectedService && (!promo.serviceIds || !promo.serviceIds.includes(selectedService))}
               >
                 {promo.title} ({promo.discountPercentage}% off)
               </option>
@@ -267,10 +245,9 @@ const Appointment = () => {
         </div>
       )}
 
-      {/* ✅ Available Slots from Doctor's Schedule */}
+      {/* Available Slots */}
       <div className="mt-6">
         <h3 className="text-xl font-semibold mb-4">Available Slots</h3>
-        
         {doctorSchedule.length === 0 ? (
           <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
             <p className="text-yellow-700">⚠️ This doctor hasn't set up their schedule yet.</p>
@@ -287,16 +264,10 @@ const Appointment = () => {
                     setSelectedTime(null);
                   }}
                   className={`px-4 py-2 rounded-lg border whitespace-nowrap transition ${
-                    selectedDate === scheduleDay.date 
-                      ? "bg-blue-500 text-white border-blue-600" 
-                      : "bg-gray-100 hover:bg-gray-200"
+                    selectedDate === scheduleDay.date ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 hover:bg-gray-200"
                   }`}
                 >
-                  {new Date(scheduleDay.date).toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
+                  {new Date(scheduleDay.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </button>
               ))}
             </div>
@@ -306,7 +277,7 @@ const Appointment = () => {
               <div className="mt-4">
                 <p className="text-sm text-gray-600 mb-2">Select Time:</p>
                 {getAvailableSlots().length === 0 ? (
-                  <p className="text-gray-500">No time slots available for this date.</p>
+                  <p className="text-red-500 font-semibold">All slots for this date are already booked.</p>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {getAvailableSlots().map((time, i) => (
@@ -314,9 +285,7 @@ const Appointment = () => {
                         key={i}
                         onClick={() => setSelectedTime(time)}
                         className={`px-3 py-2 border rounded-lg transition ${
-                          selectedTime === time 
-                            ? "bg-blue-500 text-white border-blue-600" 
-                            : "bg-gray-100 hover:bg-gray-200"
+                          selectedTime === time ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 hover:bg-gray-200"
                         }`}
                       >
                         {time}
