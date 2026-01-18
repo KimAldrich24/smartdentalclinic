@@ -407,3 +407,63 @@ export const getDoctorServicesAndSchedule = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+export const editDoctorSchedule = async (req, res) => {
+  try {
+    const doctorId = req.doctor.id; // from middleware
+    const { scheduleId } = req.params;
+    const { date, slots } = req.body;
+
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+
+    // Find schedule by _id
+    const schedule = doctor.schedule.id(scheduleId);
+    if (!schedule) return res.status(404).json({ success: false, message: "Schedule not found" });
+
+    // Optional: prevent editing booked slots
+    if (doctor.slots_book[schedule.date]) {
+      return res.status(400).json({ success: false, message: "Cannot edit, some slots are already booked" });
+    }
+
+    // Update schedule
+    schedule.date = date || schedule.date;
+    schedule.slots = slots || schedule.slots;
+
+    await doctor.save();
+
+    res.json({ success: true, message: "Schedule updated successfully", schedule });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const deleteDoctorSchedule = async (req, res) => {
+  try {
+    const doctorId = req.doctor.id; // from middleware
+    const { scheduleId } = req.params;
+
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+
+    // Find schedule by _id
+    const schedule = doctor.schedule.id(scheduleId);
+    if (!schedule) return res.status(404).json({ success: false, message: "Schedule not found" });
+
+    // Optional: prevent deleting booked slots
+    if (doctor.slots_book[schedule.date]) {
+      return res.status(400).json({ success: false, message: "Cannot delete, some slots are already booked" });
+    }
+
+    // Remove schedule
+    schedule.remove();
+    await doctor.save();
+
+    res.json({ success: true, message: "Schedule deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+

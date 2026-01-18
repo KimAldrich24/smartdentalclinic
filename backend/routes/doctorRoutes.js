@@ -18,7 +18,8 @@ import {
 } from '../controllers/doctorController.js';
 import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 import adminAuth from "../middlewares/adminAuthMiddleware.js"; 
-
+import { editDoctorSchedule, deleteDoctorSchedule } from '../controllers/doctorController.js';
+import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 const router = express.Router();
 
 // Multer setup
@@ -51,6 +52,11 @@ router.get("/", getAllDoctors);
 router.get("/:id", getDoctorById);
 router.get("/:id/slots", getDoctorSlots);
 router.post("/:id/book", bookDoctorSlot);
+// Edit a schedule (doctor only)
+router.put("/schedule/:scheduleId", doctorAuthMiddleware, editDoctorSchedule);
+
+// Delete a schedule (doctor only)
+router.delete("/schedule/:scheduleId", doctorAuthMiddleware, deleteDoctorSchedule);
 
 
 router.delete("/:id", adminAuth, deleteDoctor);
