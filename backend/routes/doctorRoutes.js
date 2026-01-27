@@ -19,7 +19,6 @@ import {
 import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 import adminAuth from "../middlewares/adminAuthMiddleware.js"; 
 import { editDoctorSchedule, deleteDoctorSchedule } from '../controllers/doctorController.js';
-import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 const router = express.Router();
 
 // Multer setup
