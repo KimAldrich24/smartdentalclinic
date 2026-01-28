@@ -103,29 +103,28 @@ const DoctorSchedule = () => {
     setTimeSlots(timeSlots.filter(s => s !== slot));
   };
 
-  // Save / Update schedule
   const handleSaveSchedule = async () => {
     if (!selectedDate || timeSlots.length === 0) {
       toast.error('Please select a date and add time slots');
       return;
     }
-
+  
     if (isPastDate(selectedDate)) {
       toast.error('Cannot create schedule for past dates');
       return;
     }
-
+  
     try {
       // Check if editing existing schedule
       const existingSchedule = schedule.find(s => s.date === selectedDate);
       let url = `${backendUrl}/api/doctors/schedule`;
       let method = 'POST';
-
+  
       if (existingSchedule?._id) {
         url = `${backendUrl}/api/doctors/schedule/${existingSchedule._id}`;
         method = 'PUT';
       }
-
+  
       const res = await fetch(url, {
         method,
         headers: {
@@ -134,12 +133,21 @@ const DoctorSchedule = () => {
         },
         body: JSON.stringify({ date: selectedDate, slots: timeSlots }),
       });
-
+  
       const data = await res.json();
-
+  
       if (data.success) {
         toast.success('Schedule saved successfully');
-        setSchedule(data.schedule || fetchData()); // fallback fetch if backend doesn't return schedule
+  
+        // ✅ Use updated schedule from backend if available
+        if (data.schedule) {
+          setSchedule(data.schedule);
+        } else {
+          // fallback: refetch doctor's schedule
+          fetchData();
+        }
+  
+        // Clear form
         setSelectedDate('');
         setTimeSlots([]);
       } else {
@@ -150,8 +158,9 @@ const DoctorSchedule = () => {
       console.error(error);
     }
   };
+  
 
- // Delete schedule
+ // ✅ Delete schedule
 const handleDeleteSchedule = async (scheduleId) => {
   if (!window.confirm("Are you sure you want to delete this schedule?")) return;
 
@@ -160,16 +169,16 @@ const handleDeleteSchedule = async (scheduleId) => {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${dToken}` },
     });
+
     const data = await res.json();
 
     if (data.success) {
       toast.success('Schedule deleted successfully');
 
-      // ✅ Use updated schedule returned from backend if available
+      // ✅ Use updated schedule from backend or fallback to local filter
       if (data.schedule) {
         setSchedule(data.schedule);
       } else {
-        // fallback local filter
         setSchedule(prev => prev.filter(s => s._id !== scheduleId));
       }
     } else {

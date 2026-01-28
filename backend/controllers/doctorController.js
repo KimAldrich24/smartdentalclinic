@@ -410,11 +410,11 @@ export const getDoctorServicesAndSchedule = async (req, res) => {
 
 export const editDoctorSchedule = async (req, res) => {
   try {
-    const doctorId = req.doctor.id; // from middleware
     const { scheduleId } = req.params;
     const { date, slots } = req.body;
 
-    const doctor = await Doctor.findById(doctorId);
+    const doctor = req.doctor; // ✅ Already authenticated doctor from middleware
+
     if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
 
     // Find schedule by _id
@@ -422,7 +422,7 @@ export const editDoctorSchedule = async (req, res) => {
     if (!schedule) return res.status(404).json({ success: false, message: "Schedule not found" });
 
     // Optional: prevent editing booked slots
-    if (doctor.slots_book[schedule.date]) {
+    if (doctor.slots_book[schedule.date] && doctor.slots_book[schedule.date].length > 0) {
       return res.status(400).json({ success: false, message: "Cannot edit, some slots are already booked" });
     }
 
@@ -430,6 +430,7 @@ export const editDoctorSchedule = async (req, res) => {
     schedule.date = date || schedule.date;
     schedule.slots = slots || schedule.slots;
 
+    // Save the doctor document
     await doctor.save();
 
     res.json({ success: true, message: "Schedule updated successfully", schedule });
@@ -441,31 +442,26 @@ export const editDoctorSchedule = async (req, res) => {
 
 export const deleteDoctorSchedule = async (req, res) => {
   try {
-    const doctorId = req.doctorId; // ✅ use the correct field from middleware
     const { scheduleId } = req.params;
+    const doctor = req.doctor; // ✅ Already authenticated doctor
 
-    const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
-
-    // Find schedule by _id
     const schedule = doctor.schedule.id(scheduleId);
     if (!schedule) return res.status(404).json({ success: false, message: "Schedule not found" });
 
     // Optional: prevent deleting booked slots
-    if (doctor.slots_book.get(schedule.date)?.length > 0) {
+    if (doctor.slots_book[schedule.date] && doctor.slots_book[schedule.date].length > 0) {
       return res.status(400).json({ success: false, message: "Cannot delete, some slots are already booked" });
     }
 
-    // Remove schedule
     schedule.remove();
     await doctor.save();
 
-    // Return updated schedule so frontend can update state
     res.json({ success: true, message: "Schedule deleted successfully", schedule: doctor.schedule });
   } catch (err) {
-    console.error("❌ Delete schedule error:", err);
+    console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
