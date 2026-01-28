@@ -441,7 +441,7 @@ export const editDoctorSchedule = async (req, res) => {
 
 export const deleteDoctorSchedule = async (req, res) => {
   try {
-    const doctorId = req.doctor.id; // from middleware
+    const doctorId = req.doctorId; // ✅ use the correct field from middleware
     const { scheduleId } = req.params;
 
     const doctor = await Doctor.findById(doctorId);
@@ -452,7 +452,7 @@ export const deleteDoctorSchedule = async (req, res) => {
     if (!schedule) return res.status(404).json({ success: false, message: "Schedule not found" });
 
     // Optional: prevent deleting booked slots
-    if (doctor.slots_book[schedule.date]) {
+    if (doctor.slots_book.get(schedule.date)?.length > 0) {
       return res.status(400).json({ success: false, message: "Cannot delete, some slots are already booked" });
     }
 
@@ -460,10 +460,12 @@ export const deleteDoctorSchedule = async (req, res) => {
     schedule.remove();
     await doctor.save();
 
-    res.json({ success: true, message: "Schedule deleted successfully" });
+    // Return updated schedule so frontend can update state
+    res.json({ success: true, message: "Schedule deleted successfully", schedule: doctor.schedule });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Delete schedule error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 

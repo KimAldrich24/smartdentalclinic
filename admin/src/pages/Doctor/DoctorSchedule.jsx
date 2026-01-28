@@ -151,27 +151,35 @@ const DoctorSchedule = () => {
     }
   };
 
-  // Delete schedule
-  const handleDeleteSchedule = async (scheduleId) => {
-    if (!window.confirm("Are you sure you want to delete this schedule?")) return;
-    try {
-      const res = await fetch(`${backendUrl}/api/doctors/schedule/${scheduleId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${dToken}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success('Schedule deleted successfully');
-        // if backend returns updated schedule, use it; otherwise filter locally
-        setSchedule(data.schedule || schedule.filter(s => s._id !== scheduleId));
+ // Delete schedule
+const handleDeleteSchedule = async (scheduleId) => {
+  if (!window.confirm("Are you sure you want to delete this schedule?")) return;
+
+  try {
+    const res = await fetch(`${backendUrl}/api/doctors/schedule/${scheduleId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${dToken}` },
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      toast.success('Schedule deleted successfully');
+
+      // ✅ Use updated schedule returned from backend if available
+      if (data.schedule) {
+        setSchedule(data.schedule);
       } else {
-        toast.error(data.message);
+        // fallback local filter
+        setSchedule(prev => prev.filter(s => s._id !== scheduleId));
       }
-    } catch (err) {
-      toast.error('Failed to delete schedule');
-      console.error(err);
+    } else {
+      toast.error(data.message);
     }
-  };
+  } catch (err) {
+    toast.error('Failed to delete schedule');
+    console.error(err);
+  }
+};
 
   // Edit schedule
   const handleEditSchedule = (sch) => {
