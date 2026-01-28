@@ -12,10 +12,15 @@ const AdminAuditTrail = () => {
     const fetchLogs = async () => {
       try {
         setLoading(true);
+        // Fetch all logs (admins, doctors, staff, etc.)
         const res = await axios.get(`${backendUrl}/api/audit`, {
           headers: { Authorization: `Bearer ${aToken}` },
         });
-        setLogs(res.data);
+        // Optional: sort logs by timestamp descending
+        const sortedLogs = res.data.sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        setLogs(sortedLogs);
       } catch (err) {
         console.error("Error fetching audit logs:", err);
         setError(err.response?.data?.message || err.message);
@@ -28,14 +33,14 @@ const AdminAuditTrail = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Audit Trail</h2>
+      <h2 className="text-2xl font-bold mb-4">Log Reports</h2>
 
       {loading ? (
-        <p className="text-gray-500">Loading audit logs...</p>
+        <p className="text-gray-500">Loading logs...</p>
       ) : error ? (
         <p className="text-red-500">Error: {error}</p>
       ) : logs.length === 0 ? (
-        <p className="text-gray-500">No audit logs available.</p>
+        <p className="text-gray-500">No logs available.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-200 text-sm text-gray-700">
