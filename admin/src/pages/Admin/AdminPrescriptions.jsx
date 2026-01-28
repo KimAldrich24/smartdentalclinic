@@ -173,16 +173,31 @@ const AdminPrescriptions = () => {
     }
   }, [patientId, fetchAppointmentsForPatient]);
 
+  // Print handler
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Prescription Maintenance</h1>
+
+      {/* Export / Print Button */}
+      <div className="mb-4">
+        <button
+          onClick={handlePrint}
+          className="bg-blue-500 text-white px-4 py-2 rounded print:hidden"
+        >
+          Print / Export
+        </button>
+      </div>
 
       {/* Errors */}
       {errorPrescriptions && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{errorPrescriptions}</div>}
       {errorAppointments && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{errorAppointments}</div>}
 
       {/* Add Prescription Form */}
-      <div className="mb-6 p-4 border rounded shadow">
+      <div className="mb-6 p-4 border rounded shadow print:hidden">
         <h2 className="text-xl mb-2">Add Prescription</h2>
         {loadingPatients ? (
           <p>Loading patients...</p>
@@ -299,7 +314,7 @@ const AdminPrescriptions = () => {
         )}
 
         {/* Pagination */}
-        <div className="mt-4 flex justify-between">
+        <div className="mt-4 flex justify-between print:hidden">
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(p - 1, 1))}
@@ -317,6 +332,14 @@ const AdminPrescriptions = () => {
           </button>
         </div>
       </div>
+
+      {/* Print-specific styles */}
+      <style>
+        {`@media print {
+          button, form, select, textarea { display: none !important; }
+          body { -webkit-print-color-adjust: exact; }
+        }`}
+      </style>
     </div>
   );
 };
