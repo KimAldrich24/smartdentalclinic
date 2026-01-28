@@ -7,8 +7,8 @@ const addressSchema = new mongoose.Schema(
     line1: { type: String, default: "" },
     line2: { type: String, default: "" },
   },
-  { _id: false } // keep _id false here, it's fine
-);
+ );
+// { _id: false } // keep _id false here, it's fine
 
 // ----------------- Schedule Schema -----------------
 const scheduleSchema = new mongoose.Schema({
