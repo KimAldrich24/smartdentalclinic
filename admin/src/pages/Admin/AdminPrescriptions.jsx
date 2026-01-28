@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useCallback } from "react";
+import React, { useEffect, useState, useContext, useCallback, useMemo } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 
@@ -44,7 +44,6 @@ const AdminPrescriptions = () => {
       const params = { page: pageNumber, limit: 20 };
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
-      if (searchTerm) params.search = searchTerm;
 
       const { data } = await axios.get(`${backendUrl}/api/prescriptions`, {
         params,
@@ -61,7 +60,7 @@ const AdminPrescriptions = () => {
     } finally {
       setLoadingPrescriptions(false);
     }
-  }, [aToken, backendUrl, searchTerm, fromDate, toDate]);
+  }, [aToken, backendUrl, fromDate, toDate]);
 
   // Fetch ALL patients who have completed appointments
   const fetchPatientsWithCompletedAppointments = useCallback(async () => {
@@ -178,6 +177,19 @@ const AdminPrescriptions = () => {
   // Print handler
   const handlePrint = () => window.print();
 
+  // FRONTEND FILTERING by search term
+  const filteredPrescriptions = useMemo(() => {
+    if (!searchTerm) return prescriptions;
+    const term = searchTerm.toLowerCase();
+
+    return prescriptions.filter(pres => {
+      const patientName = pres.patient?.name?.toLowerCase() || pres.user?.name?.toLowerCase() || "";
+      const patientEmail = pres.patient?.email?.toLowerCase() || pres.user?.email?.toLowerCase() || "";
+      const doctorName = pres.doctor?.name?.toLowerCase() || "";
+      return patientName.includes(term) || patientEmail.includes(term) || doctorName.includes(term);
+    });
+  }, [searchTerm, prescriptions]);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Prescription Maintenance</h1>
@@ -186,7 +198,7 @@ const AdminPrescriptions = () => {
       <div className="mb-4 flex flex-col md:flex-row gap-2 print:hidden">
         <input
           type="text"
-          placeholder="Search patient name or email..."
+          placeholder="Search patient name, email or doctor..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border p-2 rounded w-full md:w-1/3"
@@ -319,11 +331,11 @@ const AdminPrescriptions = () => {
         <h2 className="text-xl mb-2">Existing Prescriptions</h2>
         {loadingPrescriptions ? (
           <p>Loading prescriptions...</p>
-        ) : prescriptions.length === 0 ? (
+        ) : filteredPrescriptions.length === 0 ? (
           <p>No prescriptions found.</p>
         ) : (
           <div className="space-y-4">
-            {prescriptions.map((pres, idx) => (
+            {filteredPrescriptions.map((pres, idx) => (
               <div key={idx} className="border p-4 rounded-lg shadow-sm bg-white">
                 <p><strong>Patient:</strong> {pres.patient?.name || pres.user?.name || "N/A"} {pres.patient?.email || pres.user?.email ? `(${pres.patient?.email || pres.user?.email})` : ""}</p>
                 <p><strong>Doctor:</strong> {pres.doctor?.name || "N/A"} {pres.doctor?.email ? `(${pres.doctor?.email})` : ""}</p>
