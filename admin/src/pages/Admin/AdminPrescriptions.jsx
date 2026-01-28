@@ -23,6 +23,11 @@ const AdminPrescriptions = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Filters / search
+  const [searchTerm, setSearchTerm] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
   // Helpers
   const getApptUser = (appt) => appt.user || appt.patient || appt.userId || null;
   const getApptUserId = (appt) => {
@@ -35,13 +40,18 @@ const AdminPrescriptions = () => {
   const fetchPrescriptions = useCallback(async (pageNumber = 1) => {
     setLoadingPrescriptions(true);
     setErrorPrescriptions("");
-    
     try {
+      const params = { page: pageNumber, limit: 20 };
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
+      if (searchTerm) params.search = searchTerm;
+
       const { data } = await axios.get(`${backendUrl}/api/prescriptions`, {
-        params: { page: pageNumber, limit: 20 },
+        params,
         headers: { Authorization: `Bearer ${aToken}` },
         timeout: 30000,
       });
+
       setPrescriptions(data.prescriptions || []);
       setPage(data.page || 1);
       setTotalPages(data.totalPages || 1);
@@ -51,7 +61,7 @@ const AdminPrescriptions = () => {
     } finally {
       setLoadingPrescriptions(false);
     }
-  }, [aToken, backendUrl]);
+  }, [aToken, backendUrl, searchTerm, fromDate, toDate]);
 
   // Fetch ALL patients who have completed appointments
   const fetchPatientsWithCompletedAppointments = useCallback(async () => {
@@ -62,17 +72,15 @@ const AdminPrescriptions = () => {
         params: { status: 'completed' },
         timeout: 30000,
       });
-      
+
       const appts = res.data.appointments || [];
-      
-      // Extract unique patients
       const uniquePatients = [];
       const seenIds = new Set();
-      
+
       appts.forEach(appt => {
         const user = getApptUser(appt);
         const userId = getApptUserId(appt);
-        
+
         if (userId && !seenIds.has(userId)) {
           seenIds.add(userId);
           uniquePatients.push({
@@ -82,7 +90,7 @@ const AdminPrescriptions = () => {
           });
         }
       });
-      
+
       setPatientsList(uniquePatients);
     } catch (err) {
       console.error("Error fetching patients:", err);
@@ -103,10 +111,7 @@ const AdminPrescriptions = () => {
         timeout: 30000,
       });
       const appts = res.data.appointments || [];
-      
-      // Only show completed appointments
-      const completedAppts = appts.filter(a => a.status === 'completed');
-      setAppointments(completedAppts);
+      setAppointments(appts.filter(a => a.status === 'completed'));
     } catch (err) {
       console.error("Error fetching appointments:", err.response?.data || err.message);
       setErrorAppointments(err.response?.data?.message || err.message || "Failed to load appointments");
@@ -166,27 +171,51 @@ const AdminPrescriptions = () => {
   // Update appointments when patient changes
   useEffect(() => {
     setAppointmentId("");
-    if (patientId) {
-      fetchAppointmentsForPatient(patientId);
-    } else {
-      setAppointments([]);
-    }
+    if (patientId) fetchAppointmentsForPatient(patientId);
+    else setAppointments([]);
   }, [patientId, fetchAppointmentsForPatient]);
 
   // Print handler
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Prescription Maintenance</h1>
 
-      {/* Export / Print Button */}
-      <div className="mb-4">
+      {/* Search & Filters */}
+      <div className="mb-4 flex flex-col md:flex-row gap-2 print:hidden">
+        <input
+          type="text"
+          placeholder="Search patient name or email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="border p-2 rounded w-full md:w-1/3"
+        />
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          className="border p-2 rounded w-full md:w-1/5"
+        />
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          className="border p-2 rounded w-full md:w-1/5"
+        />
+        <button
+          onClick={() => fetchPrescriptions(1)}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Apply
+        </button>
+      </div>
+
+      {/* Print Button */}
+      <div className="mb-4 print:hidden">
         <button
           onClick={handlePrint}
-          className="bg-blue-500 text-white px-4 py-2 rounded print:hidden"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
         >
           Print / Export
         </button>
