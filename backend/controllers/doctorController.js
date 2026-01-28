@@ -443,31 +443,38 @@ export const editDoctorSchedule = async (req, res) => {
 
 export const deleteDoctorSchedule = async (req, res) => {
   try {
-    const doctorId = req.doctor._id; // ✅ Use _id from middleware
+    const doctorId = req.doctor._id; // from auth middleware
     const { scheduleId } = req.params;
 
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
-
-    // Make sure your field matches your schema
-    const schedule = doctor.schedule.id(scheduleId); // 'schedule' is the array name in your schema
-    if (!schedule) return res.status(404).json({ success: false, message: "Schedule not found" });
-
-    // Optional: prevent deleting booked slots
-    if (doctor.slots_book && doctor.slots_book[schedule.date]) {
-      return res.status(400).json({ success: false, message: "Cannot delete, some slots are already booked" });
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
     }
 
-    schedule.remove();
+    // ✅ FILTER OUT the schedule instead of schedule.remove()
+    const originalLength = doctor.schedule.length;
+    doctor.schedule = doctor.schedule.filter(
+      (s) => s._id.toString() !== scheduleId
+    );
+
+    if (doctor.schedule.length === originalLength) {
+      return res.status(404).json({ success: false, message: "Schedule not found" });
+    }
+
     await doctor.save();
 
-    // Return updated schedule to frontend
-    res.json({ success: true, message: "Schedule deleted successfully", schedule: doctor.schedule });
+    // ✅ RETURN UPDATED SCHEDULE (frontend expects this)
+    res.json({
+      success: true,
+      message: "Schedule deleted successfully",
+      schedule: doctor.schedule,
+    });
   } catch (err) {
     console.error("Delete Schedule Error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 
