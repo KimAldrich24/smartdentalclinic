@@ -1,115 +1,114 @@
 import express from "express";
-import DoctorSchedule from "../models/doctorScheduleModel.js";
 import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
+import Doctor from "../models/doctorModel.js";
 
 const router = express.Router();
 
 /* =========================
-   🔹 CREATE a new schedule
+   🔹 CREATE or UPDATE schedule
 ========================= */
 router.post("/", doctorAuthMiddleware, async (req, res) => {
   try {
     const { date, slots } = req.body;
     const doctorId = req.doctorId;
 
-    console.log("📝 Saving schedule:", { doctorId, date, slots });
-
-    // Check if schedule exists
-    const existing = await DoctorSchedule.findOne({ doctorId, date });
-    if (existing) {
-      // Update existing schedule
-      existing.slots = slots;
-      await existing.save();
-      console.log("✅ Schedule updated");
-      return res.json({ success: true, schedule: existing });
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
     }
 
-    // Create new schedule
-    const schedule = new DoctorSchedule({ doctorId, date, slots });
-    await schedule.save();
-    console.log("✅ Schedule created");
+    const existing = doctor.schedule.find(s => s.date === date);
 
-    res.json({ success: true, schedule });
+    if (existing) {
+      existing.slots = slots;
+    } else {
+      doctor.schedule.push({ date, slots });
+    }
+
+    await doctor.save();
+
+    res.json({ success: true, schedule: doctor.schedule });
   } catch (error) {
-    console.error("❌ Error saving schedule:", error);
+    console.error("❌ Save schedule error:", error);
     res.status(500).json({ success: false, message: "Error saving schedule" });
   }
 });
 
 /* =========================
-   🔹 GET schedules (for logged-in doctor)
+   🔹 GET schedules (doctor)
 ========================= */
 router.get("/", doctorAuthMiddleware, async (req, res) => {
   try {
-    const doctorId = req.doctorId;
-    console.log("🔍 Fetching schedules for doctor:", doctorId);
-    
-    const schedules = await DoctorSchedule.find({ doctorId }).sort({ date: 1 });
-    console.log("📥 Found schedules:", schedules.length);
-    
-    res.json({ success: true, schedules });
+    const doctor = await Doctor.findById(req.doctorId).select("schedule");
+
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
+    }
+
+    res.json({
+      success: true,
+      schedules: doctor.schedule.sort(
+        (a, b) => new Date(a.date) - new Date(b.date)
+      ),
+    });
   } catch (error) {
-    console.error("❌ Error fetching schedules:", error);
+    console.error("❌ Fetch schedules error:", error);
     res.status(500).json({ success: false, message: "Error fetching schedules" });
   }
 });
 
 /* =========================
-   🔹 DELETE a schedule
+   🔹 DELETE schedule
 ========================= */
-router.delete("/:id", doctorAuthMiddleware, async (req, res) => {
+router.delete("/:scheduleId", doctorAuthMiddleware, async (req, res) => {
   try {
-    console.log("🧨 DELETE schedule called");
-    console.log("➡️ Schedule ID:", req.params.id);
-    console.log("➡️ Doctor ID from token:", req.doctorId);
+    const { scheduleId } = req.params;
 
-    const schedule = await DoctorSchedule.findById(req.params.id);
-
-    console.log("📦 Found schedule:", schedule);
-
-    if (!schedule) {
-      console.log("❌ Schedule NOT found");
-      return res.status(404).json({ success: false, message: "Schedule not found" });
-    }
-
-    console.log(
-      "🔍 Comparing:",
-      schedule.doctorId.toString(),
-      "vs",
-      req.doctorId
+    const updatedDoctor = await Doctor.findByIdAndUpdate(
+      req.doctorId,
+      { $pull: { schedule: { _id: scheduleId } } },
+      { new: true }
     );
 
-    if (schedule.doctorId.toString() !== req.doctorId) {
-      console.log("⛔ Ownership mismatch");
-      return res.status(403).json({
-        success: false,
-        message: "Not your schedule",
-      });
+    if (!updatedDoctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
     }
 
-    await schedule.deleteOne();
-
-    console.log("✅ Schedule deleted");
-
-    res.json({ success: true });
+    res.json({ success: true, message: "Schedule deleted successfully" });
   } catch (error) {
-    console.error("🔥 DELETE error:", error);
-    res.status(500).json({ success: false, message: "Delete failed" });
+    console.error("❌ Delete schedule error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete schedule" });
   }
 });
 
-
 /* =========================
-   🔹 PUBLIC — get all available schedules (for patients)
+   🔹 PUBLIC — available schedules (patients)
 ========================= */
 router.get("/available", async (req, res) => {
   try {
-    const schedules = await DoctorSchedule.find()
-      .populate("doctorId", "name degree image")
-      .sort({ date: 1 });
+    const doctors = await Doctor.find(
+      { "schedule.0": { $exists: true } },
+      "name degree image schedule"
+    );
+
+    const schedules = doctors.flatMap(doc =>
+      doc.schedule.map(s => ({
+        _id: s._id,
+        date: s.date,
+        slots: s.slots,
+        doctor: {
+          _id: doc._id,
+          name: doc.name,
+          degree: doc.degree,
+          image: doc.image,
+        },
+      }))
+    );
+
     res.json({ success: true, schedules });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error fetching available schedules" });
+    console.error("❌ Fetch available schedules error:", error);
+    res.status(500).json({ success: false, message: "Error fetching schedules" });
   }
 });
 

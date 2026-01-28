@@ -139,7 +139,7 @@ const DoctorSchedule = () => {
 
       if (data.success) {
         toast.success('Schedule saved successfully');
-        setSchedule(data.schedule || []);
+        setSchedule(data.schedule || fetchData()); // fallback fetch if backend doesn't return schedule
         setSelectedDate('');
         setTimeSlots([]);
       } else {
@@ -162,7 +162,8 @@ const DoctorSchedule = () => {
       const data = await res.json();
       if (data.success) {
         toast.success('Schedule deleted successfully');
-        setSchedule(schedule.filter(s => s._id !== scheduleId));
+        // if backend returns updated schedule, use it; otherwise filter locally
+        setSchedule(data.schedule || schedule.filter(s => s._id !== scheduleId));
       } else {
         toast.error(data.message);
       }
@@ -174,9 +175,21 @@ const DoctorSchedule = () => {
 
   // Edit schedule
   const handleEditSchedule = (sch) => {
+    if (isPastDate(sch.date)) {
+      toast.error('Cannot edit past schedule');
+      return;
+    }
     setSelectedDate(sch.date);
     setTimeSlots([...sch.slots]);
   };
+
+  // Clear time slots if user selects a past date manually
+  useEffect(() => {
+    if (selectedDate && isPastDate(selectedDate)) {
+      setTimeSlots([]);
+      toast.error('Cannot select a past date');
+    }
+  }, [selectedDate]);
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
@@ -192,9 +205,7 @@ const DoctorSchedule = () => {
               return (
                 <div
                   key={service._id}
-                  className={`border rounded-lg p-4 flex justify-between items-center transition ${
-                    added ? 'bg-green-50 border-green-300' : 'bg-white hover:shadow-md'
-                  }`}
+                  className={`border rounded-lg p-4 flex justify-between items-center transition ${added ? 'bg-green-50 border-green-300' : 'bg-white hover:shadow-md'}`}
                 >
                   <div>
                     <h4 className="font-semibold text-gray-800">{service.name}</h4>
@@ -202,17 +213,11 @@ const DoctorSchedule = () => {
                     {service.description && <p className="text-xs text-gray-500 mt-1">{service.description}</p>}
                   </div>
                   {added ? (
-                    <button
-                      onClick={() => handleRemoveService(service._id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm"
-                    >
+                    <button onClick={() => handleRemoveService(service._id)} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
                       Remove
                     </button>
                   ) : (
-                    <button
-                      onClick={() => handleAddService(service._id)}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition text-sm"
-                    >
+                    <button onClick={() => handleAddService(service._id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition text-sm">
                       Add
                     </button>
                   )}
@@ -264,11 +269,7 @@ const DoctorSchedule = () => {
                 onChange={(e) => setNewSlot(e.target.value)}
                 className="border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 outline-none flex-1"
               />
-              <button
-                type="button"
-                onClick={handleAddSlot}
-                className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition flex items-center gap-2"
-              >
+              <button type="button" onClick={handleAddSlot} className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition flex items-center gap-2">
                 <Plus size={18} /> Add
               </button>
             </div>
@@ -289,10 +290,7 @@ const DoctorSchedule = () => {
             </div>
           )}
 
-          <button
-            onClick={handleSaveSchedule}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
-          >
+          <button onClick={handleSaveSchedule} className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
             Save Schedule
           </button>
         </div>
@@ -308,12 +306,7 @@ const DoctorSchedule = () => {
                 <div key={sch._id} className="border rounded-lg p-4 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center">
                   <div>
                     <p className="font-semibold text-gray-800 mb-2">
-                      📅 {new Date(sch.date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
+                      📅 {new Date(sch.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {sch.slots.map((slot, i) => (
@@ -324,16 +317,10 @@ const DoctorSchedule = () => {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-2 md:mt-0">
-                    <button
-                      onClick={() => handleEditSchedule(sch)}
-                      className="bg-yellow-400 text-white px-4 py-2 rounded-lg hover:bg-yellow-500 transition"
-                    >
+                    <button onClick={() => handleEditSchedule(sch)} className="bg-yellow-400 text-white px-4 py-2 rounded-lg hover:bg-yellow-500 transition">
                       Edit
                     </button>
-                    <button
-                      onClick={() => handleDeleteSchedule(sch._id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-1"
-                    >
+                    <button onClick={() => handleDeleteSchedule(sch._id)} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-1">
                       Delete <Trash2 size={16} />
                     </button>
                   </div>
