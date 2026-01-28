@@ -108,23 +108,22 @@ const DoctorSchedule = () => {
       toast.error('Please select a date and add time slots');
       return;
     }
-  
+
     if (isPastDate(selectedDate)) {
       toast.error('Cannot create schedule for past dates');
       return;
     }
-  
+
     try {
-      // Check if editing existing schedule
       const existingSchedule = schedule.find(s => s.date === selectedDate);
       let url = `${backendUrl}/api/doctors/schedule`;
       let method = 'POST';
-  
+
       if (existingSchedule?._id) {
         url = `${backendUrl}/api/doctors/schedule/${existingSchedule._id}`;
         method = 'PUT';
       }
-  
+
       const res = await fetch(url, {
         method,
         headers: {
@@ -133,21 +132,16 @@ const DoctorSchedule = () => {
         },
         body: JSON.stringify({ date: selectedDate, slots: timeSlots }),
       });
-  
+
       const data = await res.json();
-  
+
       if (data.success) {
         toast.success('Schedule saved successfully');
-  
-        // ✅ Use updated schedule from backend if available
         if (data.schedule) {
           setSchedule(data.schedule);
         } else {
-          // fallback: refetch doctor's schedule
           fetchData();
         }
-  
-        // Clear form
         setSelectedDate('');
         setTimeSlots([]);
       } else {
@@ -158,40 +152,40 @@ const DoctorSchedule = () => {
       console.error(error);
     }
   };
-  
 
- // ✅ Delete schedule
-const handleDeleteSchedule = async (scheduleId) => {
-  if (!window.confirm("Are you sure you want to delete this schedule?")) return;
+  // Delete schedule
+  const handleDeleteSchedule = async (scheduleId) => {
+    if (!window.confirm("Are you sure you want to delete this schedule?")) return;
 
-  try {
-    const res = await fetch(`${backendUrl}/api/doctors/schedule/${scheduleId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${dToken}` },
-    });
+    try {
+      const res = await fetch(`${backendUrl}/api/doctors/schedule/${scheduleId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${dToken}` },
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.success) {
-      toast.success('Schedule deleted successfully');
-
-      // ✅ Use updated schedule from backend or fallback to local filter
-      if (data.schedule) {
-        setSchedule(data.schedule);
+      if (data.success) {
+        toast.success('Schedule deleted successfully');
+        if (data.schedule) {
+          setSchedule(data.schedule);
+        } else {
+          setSchedule(prev => prev.filter(s => s._id !== scheduleId));
+        }
       } else {
-        setSchedule(prev => prev.filter(s => s._id !== scheduleId));
+        toast.error(data.message);
       }
-    } else {
-      toast.error(data.message);
+    } catch (err) {
+      toast.error('Failed to delete schedule');
+      console.error(err);
     }
-  } catch (err) {
-    toast.error('Failed to delete schedule');
-    console.error(err);
-  }
-};
+  };
 
-  // Edit schedule
-  const handleEditSchedule = (sch) => {
+  // ✅ Edit schedule using scheduleId
+  const handleEditSchedule = (scheduleId) => {
+    const sch = schedule.find(s => s._id === scheduleId);
+    if (!sch) return;
+
     if (isPastDate(sch.date)) {
       toast.error('Cannot edit past schedule');
       return;
@@ -334,7 +328,7 @@ const handleDeleteSchedule = async (scheduleId) => {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-2 md:mt-0">
-                    <button onClick={() => handleEditSchedule(sch)} className="bg-yellow-400 text-white px-4 py-2 rounded-lg hover:bg-yellow-500 transition">
+                    <button onClick={() => handleEditSchedule(sch._id)} className="bg-yellow-400 text-white px-4 py-2 rounded-lg hover:bg-yellow-500 transition">
                       Edit
                     </button>
                     <button onClick={() => handleDeleteSchedule(sch._id)} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-1">
