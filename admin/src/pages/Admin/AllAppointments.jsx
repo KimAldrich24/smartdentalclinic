@@ -3,50 +3,63 @@ import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 
-
 const AllAppointments = () => {
   const { aToken, backendUrl } = useContext(AdminContext);
+
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState(null);
 
-  // Fetch all appointments
+  // 🔥 Filters
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  // Fetch appointments
   const fetchAppointments = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/appointments/all`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
 
-      if (data.success) setAppointments(data.appointments);
-      else setError(data.message || "Failed to load appointments");
+      if (data.success) {
+        setAppointments(data.appointments);
+        setError(null);
+      } else {
+        setError(data.message || "Failed to load appointments");
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     }
   };
 
-  // Delete appointment
+  // Delete
   const deleteAppointment = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this appointment?")) return;
+    if (!window.confirm("Delete this appointment?")) return;
 
     try {
-      const { data } = await axios.delete(`${backendUrl}/api/appointments/${id}`, {
-        headers: { Authorization: `Bearer ${aToken}` },
-      });
+      const { data } = await axios.delete(
+        `${backendUrl}/api/appointments/${id}`,
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
 
       if (data.success) {
-        setAppointments(prev => prev.filter(appt => appt._id !== id));
-        toast.success("Appointment deleted successfully!");
-      } else toast.error(data.message || "Failed to delete appointment");
+        setAppointments((prev) => prev.filter((a) => a._id !== id));
+        toast.success("Appointment deleted");
+      } else {
+        toast.error(data.message);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message);
     }
   };
 
-  // Mark appointment as done & push to patient history
+  // Mark as completed
   const markAsDone = async (appt) => {
-    if (!window.confirm("Mark this appointment as completed?")) return;
+    if (!window.confirm("Mark appointment as completed?")) return;
 
     try {
-      // 1️⃣ Update appointment status in backend
       const { data } = await axios.put(
         `${backendUrl}/api/appointments/${appt._id}/complete`,
         {},
@@ -54,11 +67,11 @@ const AllAppointments = () => {
       );
 
       if (data.success) {
-        toast.success("Appointment marked as completed!");
-
-        // 2️⃣ Optionally: Refresh appointments to show updated status
+        toast.success("Appointment completed");
         fetchAppointments();
-      } else toast.error(data.message || "Failed to mark as done");
+      } else {
+        toast.error(data.message);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message);
     }
@@ -68,99 +81,156 @@ const AllAppointments = () => {
     if (aToken) fetchAppointments();
   }, [aToken, backendUrl]);
 
+  // 🔥 APPLY FILTERS
+  const filteredAppointments = appointments
+    // Search
+    .filter((appt) => {
+      const term = searchTerm.toLowerCase();
+      return (
+        appt.user?.name?.toLowerCase().includes(term) ||
+        appt.doctor?.name?.toLowerCase().includes(term)
+      );
+    })
+    // Status
+    .filter((appt) =>
+      statusFilter === "all" ? true : appt.status === statusFilter
+    )
+    // Date Range
+    .filter((appt) => {
+      const apptDate = new Date(appt.date);
+      if (startDate && apptDate < new Date(startDate)) return false;
+      if (endDate && apptDate > new Date(endDate)) return false;
+      return true;
+    })
+    // Sort
+    .sort((a, b) => {
+      const dateA = new Date(`${a.date} ${a.time}`);
+      const dateB = new Date(`${b.date} ${b.time}`);
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+    });
+
   if (!aToken)
-    return (
-      <div className="max-w-5xl mx-auto p-6">
-        <p className="text-red-500 font-semibold">
-          Please login as admin to view appointments.
-        </p>
-      </div>
-    );
+    return <p className="p-6 text-red-500">Admin login required.</p>;
 
   if (error)
-    return (
-      <div className="max-w-5xl mx-auto p-6">
-        <p className="text-red-500 font-semibold">Error: {error}</p>
-      </div>
-    );
+    return <p className="p-6 text-red-500">Error: {error}</p>;
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <p className="text-2xl font-semibold text-gray-800 mb-6">All Appointments</p>
+    <div className="max-w-7xl mx-auto p-6">
+      <p className="text-2xl font-semibold mb-4">All Appointments</p>
 
-      {appointments.length === 0 ? (
+      {/* 🔥 FILTER BAR */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="Search patient or doctor..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm"
+        />
+
+        {/* Status */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+
+        {/* Start Date */}
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm"
+        />
+
+        {/* End Date */}
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm"
+        />
+
+        {/* Sort */}
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+        </select>
+      </div>
+
+      {/* LIST */}
+      {filteredAppointments.length === 0 ? (
         <p className="text-gray-500">No appointments found.</p>
       ) : (
         <div className="grid gap-6">
-          {appointments.map((appt) => (
+          {filteredAppointments.map((appt) => (
             <div
               key={appt._id}
-              className="flex flex-col md:flex-row items-start gap-6 bg-white shadow-md rounded-xl p-5 hover:shadow-lg transition"
+              className="flex flex-col md:flex-row gap-6 bg-white shadow rounded-xl p-5"
             >
-              {/* Doctor Image */}
-              <div className="w-32 h-32 flex-shrink-0">
-                <img
-                  src={
-                    appt.doctor?.image
-                      ? `${backendUrl}/uploads/doctors/${appt.doctor.image}`
-                      : "/placeholder-doctor.png"
-                  }
-                  alt={appt.doctor?.name || "Doctor"}
-                  className="w-full h-full rounded-lg object-cover shadow-sm"
-                />
-              </div>
+              <img
+                src={
+                  appt.doctor?.image
+                    ? `${backendUrl}/uploads/doctors/${appt.doctor.image}`
+                    : "/placeholder-doctor.png"
+                }
+                alt="Doctor"
+                className="w-32 h-32 object-cover rounded-lg"
+              />
 
-              {/* Appointment Details */}
-              <div className="flex-1 space-y-2">
-                <p className="text-xl font-semibold text-gray-800">
-                  Dr. {appt.doctor?.name || "Unknown Doctor"}
+              <div className="flex-1">
+                <p className="text-xl font-semibold">
+                  Dr. {appt.doctor?.name}
                 </p>
                 <p className="text-gray-600">{appt.doctor?.speciality}</p>
 
-                <p className="text-sm text-gray-600 mt-2">
-                  <span className="font-semibold text-gray-700">Patient:</span>{" "}
-                  {appt.user?.name || "Unknown"} ({appt.user?.email || "No email"})
+                <p className="text-sm mt-2">
+                  <b>Patient:</b> {appt.user?.name} ({appt.user?.email})
                 </p>
 
-                {appt.service && (
-                  <p className="text-sm text-gray-700">
-                    <span className="font-semibold">Service:</span> {appt.service.name} — ₱{appt.service.price} ({appt.service.duration})
-                  </p>
-                )}
-
-                <p className="text-sm text-gray-600">
-                  <span className="font-semibold text-gray-700">Date & Time:</span> {appt.date} | {appt.time}
+                <p className="text-sm">
+                  <b>Date:</b> {appt.date} | {appt.time}
                 </p>
 
-                <p className="text-sm text-gray-500">
-                  Status:{" "}
+                <p className="text-sm">
+                  <b>Status:</b>{" "}
                   <span
-                    className={`font-semibold ${
-                      appt.status === "cancelled"
-                        ? "text-red-500"
-                        : appt.status === "completed"
+                    className={
+                      appt.status === "completed"
                         ? "text-green-600"
-                        : "text-blue-600"
-                    }`}
+                        : appt.status === "cancelled"
+                        ? "text-red-500"
+                        : "text-blue-500"
+                    }
                   >
                     {appt.status}
                   </span>
                 </p>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-col gap-2">
                 {appt.status !== "completed" && (
                   <button
                     onClick={() => markAsDone(appt)}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg"
                   >
                     Mark as Done
                   </button>
                 )}
                 <button
                   onClick={() => deleteAppointment(appt._id)}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg"
                 >
                   Delete
                 </button>
