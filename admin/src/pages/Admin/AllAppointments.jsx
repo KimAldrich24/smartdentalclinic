@@ -137,7 +137,7 @@ const AllAppointments = () => {
           className="border rounded-lg px-3 py-2 text-sm"
         >
           <option value="all">All Status</option>
-          <option value="pending">Pending</option>
+          <option value="booked">Pending</option>
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
         </select>
