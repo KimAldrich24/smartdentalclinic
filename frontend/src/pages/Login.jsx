@@ -35,10 +35,6 @@ const Login = () => {
     dob: "",
   });
 
-  // ID photo state
-  const [idPhoto, setIdPhoto] = useState(null);
-  const [idError, setIdError] = useState("");
-
   // Age warning state
   const [ageWarning, setAgeWarning] = useState("");
 
@@ -68,30 +64,10 @@ const Login = () => {
   // Handle input change
   const handleChange = (e) => {
     if (e.target.name === "phone") {
-      // Only allow digits for phone
       const cleaned = e.target.value.replace(/\D/g, "");
       setFormData({ ...formData, phone: cleaned });
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
-    }
-  };
-
-  // Handle ID upload
-  const handleIdUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!["image/jpeg", "image/png"].includes(file.type)) {
-        setIdError("Only JPG or PNG files are allowed.");
-        setIdPhoto(null);
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setIdError("File size must be less than 5MB.");
-        setIdPhoto(null);
-        return;
-      }
-      setIdError("");
-      setIdPhoto(file);
     }
   };
 
@@ -102,13 +78,7 @@ const Login = () => {
     setSuccess("");
 
     // Validate all required fields
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.dob ||
-      !formData.password
-    ) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.dob || !formData.password) {
       setError("Please fill in all fields");
       return;
     }
@@ -119,9 +89,7 @@ const Login = () => {
     let age = todayDate.getFullYear() - birthDate.getFullYear();
     const monthDiff = todayDate.getMonth() - birthDate.getMonth();
     const dayDiff = todayDate.getDate() - birthDate.getDate();
-    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-      age--;
-    }
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
     if (age < 18) {
       setError("You must be at least 18 years old to create an account.");
       return;
@@ -146,27 +114,14 @@ const Login = () => {
       return;
     }
 
-    // Validate ID upload
-    if (!idPhoto) {
-      setError("Please upload a valid ID photo before proceeding.");
-      return;
-    }
-
     setLoading(true);
 
     try {
       // Save form data in session storage
       sessionStorage.setItem("registrationData", JSON.stringify(formData));
 
-      // Send OTP request to backend with ID
-      const form = new FormData();
-      form.append("phone", formData.phone);
-      form.append("idPhoto", idPhoto);
-
-      const res = await axios.post(`${API_URL}/api/users/send-otp`, form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
+      // Send OTP request to backend
+      const res = await axios.post(`${API_URL}/api/users/send-otp`, { phone: formData.phone });
       console.log("[DEBUG] send-otp:", res.data);
 
       if (res.data.success) {
@@ -269,49 +224,15 @@ const Login = () => {
         </p>
 
         {/* ERROR & SUCCESS MESSAGES */}
-        {error && (
-          <p className="bg-red-100 text-red-700 text-center p-2 rounded mb-4 text-sm">
-            {error}
-          </p>
-        )}
-        {success && (
-          <p className="bg-green-100 text-green-700 text-center p-2 rounded mb-4 text-sm">
-            {success}
-          </p>
-        )}
+        {error && <p className="bg-red-100 text-red-700 text-center p-2 rounded mb-4 text-sm">{error}</p>}
+        {success && <p className="bg-green-100 text-green-700 text-center p-2 rounded mb-4 text-sm">{success}</p>}
 
         {/* SIGNUP FORM - STEP 1: SEND OTP */}
         {mode === "signup" && !phoneOtpSent && (
           <form onSubmit={handleSendPhoneOtp} className="space-y-3">
-            <input
-              type="text"
-              name="name"
-              placeholder="Full Name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="tel"
-              name="phone"
-              placeholder="09XXXXXXXXX"
-              value={formData.phone}
-              onChange={handleChange}
-              minLength="11"
-              maxLength="11"
-              required
-              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="tel" name="phone" placeholder="09XXXXXXXXX" value={formData.phone} onChange={handleChange} minLength="11" maxLength="11" required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <p className="text-sm text-red-700 mt-1">
               Note: Smart/TNT numbers currently have no service. Other carriers can proceed.
             </p>
@@ -332,61 +253,21 @@ const Login = () => {
                   const monthDiff = todayDate.getMonth() - birthDate.getMonth();
                   const dayDiff = todayDate.getDate() - birthDate.getDate();
                   if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
-                  if (age < 18) {
-                    setAgeWarning("You must be at least 18 years old to create an account.");
-                  } else {
-                    setAgeWarning("");
-                  }
+                  setAgeWarning(age < 18 ? "You must be at least 18 years old to create an account." : "");
                 }}
                 required
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {ageWarning && (
-                <p className="text-red-600 text-sm mt-1">{ageWarning}</p>
-              )}
-            </div>
-
-            {/* ID Upload */}
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">
-                Upload Valid ID (JPG/PNG, max 5MB)
-              </label>
-              <input
-                type="file"
-                accept="image/png, image/jpeg"
-                onChange={handleIdUpload}
-                required
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {idError && <p className="text-red-600 text-sm mt-1">{idError}</p>}
-              {idPhoto && <p className="text-green-600 text-sm mt-1">ID selected: {idPhoto.name}</p>}
+              {ageWarning && <p className="text-red-600 text-sm mt-1">{ageWarning}</p>}
             </div>
 
             {/* Password */}
             <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Password (min 6 characters)"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength="6"
-                className="w-full border rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </span>
+              <input type={showPassword ? "text" : "password"} name="password" placeholder="Password (min 6 characters)" value={formData.password} onChange={handleChange} required minLength="6" className="w-full border rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <span onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 cursor-pointer">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</span>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={loading} className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? "Sending..." : "Send Phone OTP"}
             </button>
           </form>
@@ -400,42 +281,22 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Enter OTP Code
-              </label>
-              <input
-                type="text"
-                value={phoneOtp}
-                onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
-                placeholder="Enter 6-digit OTP"
-                maxLength="6"
-                required
-                className="w-full border text-center text-lg tracking-widest rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code</label>
+              <input type="text" value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))} placeholder="Enter 6-digit OTP" maxLength="6" required className="w-full border text-center text-lg tracking-widest rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={loading} className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? "Verifying..." : "Verify & Create Account"}
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setPhoneOtpSent(false);
-                setPhoneOtp("");
-                setError("");
-                setSuccess("");
-                setIdPhoto(null);
-                setIdError("");
-                sessionStorage.removeItem("registrationData");
-                sessionStorage.removeItem("phoneOtpSent");
-              }}
-              className="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-300 transition-all text-sm"
-            >
+            <button type="button" onClick={() => {
+              setPhoneOtpSent(false);
+              setPhoneOtp("");
+              setError("");
+              setSuccess("");
+              sessionStorage.removeItem("registrationData");
+              sessionStorage.removeItem("phoneOtpSent");
+            }} className="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-300 transition-all text-sm">
               Start Over
             </button>
           </form>
@@ -444,37 +305,12 @@ const Login = () => {
         {/* LOGIN FORM */}
         {mode === "login" && (
           <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full border rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </span>
+              <input type={showPassword ? "text" : "password"} name="password" placeholder="Password" value={formData.password} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <span onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 cursor-pointer">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</span>
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={loading} className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
@@ -482,21 +318,14 @@ const Login = () => {
 
         {/* SWITCH MODE BUTTON */}
         <div className="mt-6 text-center">
-          <button
-            onClick={() => {
-              setMode(mode === "login" ? "signup" : "login");
-              setError("");
-              setSuccess("");
-              setPhoneOtpSent(false);
-              setPhoneOtp("");
-              setIdPhoto(null);
-              setIdError("");
-            }}
-            className="text-blue-500 hover:underline text-sm font-medium"
-          >
-            {mode === "login"
-              ? "Don't have an account? Sign Up"
-              : "Already have an account? Sign In"}
+          <button onClick={() => {
+            setMode(mode === "login" ? "signup" : "login");
+            setError("");
+            setSuccess("");
+            setPhoneOtpSent(false);
+            setPhoneOtp("");
+          }} className="text-blue-500 hover:underline text-sm font-medium">
+            {mode === "login" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
           </button>
         </div>
       </div>
