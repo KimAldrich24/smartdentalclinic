@@ -475,6 +475,32 @@ export const deleteDoctorSchedule = async (req, res) => {
   }
 };
 
+export const changeDoctorPassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const doctorId = req.doctor.id;
+
+    const doctor = await Doctor.findById(doctorId).select("+password");
+
+    if (!doctor) {
+      return res.json({ success: false, message: "Doctor not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, doctor.password);
+
+    if (!isMatch) {
+      return res.json({ success: false, message: "Current password is incorrect" });
+    }
+
+    doctor.password = await bcrypt.hash(newPassword, 10);
+    await doctor.save();
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 
 

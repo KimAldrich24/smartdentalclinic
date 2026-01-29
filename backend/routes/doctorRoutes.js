@@ -15,6 +15,7 @@ import {
   addDoctorService,
   removeDoctorService,
   getDoctorServicesAndSchedule,
+  changeDoctorPassword
 } from '../controllers/doctorController.js';
 import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 import adminAuth from "../middlewares/adminAuthMiddleware.js"; 
@@ -59,6 +60,9 @@ router.delete("/schedule/:scheduleId", doctorAuthMiddleware, deleteDoctorSchedul
 
 
 router.delete("/:id", adminAuth, deleteDoctor);
+
+router.put("/change-password", authDoctor, changeDoctorPassword);
+
 
 
 export default router;

@@ -64,6 +64,14 @@ const DoctorDashboard = () => {
         {/* Header with Title and Logout */}
         <div className="flex justify-between items-start mb-4">
           <h1 className="text-3xl font-bold">👨‍⚕️ Doctor Dashboard</h1>
+
+          <button
+  onClick={() => navigate("/doctor-change-password")}
+  className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition font-semibold shadow-md"
+>
+  🔒 Change Password
+</button>
+
           
           {/* Logout Button */}
           <button
