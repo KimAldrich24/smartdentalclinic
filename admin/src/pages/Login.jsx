@@ -1,6 +1,8 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { AdminContext } from "../context/AdminContext"; // For backendUrl
+import { AdminContext } from "../context/AdminContext";
+import { DoctorContext } from "../context/DoctorContext";
+import { StaffContext } from "../context/StaffContext";
 import { toast } from "react-toastify";
 import { Eye, EyeOff, Shield } from "lucide-react";
 
@@ -10,36 +12,47 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { backendUrl, setAToken } = useContext(AdminContext);
+  const { setAToken, getAllDoctors, backendUrl } = useContext(AdminContext);
+  const { loginDoctor } = useContext(DoctorContext);
+  const { loginStaff } = useContext(StaffContext);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const handleLogin = async () => {
     try {
-      const res = await fetch(`${backendUrl}/api/login`, {
+      // 1️⃣ Try Admin login
+      const adminRes = await fetch(`${backendUrl}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
-      const data = await res.json();
-
-      if (data.success) {
-        // Save token
-        localStorage.setItem("token", data.token);
-        setAToken && setAToken(data.token); // Optional if using admin context
-
-        toast.success(`${data.role.charAt(0).toUpperCase() + data.role.slice(1)} login successful!`);
-
-        // Navigate based on role
-        if (data.role === "admin") navigate("/dashboard");
-        else if (data.role === "doctor") navigate("/doctor-dashboard");
-        else if (data.role === "staff") navigate("/staff-dashboard");
-      } else {
-        toast.error(data.message || "Login failed");
+      const adminData = await adminRes.json();
+      if (adminData.success && adminData.token) {
+        setAToken(adminData.token);
+        localStorage.setItem("aToken", adminData.token);
+        await getAllDoctors();
+        toast.success("Admin login successful!");
+        navigate("/dashboard");
+        return;
       }
+
+      // 2️⃣ Try Doctor login
+      const doctorResult = await loginDoctor(email, password);
+      if (doctorResult.success) {
+        toast.success("Doctor login successful!");
+        navigate("/doctor-dashboard");
+        return;
+      }
+
+      // 3️⃣ Try Staff login
+      const staffResult = await loginStaff(email, password);
+      if (staffResult.success) {
+        toast.success("Staff login successful!");
+        navigate("/staff-dashboard");
+        return;
+      }
+
+      // If all failed
+      toast.error("Invalid credentials for all roles");
     } catch (err) {
       console.error("Login error:", err);
       toast.error("Login error. Please try again.");
@@ -48,13 +61,19 @@ const Login = () => {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    handleLogin();
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
       <form
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md"
       >
-        {/* LOGO */}
+        {/* Logo */}
         <div className="text-center mb-6">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Shield size={40} className="text-white" />
@@ -67,12 +86,12 @@ const Login = () => {
           Login to Your Account
         </h2>
 
-        {/* Email */}
+        {/* Email Input */}
         <div className="mb-4">
           <label className="block mb-2 font-medium text-gray-700">Email</label>
           <input
             type="email"
-            placeholder="Enter your email"
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -80,7 +99,7 @@ const Login = () => {
           />
         </div>
 
-        {/* Password */}
+        {/* Password Input */}
         <div className="mb-6">
           <label className="block mb-2 font-medium text-gray-700">Password</label>
           <div className="relative">
