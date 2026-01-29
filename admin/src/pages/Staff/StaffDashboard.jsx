@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   User,
-  Clock
+  Clock,
+  Shield
 } from "lucide-react";
 
 const StaffDashboard = () => {
@@ -26,6 +27,13 @@ const StaffDashboard = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patientHistory, setPatientHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  // For change password
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
   useEffect(() => {
     if (!sToken) {
@@ -88,11 +96,44 @@ const StaffDashboard = () => {
     navigate("/login");
   };
 
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${backendUrl}/api/staff/change-password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sToken}`,
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Password changed successfully!");
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        setActiveModule("appointments");
+      } else {
+        alert(data.message || "Failed to change password");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
+    }
+  };
+
   const modules = [
     { id: "appointments", name: "Appointments", icon: Calendar, color: "bg-blue-500" },
     { id: "patients", name: "Patients", icon: Users, color: "bg-green-500" },
     { id: "treatments", name: "Treatments", icon: ClipboardList, color: "bg-purple-500" },
     { id: "reports", name: "Reports", icon: FileText, color: "bg-orange-500" },
+    { id: "changePassword", name: "Change Password", icon: Shield, color: "bg-red-500" },
   ];
 
   return (
@@ -266,6 +307,58 @@ const StaffDashboard = () => {
                       <p className="text-sm text-purple-600 font-medium">Treatments</p>
                       <p className="text-3xl font-bold text-purple-700 mt-2">{treatments.length}</p>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Change Password */}
+              {activeModule === "changePassword" && (
+                <div className="bg-white rounded-lg shadow p-6 max-w-md mx-auto">
+                  <h3 className="text-xl font-semibold mb-4">Change Password</h3>
+
+                  <input
+                    type="password"
+                    placeholder="Current Password"
+                    className="w-full border rounded-lg px-3 py-2 mb-3"
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                    }
+                  />
+
+                  <input
+                    type="password"
+                    placeholder="New Password"
+                    className="w-full border rounded-lg px-3 py-2 mb-3"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      setPasswordData({ ...passwordData, newPassword: e.target.value })
+                    }
+                  />
+
+                  <input
+                    type="password"
+                    placeholder="Confirm New Password"
+                    className="w-full border rounded-lg px-3 py-2 mb-4"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                    }
+                  />
+
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setActiveModule("appointments")}
+                      className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleChangePassword}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg"
+                    >
+                      Save
+                    </button>
                   </div>
                 </div>
               )}
