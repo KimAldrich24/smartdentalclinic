@@ -10,14 +10,13 @@ import {
   Menu,
   X,
   User,
-  Clock,
-  CheckCircle,
-  XCircle
+  Clock
 } from "lucide-react";
 
 const StaffDashboard = () => {
   const { staff, sToken, logoutStaff, backendUrl } = useContext(StaffContext);
   const navigate = useNavigate();
+
   const [activeModule, setActiveModule] = useState("appointments");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [appointments, setAppointments] = useState([]);
@@ -31,12 +30,14 @@ const StaffDashboard = () => {
   useEffect(() => {
     if (!sToken) {
       navigate("/login");
-    } else {
+    } else if (backendUrl) {
       fetchData();
     }
-  }, [sToken, activeModule]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sToken, activeModule, backendUrl]);
 
   const fetchData = async () => {
+    if (!backendUrl || !sToken) return;
     setLoading(true);
     try {
       if (activeModule === "appointments") {
@@ -44,19 +45,19 @@ const StaffDashboard = () => {
           headers: { Authorization: `Bearer ${sToken}` },
         });
         const data = await res.json();
-        if (data.success) setAppointments(data.appointments);
+        if (data.success) setAppointments(data.appointments || []);
       } else if (activeModule === "patients") {
         const res = await fetch(`${backendUrl}/api/staff/patients`, {
           headers: { Authorization: `Bearer ${sToken}` },
         });
         const data = await res.json();
-        if (data.success) setPatients(data.patients);
+        if (data.success) setPatients(data.patients || []);
       } else if (activeModule === "treatments") {
         const res = await fetch(`${backendUrl}/api/staff/treatments`, {
           headers: { Authorization: `Bearer ${sToken}` },
         });
         const data = await res.json();
-        if (data.success) setTreatments(data.treatments);
+        if (data.success) setTreatments(data.treatments || []);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -66,6 +67,7 @@ const StaffDashboard = () => {
   };
 
   const fetchPatientHistory = async (patientId) => {
+    if (!backendUrl || !sToken || !patientId) return;
     try {
       const res = await fetch(`${backendUrl}/api/staff/patients/${patientId}/history`, {
         headers: { Authorization: `Bearer ${sToken}` },
@@ -73,7 +75,7 @@ const StaffDashboard = () => {
       const data = await res.json();
       if (data.success) {
         setSelectedPatient(data.patient);
-        setPatientHistory(data.appointments);
+        setPatientHistory(data.appointments || []);
         setShowHistoryModal(true);
       }
     } catch (err) {
@@ -96,17 +98,10 @@ const StaffDashboard = () => {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div
-        className={`${
-          sidebarOpen ? "w-64" : "w-20"
-        } bg-white shadow-lg transition-all duration-300 flex flex-col`}
-      >
+      <div className={`${sidebarOpen ? "w-64" : "w-20"} bg-white shadow-lg transition-all duration-300 flex flex-col`}>
         <div className="p-4 border-b flex items-center justify-between">
           {sidebarOpen && <h1 className="text-xl font-bold text-gray-800">Staff Portal</h1>}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg">
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
@@ -133,9 +128,7 @@ const StaffDashboard = () => {
                 key={module.id}
                 onClick={() => setActiveModule(module.id)}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${
-                  activeModule === module.id
-                    ? `${module.color} text-white`
-                    : "hover:bg-gray-100 text-gray-700"
+                  activeModule === module.id ? `${module.color} text-white` : "hover:bg-gray-100 text-gray-700"
                 }`}
               >
                 <Icon size={20} />
@@ -159,12 +152,8 @@ const StaffDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="bg-white shadow-sm p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {modules.find((m) => m.id === activeModule)?.name || "Dashboard"}
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Welcome back, {staff?.name || "Staff Member"}!
-          </p>
+          <h2 className="text-2xl font-bold text-gray-800">{modules.find(m => m.id === activeModule)?.name || "Dashboard"}</h2>
+          <p className="text-gray-600 mt-1">Welcome back, {staff?.name || "Staff Member"}!</p>
         </div>
 
         <div className="p-6">
@@ -175,7 +164,7 @@ const StaffDashboard = () => {
             </div>
           ) : (
             <>
-              {/* Appointments Module */}
+              {/* Appointments */}
               {activeModule === "appointments" && (
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-xl font-semibold mb-4">Appointments</h3>
@@ -183,11 +172,8 @@ const StaffDashboard = () => {
                     <p className="text-gray-500">No appointments found</p>
                   ) : (
                     <div className="space-y-3">
-                      {appointments.map((apt) => (
-                        <div
-                          key={apt._id}
-                          className="border rounded-lg p-4 hover:bg-gray-50 transition"
-                        >
+                      {appointments.map(apt => (
+                        <div key={apt._id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
@@ -196,37 +182,15 @@ const StaffDashboard = () => {
                                   apt.status === 'completed' ? 'bg-green-100 text-green-700' :
                                   apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
                                   'bg-blue-100 text-blue-700'
-                                }`}>
-                                  {apt.status || 'pending'}
-                                </span>
+                                }`}>{apt.status || 'pending'}</span>
                               </div>
-                              
                               <div className="space-y-1 text-sm text-gray-600">
-                                <p className="flex items-center gap-2">
-                                  <User size={16} />
-                                  <span>Doctor: {apt.doctor?.name || 'Not assigned'}</span>
-                                </p>
-                                <p className="flex items-center gap-2">
-                                  <Calendar size={16} />
-                                  <span>{apt.date ? new Date(apt.date).toLocaleDateString() : 'No date'}</span>
-                                </p>
-                                <p className="flex items-center gap-2">
-                                  <Clock size={16} />
-                                  <span>{apt.time || 'No time'}</span>
-                                </p>
-                                {apt.service && (
-                                  <p className="flex items-center gap-2 font-medium text-purple-600">
-                                    <ClipboardList size={16} />
-                                    <span>Service: {apt.service?.name || 'Not specified'}</span>
-                                  </p>
-                                )}
+                                <p className="flex items-center gap-2"><User size={16}/> Doctor: {apt.doctor?.name || 'Not assigned'}</p>
+                                <p className="flex items-center gap-2"><Calendar size={16}/> {apt.date ? new Date(apt.date).toLocaleDateString() : 'No date'}</p>
+                                <p className="flex items-center gap-2"><Clock size={16}/> {apt.time || 'No time'}</p>
+                                {apt.service && <p className="flex items-center gap-2 font-medium text-purple-600">Service: {apt.service?.name || 'Not specified'}</p>}
                               </div>
-                              
-                              {apt.notes && (
-                                <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
-                                  <strong>Notes:</strong> {apt.notes}
-                                </div>
-                              )}
+                              {apt.notes && <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700"><strong>Notes:</strong> {apt.notes}</div>}
                             </div>
                           </div>
                         </div>
@@ -236,7 +200,7 @@ const StaffDashboard = () => {
                 </div>
               )}
 
-              {/* Patients Module */}
+              {/* Patients */}
               {activeModule === "patients" && (
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-xl font-semibold mb-4">Patient Records</h3>
@@ -244,24 +208,19 @@ const StaffDashboard = () => {
                     <p className="text-gray-500">No patient records found</p>
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {patients.map((patient) => (
-                        <div
-                          key={patient._id}
-                          onClick={() => fetchPatientHistory(patient._id)}
-                          className="border rounded-lg p-4 hover:shadow-lg transition cursor-pointer hover:border-purple-500"
-                        >
+                      {patients.map(patient => (
+                        <div key={patient._id} onClick={() => fetchPatientHistory(patient._id)}
+                          className="border rounded-lg p-4 hover:shadow-lg transition cursor-pointer hover:border-purple-500">
                           <div className="flex items-center gap-3 mb-2">
                             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                              <User size={20} className="text-green-600" />
+                              <User size={20} className="text-green-600"/>
                             </div>
                             <div className="flex-1">
                               <p className="font-semibold">{patient.name}</p>
                               <p className="text-sm text-gray-600">{patient.email}</p>
                             </div>
                           </div>
-                          {patient.phone && (
-                            <p className="text-sm text-gray-500">Phone: {patient.phone}</p>
-                          )}
+                          {patient.phone && <p className="text-sm text-gray-500">Phone: {patient.phone}</p>}
                           <p className="text-xs text-purple-600 mt-2">Click to view history</p>
                         </div>
                       ))}
@@ -270,7 +229,7 @@ const StaffDashboard = () => {
                 </div>
               )}
 
-              {/* Treatments Module */}
+              {/* Treatments */}
               {activeModule === "treatments" && (
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-xl font-semibold mb-4">Treatment Plans</h3>
@@ -278,16 +237,11 @@ const StaffDashboard = () => {
                     <p className="text-gray-500">No treatments available</p>
                   ) : (
                     <div className="space-y-3">
-                      {treatments.map((treatment) => (
-                        <div
-                          key={treatment._id}
-                          className="border rounded-lg p-4 hover:bg-gray-50 transition"
-                        >
-                          <p className="font-semibold">{treatment.name}</p>
-                          <p className="text-sm text-gray-600 mt-1">{treatment.description}</p>
-                          <p className="text-sm font-medium text-purple-600 mt-2">
-                          ₱{treatment.price}
-                          </p>
+                      {treatments.map(t => (
+                        <div key={t._id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
+                          <p className="font-semibold">{t.name}</p>
+                          <p className="text-sm text-gray-600 mt-1">{t.description}</p>
+                          <p className="text-sm font-medium text-purple-600 mt-2">₱{t.price}</p>
                         </div>
                       ))}
                     </div>
@@ -295,7 +249,7 @@ const StaffDashboard = () => {
                 </div>
               )}
 
-              {/* Reports Module */}
+              {/* Reports */}
               {activeModule === "reports" && (
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-xl font-semibold mb-4">Reports & Analytics</h3>
@@ -330,21 +284,18 @@ const StaffDashboard = () => {
                 <p className="text-gray-600">{selectedPatient.email}</p>
                 {selectedPatient.phone && <p className="text-gray-600">Phone: {selectedPatient.phone}</p>}
               </div>
-              <button
-                onClick={() => setShowHistoryModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <X size={24} />
+              <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={24}/>
               </button>
             </div>
-            
+
             <div className="p-6">
               <h3 className="text-xl font-semibold mb-4">Appointment History</h3>
               {patientHistory.length === 0 ? (
                 <p className="text-gray-500">No appointment history found</p>
               ) : (
                 <div className="space-y-3">
-                  {patientHistory.map((apt) => (
+                  {patientHistory.map(apt => (
                     <div key={apt._id} className="border rounded-lg p-4 hover:bg-gray-50">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
@@ -356,26 +307,11 @@ const StaffDashboard = () => {
                               apt.status === 'completed' ? 'bg-green-100 text-green-700' :
                               apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
                               'bg-blue-100 text-blue-700'
-                            }`}>
-                              {apt.status || 'pending'}
-                            </span>
+                            }`}>{apt.status || 'pending'}</span>
                           </div>
-                          
-                          <p className="text-sm text-gray-600">
-                            Doctor: {apt.doctor?.name || 'Not assigned'}
-                          </p>
-                          
-                          {apt.service && (
-                            <p className="text-sm font-medium text-purple-600 mt-1">
-                            Service: {apt.service?.name || 'Not specified'}
-                          </p>
-                          )}
-                          
-                          {apt.notes && (
-                            <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
-                              <strong>Notes:</strong> {apt.notes}
-                            </div>
-                          )}
+                          <p className="text-sm text-gray-600">Doctor: {apt.doctor?.name || 'Not assigned'}</p>
+                          {apt.service && <p className="text-sm font-medium text-purple-600 mt-1">Service: {apt.service?.name || 'Not specified'}</p>}
+                          {apt.notes && <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700"><strong>Notes:</strong> {apt.notes}</div>}
                         </div>
                       </div>
                     </div>

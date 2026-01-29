@@ -135,4 +135,64 @@ staffRouter.get('/treatments', staffAuth, async (req, res) => {
   }
 });
 
+// Change Staff Password
+staffRouter.put('/change-password', staffAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.json({
+        success: false,
+        message: 'Current and new password are required',
+      });
+    }
+
+    // Find logged-in staff
+    const staff = await Staff.findById(req.staffId);
+
+    if (!staff) {
+      return res.json({
+        success: false,
+        message: 'Staff not found',
+      });
+    }
+
+    // Check current password
+    const isMatch = await bcrypt.compare(currentPassword, staff.password);
+
+    if (!isMatch) {
+      return res.json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Prevent same password reuse
+    const isSamePassword = await bcrypt.compare(newPassword, staff.password);
+    if (isSamePassword) {
+      return res.json({
+        success: false,
+        message: 'New password must be different from old password',
+      });
+    }
+
+    // Hash & save new password
+    const salt = await bcrypt.genSalt(10);
+    staff.password = await bcrypt.hash(newPassword, salt);
+    await staff.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+});
+
+
 export default staffRouter;
