@@ -16,12 +16,19 @@ const AdminProfile = () => {
     phone: "",
   });
 
+  // Password state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [pwdLoading, setPwdLoading] = useState(false);
+
   // ✅ Decode token to get admin info
   useEffect(() => {
     if (aToken) {
       try {
-        const decoded = JSON.parse(atob(aToken.split('.')[1]));
-        
+        const decoded = JSON.parse(atob(aToken.split(".")[1]));
         // Fetch full admin data from backend
         fetchAdminProfile(decoded.id);
       } catch (err) {
@@ -31,60 +38,48 @@ const AdminProfile = () => {
   }, [aToken]);
 
   // ✅ Fetch admin profile
-const fetchAdminProfile = async (adminId) => {
-  console.log("🔍 Fetching profile for admin ID:", adminId); // ✅ DEBUG
-  
-  try {
-    const res = await axios.get(`${backendUrl}/api/admin/profile`, {
-      headers: { Authorization: `Bearer ${aToken}` },
-    });
-
-    console.log("📡 Backend response:", res.data); // ✅ DEBUG
-
-    if (res.data.success) {
-      console.log("✅ Setting admin from backend:", res.data.admin); // ✅ DEBUG
-      setAdmin(res.data.admin);
-      setFormData({
-        name: res.data.admin.name || "",
-        phone: res.data.admin.phone || "",
-      });
-    } else {
-      console.log("⚠️ Backend failed, using fallback..."); // ✅ DEBUG
-      throw new Error(res.data.message); // ✅ Force fallback
-    }
-  } catch (err) {
-    console.error("❌ Fetch profile error:", err); // ✅ DEBUG
-    
-    // ✅ FALLBACK: Use token data if backend fails
-    console.log("🔄 Attempting fallback with token data..."); // ✅ DEBUG
-    
+  const fetchAdminProfile = async (adminId) => {
     try {
-      const decoded = JSON.parse(atob(aToken.split('.')[1]));
-      console.log("🔓 Decoded token:", decoded); // ✅ DEBUG
-      
-      const fallbackAdmin = {
-        id: decoded.id,
-        name: decoded.name || "Admin User",
-        email: decoded.email,
-        role: decoded.role,
-        phone: "Not set",
-        gender: "Not Selected",
-        status: "active",
-      };
-      
-      console.log("✅ Fallback admin created:", fallbackAdmin); // ✅ DEBUG
-      setAdmin(fallbackAdmin);
-      setFormData({
-        name: fallbackAdmin.name,
-        phone: fallbackAdmin.phone,
+      const res = await axios.get(`${backendUrl}/api/admin/profile`, {
+        headers: { Authorization: `Bearer ${aToken}` },
       });
-    } catch (decodeErr) {
-      console.error("💥 Fallback failed:", decodeErr); // ✅ DEBUG
-    }
-  }
-};
 
-  // Handle input change
+      if (res.data.success) {
+        setAdmin(res.data.admin);
+        setFormData({
+          name: res.data.admin.name || "",
+          phone: res.data.admin.phone || "",
+        });
+      } else {
+        throw new Error(res.data.message);
+      }
+    } catch (err) {
+      console.error("Fetch profile error:", err);
+
+      // Fallback: use token data
+      try {
+        const decoded = JSON.parse(atob(aToken.split(".")[1]));
+        const fallbackAdmin = {
+          id: decoded.id,
+          name: decoded.name || "Admin User",
+          email: decoded.email,
+          role: decoded.role,
+          phone: "Not set",
+          gender: "Not Selected",
+          status: "active",
+        };
+        setAdmin(fallbackAdmin);
+        setFormData({
+          name: fallbackAdmin.name,
+          phone: fallbackAdmin.phone,
+        });
+      } catch (decodeErr) {
+        console.error("Fallback failed:", decodeErr);
+      }
+    }
+  };
+
+  // Handle profile input change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -122,6 +117,50 @@ const fetchAdminProfile = async (adminId) => {
       phone: admin?.phone || "",
     });
     setIsEdit(false);
+  };
+
+  // Handle password input change
+  const handlePasswordChange = (e) => {
+    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+  };
+
+  // Handle change password submit
+  const handleChangePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordData;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("All password fields are required");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+
+    setPwdLoading(true);
+    try {
+      const res = await axios.put(
+        `${backendUrl}/api/admin/change-password`,
+        { currentPassword, newPassword },
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+
+      if (res.data.success) {
+        toast.success("Password changed successfully!");
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        toast.error(res.data.message || "Failed to change password");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to change password");
+    } finally {
+      setPwdLoading(false);
+    }
   };
 
   if (!admin) {
@@ -187,9 +226,7 @@ const fetchAdminProfile = async (adminId) => {
               placeholder="Admin Name"
             />
           ) : (
-            <h2 className="text-3xl font-bold text-gray-800">
-              {admin.name}
-            </h2>
+            <h2 className="text-3xl font-bold text-gray-800">{admin.name}</h2>
           )}
 
           <div className="mt-2 px-4 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
@@ -258,6 +295,44 @@ const fetchAdminProfile = async (adminId) => {
                 <span className="text-green-600">● Active</span>
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Change Password Section */}
+        <div className="mt-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Change Password</h3>
+          <div className="space-y-4">
+            <input
+              type="password"
+              name="currentPassword"
+              value={passwordData.currentPassword}
+              onChange={handlePasswordChange}
+              placeholder="Current Password"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+            />
+            <input
+              type="password"
+              name="newPassword"
+              value={passwordData.newPassword}
+              onChange={handlePasswordChange}
+              placeholder="New Password"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+            />
+            <input
+              type="password"
+              name="confirmPassword"
+              value={passwordData.confirmPassword}
+              onChange={handlePasswordChange}
+              placeholder="Confirm New Password"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+            />
+            <button
+              onClick={handleChangePassword}
+              disabled={pwdLoading}
+              className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50"
+            >
+              {pwdLoading ? "Changing..." : "Change Password"}
+            </button>
           </div>
         </div>
 
