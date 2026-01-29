@@ -35,6 +35,10 @@ const Login = () => {
     dob: "",
   });
 
+  // ID photo state
+  const [idPhoto, setIdPhoto] = useState(null);
+  const [idError, setIdError] = useState("");
+
   // Age warning state
   const [ageWarning, setAgeWarning] = useState("");
 
@@ -72,6 +76,25 @@ const Login = () => {
     }
   };
 
+  // Handle ID upload
+  const handleIdUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!["image/jpeg", "image/png"].includes(file.type)) {
+        setIdError("Only JPG or PNG files are allowed.");
+        setIdPhoto(null);
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setIdError("File size must be less than 5MB.");
+        setIdPhoto(null);
+        return;
+      }
+      setIdError("");
+      setIdPhoto(file);
+    }
+  };
+
   // Handle sending phone OTP
   const handleSendPhoneOtp = async (e) => {
     e.preventDefault();
@@ -79,7 +102,13 @@ const Login = () => {
     setSuccess("");
 
     // Validate all required fields
-    if (!formData.name || !formData.email || !formData.phone || !formData.dob || !formData.password) {
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.dob ||
+      !formData.password
+    ) {
       setError("Please fill in all fields");
       return;
     }
@@ -117,15 +146,25 @@ const Login = () => {
       return;
     }
 
+    // Validate ID upload
+    if (!idPhoto) {
+      setError("Please upload a valid ID photo before proceeding.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Save form data in session storage
       sessionStorage.setItem("registrationData", JSON.stringify(formData));
 
-      // Send OTP request to backend
-      const res = await axios.post(`${API_URL}/api/users/send-otp`, {
-        phone: formData.phone,
+      // Send OTP request to backend with ID
+      const form = new FormData();
+      form.append("phone", formData.phone);
+      form.append("idPhoto", idPhoto);
+
+      const res = await axios.post(`${API_URL}/api/users/send-otp`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       console.log("[DEBUG] send-otp:", res.data);
@@ -151,7 +190,6 @@ const Login = () => {
     setError("");
     setSuccess("");
 
-    // Validate OTP input
     if (!phoneOtp || phoneOtp.length !== 6) {
       setError("Please enter the 6-digit phone OTP");
       return;
@@ -160,13 +198,11 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Retrieve form data from session storage if available
       const savedData = sessionStorage.getItem("registrationData");
       const dataToSend = savedData ? JSON.parse(savedData) : formData;
 
       console.log("[DEBUG] Sending registration data:", dataToSend);
 
-      // Send registration request to backend
       const res = await axios.post(`${API_URL}/api/users/verify-and-register`, {
         name: dataToSend.name,
         email: dataToSend.email,
@@ -180,17 +216,13 @@ const Login = () => {
 
       if (res.data.success) {
         setSuccess("Registration successful! Signing in...");
-
-        // Clear session storage after success
         sessionStorage.removeItem("registrationData");
         sessionStorage.removeItem("phoneOtpSent");
 
-        // Save token if returned
         if (res.data.token) {
           localStorage.setItem("token", res.data.token);
         }
 
-        // Automatically log in
         await login(dataToSend.email, dataToSend.password);
         navigate("/");
       } else {
@@ -280,24 +312,26 @@ const Login = () => {
               required
               className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-sm text-red-700 mt-1">
+              Note: Smart/TNT numbers currently have no service. Other carriers can proceed.
+            </p>
+
+            {/* DOB */}
             <div>
               <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
               <input
                 type="date"
                 name="dob"
                 value={formData.dob}
-                max={maxDob} // ✅ Grey out dates under 18
+                max={maxDob}
                 onChange={(e) => {
                   setFormData({ ...formData, dob: e.target.value });
-
-                  // Check age immediately
                   const birthDate = new Date(e.target.value);
                   const todayDate = new Date();
                   let age = todayDate.getFullYear() - birthDate.getFullYear();
                   const monthDiff = todayDate.getMonth() - birthDate.getMonth();
                   const dayDiff = todayDate.getDate() - birthDate.getDate();
                   if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
-
                   if (age < 18) {
                     setAgeWarning("You must be at least 18 years old to create an account.");
                   } else {
@@ -312,6 +346,23 @@ const Login = () => {
               )}
             </div>
 
+            {/* ID Upload */}
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">
+                Upload Valid ID (JPG/PNG, max 5MB)
+              </label>
+              <input
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={handleIdUpload}
+                required
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {idError && <p className="text-red-600 text-sm mt-1">{idError}</p>}
+              {idPhoto && <p className="text-green-600 text-sm mt-1">ID selected: {idPhoto.name}</p>}
+            </div>
+
+            {/* Password */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -378,6 +429,8 @@ const Login = () => {
                 setPhoneOtp("");
                 setError("");
                 setSuccess("");
+                setIdPhoto(null);
+                setIdError("");
                 sessionStorage.removeItem("registrationData");
                 sessionStorage.removeItem("phoneOtpSent");
               }}
@@ -436,6 +489,8 @@ const Login = () => {
               setSuccess("");
               setPhoneOtpSent(false);
               setPhoneOtp("");
+              setIdPhoto(null);
+              setIdError("");
             }}
             className="text-blue-500 hover:underline text-sm font-medium"
           >
