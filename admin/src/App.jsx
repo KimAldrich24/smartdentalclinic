@@ -36,12 +36,12 @@ import PendingUsers from "./pages/Admin/PendingUsers";
 import StaffManagement from "./pages/Admin/StaffManagement";
 import PatientHistory from "./pages/Admin/PatientHistory";
 import AdminRegister from './pages/Admin/AdminRegister';
- import AdminPaymentProofs from './pages/Admin/AdminPaymentProofs';
+import AdminPaymentProofs from './pages/Admin/AdminPaymentProofs';
 
 // Doctor Pages
 import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
 import DoctorSchedule from "./pages/Doctor/DoctorSchedule";
-
+import DoctorChangePassword from "./pages/Doctor/DoctorChangePassword";
 // Staff Pages
 import StaffDashboard from "./pages/Staff/StaffDashboard";
 
@@ -104,6 +104,11 @@ const AppContent = () => {
       <Routes>
         <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         <Route path="/doctor-schedule" element={<DoctorSchedule />} />
+
+        <Route
+          path="/doctor-change-password"
+          element={<DoctorChangePassword />}
+        />
         <Route path="*" element={<Navigate to="/doctor-dashboard" replace />} />
       </Routes>
     );
