@@ -61,7 +61,7 @@ router.delete("/schedule/:scheduleId", doctorAuthMiddleware, deleteDoctorSchedul
 
 router.delete("/:id", adminAuth, deleteDoctor);
 
-router.put("/change-password", authDoctor, changeDoctorPassword);
+router.put("/change-password", doctorAuthMiddleware, changeDoctorPassword);
 
 
 
