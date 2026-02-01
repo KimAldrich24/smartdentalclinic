@@ -45,18 +45,18 @@ const DoctorDashboard = () => {
   }, [dToken]);
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6">
-      
+    <div className="min-h-[100dvh] max-w-6xl mx-auto px-4 py-6 md:p-6">
+
       {/* ================= HEADER ================= */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl p-5 md:p-6 mb-6 shadow-lg">
-        
+      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl p-5 md:p-6 mb-8 shadow-lg">
+
         {/* Title + Buttons */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3 mb-5">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
           <h1 className="text-2xl md:text-3xl font-bold">
             👨‍⚕️ Doctor Dashboard
           </h1>
 
-          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <button
               onClick={() => navigate("/doctor-change-password")}
               className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md w-full md:w-auto"
@@ -75,7 +75,7 @@ const DoctorDashboard = () => {
         </div>
 
         {/* Profile Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
           <div className="flex items-center gap-4">
             {doctor?.image ? (
               <img
@@ -95,7 +95,9 @@ const DoctorDashboard = () => {
               </h2>
               <p className="text-green-100">{doctor?.degree}</p>
               <p className="text-green-100">{doctor?.speciality}</p>
-              <p className="text-sm text-green-100">📧 {doctor?.email}</p>
+              <p className="text-sm text-green-100 mt-1">
+                📧 {doctor?.email}
+              </p>
             </div>
           </div>
 
@@ -110,7 +112,7 @@ const DoctorDashboard = () => {
       </div>
 
       {/* ================= STATS ================= */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         <StatCard
           icon={<Users size={24} />}
           title="Total Appointments"
@@ -132,35 +134,35 @@ const DoctorDashboard = () => {
       </div>
 
       {/* ================= APPOINTMENTS ================= */}
-      <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6">
-        <h2 className="text-xl md:text-2xl font-bold mb-4 border-b pb-2">
+      <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6">
+        <h2 className="text-xl md:text-2xl font-bold mb-5 border-b pb-2">
           📅 My Appointments
         </h2>
 
         {loading ? (
-          <p className="text-center text-gray-500 py-6">
+          <p className="text-center text-gray-500 py-10">
             Loading appointments...
           </p>
         ) : appointments.length === 0 ? (
-          <div className="text-center py-6">
+          <div className="text-center py-10">
             <p className="text-gray-500">No appointments scheduled yet.</p>
             <button
               onClick={() => navigate('/doctor-schedule')}
-              className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg"
+              className="mt-5 bg-blue-500 text-white px-6 py-2 rounded-lg"
             >
               Set Up Schedule
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {appointments.map(appt => (
               <div
                 key={appt._id}
-                className="border rounded-lg p-4 hover:shadow-md transition"
+                className="border rounded-xl p-4 md:p-5 hover:shadow-md transition"
               >
-                <div className="flex flex-col md:flex-row md:justify-between gap-3">
+                <div className="flex flex-col md:flex-row md:justify-between gap-4">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
                       <span className="font-semibold text-gray-800">
                         {appt.user?.name || 'Patient'}
                       </span>
