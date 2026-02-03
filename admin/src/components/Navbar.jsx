@@ -11,7 +11,7 @@ const Navbar = () => {
   const menuRef = useRef();
 
   // Close dropdown when clicking outside
-  useEffect(() => { 
+  useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setOpenMenu(false);
@@ -28,7 +28,8 @@ const Navbar = () => {
   };
 
   return (
-    <div className="flex justify-between items-center px-4 sm:px-10 py-3 border-b bg-white shadow-sm">
+    <div className="flex justify-between items-center px-3 sm:px-10 py-3 border-b bg-white shadow-sm">
+
       {/* Logo */}
       <div className="flex items-center gap-2 text-xs">
         <img
@@ -36,7 +37,7 @@ const Navbar = () => {
           src={assets.logo2}
           alt="logo"
         />
-        <p className="border px-2.5 py-0.5 rounded-full border-gray-500 text-gray-600">
+        <p className="hidden sm:block border px-2.5 py-0.5 rounded-full border-gray-500 text-gray-600">
           Admin
         </p>
       </div>
@@ -44,14 +45,17 @@ const Navbar = () => {
       {/* Admin Profile Section */}
       <div className="relative" ref={menuRef}>
         <div
-          className="flex items-center gap-3 cursor-pointer select-none"
+          className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none p-2 rounded-lg hover:bg-gray-100"
           onClick={() => setOpenMenu(!openMenu)}
         >
+
+
           <img
-            src={admin?.image || assets.defaultProfile} // fallback image
+            src={admin?.image || assets.defaultProfile}
             alt="profile"
-            className="w-10 h-10 rounded-full object-cover border"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border"
           />
+
           <div className="hidden sm:flex flex-col text-sm text-gray-700">
             <span className="font-semibold">{admin?.name || "Admin"}</span>
             <span className="text-gray-500 text-xs">Administrator</span>
@@ -61,20 +65,21 @@ const Navbar = () => {
 
         {/* Dropdown menu */}
         {openMenu && (
-          <div className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg py-2 z-50">
+          <div className="absolute right-0 mt-2 w-56 sm:w-44 bg-white border rounded-lg shadow-lg py-2 z-50">
+
             <button
               onClick={() => {
                 navigate("/profile"); // ✅ FIXED: Changed from /admin/profile to /profile
                 setOpenMenu(false); // ✅ Close menu after clicking
               }}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+              className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
             >
               <User size={16} /> Profile
             </button>
 
             <button
               onClick={logout}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-100 w-full text-left"
+              className="flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-100 w-full text-left"
             >
               <LogOut size={16} /> Logout
             </button>
