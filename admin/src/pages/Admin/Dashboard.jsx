@@ -51,49 +51,64 @@ const Dashboard = () => {
   const COLORS = ["#0088FE", "#FF69B4", "#00C49F", "#FFBB28"];
 
   return (
-    <div className="p-6 grid gap-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Top Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl shadow"><h2>Total Patients</h2><p>{stats.totalPatients || 0}</p></div>
-        <div className="bg-white p-4 rounded-xl shadow"><h2>Appointments</h2><p>{stats.totalAppointments || 0}</p></div>
-        <div className="bg-white p-4 rounded-xl shadow"><h2>Revenue</h2><p>₱{stats.revenue?.toLocaleString() || 0}</p></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-xl shadow flex flex-col items-start justify-center">
+          <h2 className="text-sm md:text-base font-semibold">Total Patients</h2>
+          <p className="text-lg md:text-xl font-bold">{stats.totalPatients || 0}</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow flex flex-col items-start justify-center">
+          <h2 className="text-sm md:text-base font-semibold">Appointments</h2>
+          <p className="text-lg md:text-xl font-bold">{stats.totalAppointments || 0}</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow flex flex-col items-start justify-center">
+          <h2 className="text-sm md:text-base font-semibold">Revenue</h2>
+          <p className="text-lg md:text-xl font-bold">₱{stats.revenue?.toLocaleString() || 0}</p>
+        </div>
       </div>
+
       {/* Charts */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-4 rounded-xl shadow">
-          <h2>Appointments Per Month</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={stats.monthlyAppointments || []}>
-              <CartesianGrid strokeDasharray="3 3"/>
-              <XAxis dataKey="_id" tickFormatter={m => `Month ${m}`} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="total" stroke="#4F46E5" />
-            </LineChart>
-          </ResponsiveContainer>
+          <h2 className="text-sm md:text-base font-semibold mb-2">Appointments Per Month</h2>
+          <div className="w-full h-64 md:h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={stats.monthlyAppointments || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="_id" tickFormatter={(m) => `Month ${m}`} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="total" stroke="#4F46E5" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
         <div className="bg-white p-4 rounded-xl shadow">
-          <h2>Patient Demographics</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={stats.demographics || []} cx="50%" cy="50%" outerRadius={100} fill="#8884d8" dataKey="value" label>
-                {(stats.demographics || []).map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          <h2 className="text-sm md:text-base font-semibold mb-2">Patient Demographics</h2>
+          <div className="w-full h-64 md:h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={stats.demographics || []} cx="50%" cy="50%" outerRadius={60} fill="#8884d8" dataKey="value" label>
+                  {(stats.demographics || []).map((entry, index) => (
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
+
       {/* Recent Appointments */}
-      <div className="bg-white p-4 rounded-xl shadow">
-        <h2>Recent Appointments</h2>
+      <div className="bg-white p-4 rounded-xl shadow overflow-x-auto">
+        <h2 className="text-sm md:text-base font-semibold mb-2">Recent Appointments</h2>
         {recentAppointments.length === 0 ? (
-          <p>No recent appointments found.</p>
+          <p className="text-sm md:text-base">No recent appointments found.</p>
         ) : (
-          <table className="w-full border-collapse">
+          <table className="min-w-[600px] w-full border-collapse text-sm md:text-base">
             <thead>
               <tr>
                 <th className="border p-2">Patient</th>
@@ -104,17 +119,21 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {recentAppointments.map(a => (
+              {recentAppointments.map((a) => (
                 <tr key={a._id}>
                   <td className="border p-2">{a.user?.name || "N/A"}</td>
                   <td className="border p-2">{a.doctor?.name || "N/A"}</td>
                   <td className="border p-2">{a.date ? new Date(a.date).toLocaleString() : "Unknown"}</td>
                   <td className="border p-2">
-                    <span className={`px-2 py-1 rounded ${
-                      a.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      a.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${
+                        a.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : a.status === "cancelled"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
                       {a.status || "Unknown"}
                     </span>
                   </td>
