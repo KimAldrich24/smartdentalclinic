@@ -248,10 +248,11 @@ const Sidebar = () => {
 
       {/* Mobile Sidebar */}
       {mobileOpen && (
-        <div className="md:hidden absolute top-0 left-0 w-64 h-screen bg-white border-r z-50 shadow-lg overflow-y-auto">
+        <div className="md:hidden absolute top-0 left-0 w-48 h-screen bg-white border-r z-50 shadow-lg overflow-y-auto">
           <div className="p-3">{links}</div>
         </div>
       )}
+
 
       {/* Desktop Sidebar */}
       <div className="hidden md:block min-h-screen bg-white border-r overflow-y-auto">
