@@ -21,118 +21,118 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/dashboard"
       >
-        <img src={assets.home_icon} alt="Dashboard" />
-        <p>Dashboard</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.home_icon} alt="Dashboard" />
+        <p className="text-sm md:text-base">Dashboard</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/all-appointment"
       >
-        <img src={assets.appointment_icon} alt="Appointments" />
-        <p>Appointments</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.appointment_icon} alt="Appointments" />
+        <p className="text-sm md:text-base">Appointments</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/doctor-list"
       >
-        <img src={assets.people_icon} alt="Doctors List" />
-        <p>Dentist List</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.people_icon} alt="Doctors List" />
+        <p className="text-sm md:text-base">Dentist List</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/services"
       >
-        <img src={assets.add_icon} alt="Services" />
-        <p>Services Maintenance</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.add_icon} alt="Services" />
+        <p className="text-sm md:text-base">Services Maintenance</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/patients"
       >
-        <img src={assets.appointment_icon} alt="Patients" />
-        <p>Patient Account Maintenance</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.appointment_icon} alt="Patients" />
+        <p className="text-sm md:text-base">Patient Account Maintenance</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/promotions"
       >
-        <img src={assets.add_icon} alt="Promotions" />
-        <p>Promotion Maintenance</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.add_icon} alt="Promotions" />
+        <p className="text-sm md:text-base">Promotion Maintenance</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/patient-history"
       >
-        <img src={assets.appointment_icon} alt="Patient History" />
-        <p>Patient History</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.appointment_icon} alt="Patient History" />
+        <p className="text-sm md:text-base">Patient History</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/faqs"
       >
-        <img src={assets.add_icon} alt="FAQ" />
-        <p>FAQ Maintenance</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.add_icon} alt="FAQ" />
+        <p className="text-sm md:text-base">FAQ Maintenance</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/prescriptions"
       >
-        <img src={assets.prescription_icon || assets.add_icon} alt="" />
-        <p>Prescription Maintenance</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.prescription_icon || assets.add_icon} alt="" />
+        <p className="text-sm md:text-base">Prescription Maintenance</p>
       </NavLink>
 
       {/* Admin-Only Links */}
@@ -141,40 +141,40 @@ const Sidebar = () => {
           <NavLink
             onClick={handleLinkClick}
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
                 isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
               }`
             }
             to="/add-doctor"
           >
-            <img src={assets.add_icon} alt="Add Doctor" />
-            <p>Add Dentist</p>
+            <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.add_icon} alt="Add Doctor" />
+            <p className="text-sm md:text-base">Add Dentist</p>
           </NavLink>
 
           <NavLink
             onClick={handleLinkClick}
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
                 isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
               }`
             }
             to="/user-maintenance"
           >
-            <img src={assets.people_icon} alt="User Maintenance" />
-            <p>User Maintenance</p>
+            <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.people_icon} alt="User Maintenance" />
+            <p className="text-sm md:text-base">User Maintenance</p>
           </NavLink>
 
           <NavLink
             onClick={handleLinkClick}
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
                 isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
               }`
             }
             to="/job-applications"
           >
-            <img src={assets.job_icon || assets.add_icon} alt="Job Applications" />
-            <p>Job Applications</p>
+            <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.job_icon || assets.add_icon} alt="Job Applications" />
+            <p className="text-sm md:text-base">Job Applications</p>
           </NavLink>
         </>
       )}
@@ -183,14 +183,14 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/contact"
       >
-        <img src={assets.contact_icon || assets.add_icon} alt="Contact" />
-        <p>Contact Info Maintenance</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.contact_icon || assets.add_icon} alt="Contact" />
+        <p className="text-sm md:text-base">Contact Info Maintenance</p>
       </NavLink>
 
       {/* Old links commented out as backup */}
@@ -198,77 +198,77 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/sales-report"
       >
-        <img src={assets.report_icon || assets.add_icon} alt="Sales Report" />
-        <p>Sales Report</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.report_icon || assets.add_icon} alt="Sales Report" />
+        <p className="text-sm md:text-base">Sales Report</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/pending-users"
       >
-        <img src={assets.pending_icon || assets.add_icon} alt="Pending Users" />
-        <p>Pending Users</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.pending_icon || assets.add_icon} alt="Pending Users" />
+        <p className="text-sm md:text-base">Pending Users</p>
       </NavLink>
       */}
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/staff-management"
       >
-        <img src={assets.pending_icon || assets.add_icon} alt="Staff Management" />
-        <p>👥 Staff Management</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.pending_icon || assets.add_icon} alt="Staff Management" />
+        <p className="text-sm md:text-base">👥 Staff Management</p>
       </NavLink>
 
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-3 py-3.5 px-3 md:px-9 cursor-pointer ${
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
             isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/admin/payment-proofs"
       >
-        <img src={assets.pending_icon || assets.add_icon} alt="Payment Proofs" />
-        <p>💳 Payment Proofs</p>
+        <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.pending_icon || assets.add_icon} alt="Payment Proofs" />
+        <p className="text-sm md:text-base">💳 Payment Proofs</p>
       </NavLink>
     </>
   );
 
   return (
     <>
-      {/* Mobile Hamburger */}
+      {/* Mobile Hamburger stays always hamburger */}
       <div className="md:hidden fixed top-2 left-2 z-50">
         <button onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          <Menu size={22} />
         </button>
       </div>
 
       {/* Mobile Sidebar */}
       {mobileOpen && (
-        <div className="md:hidden absolute top-16 left-0 w-40 h-[calc(100vh-4rem)] bg-white border-r z-50 shadow-lg overflow-y-auto rounded-r-md">
+        <div className="md:hidden absolute top-16 left-0 w-36 h-[calc(100vh-4rem)] bg-white border-r z-50 shadow-lg overflow-y-auto rounded-r-md">
           {/* Close Button Inside Sidebar */}
           <div className="flex justify-end p-2 border-b">
             <button onClick={() => setMobileOpen(false)}>
               <X size={20} />
             </button>
           </div>
-          <div className="p-2">{links}</div>
+          <div className="p-1">{links}</div>
         </div>
       )}
 
