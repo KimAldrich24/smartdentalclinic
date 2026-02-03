@@ -238,12 +238,12 @@ const Sidebar = () => {
   return (
     <>
       {/* Mobile Hamburger */}
-      <div className="md:hidden flex justify-between items-center bg-white border-b px-2 py-2">
-        <h1 className="font-semibold text-base">Menu</h1>
+      <div className="md:hidden fixed top-2 left-2 z-50">
         <button onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
+
 
 
       {/* Mobile Sidebar */}
