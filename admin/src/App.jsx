@@ -64,9 +64,11 @@ const AppContent = () => {
     return (
       <div>
         <Navbar />
-        <div className="flex items-start">
+        <div className="flex w-full">
           <Sidebar />
-          <div className="flex-1 p-4">
+
+          {/* 🔥 THIS LINE FIXES MOBILE OVERFLOW */}
+          <div className="flex-1 min-w-0 overflow-x-hidden p-4">
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/all-appointment" element={<AllAppointments />} />
