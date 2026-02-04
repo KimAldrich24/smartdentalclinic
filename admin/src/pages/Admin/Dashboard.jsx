@@ -2,7 +2,19 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 import { useNavigate } from "react-router-dom";
-import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
 
 const Dashboard = () => {
   const { aToken, setAToken, backendUrl } = useContext(AdminContext);
@@ -18,7 +30,10 @@ const Dashboard = () => {
 
     const fetchStats = async () => {
       try {
-        const res = await axios.get(`${backendUrl}/dashboard/stats`, { headers: { Authorization: `Bearer ${aToken}` } });
+        const res = await axios.get(
+          `${backendUrl}/dashboard/stats`,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
         setStats(res.data);
       } catch (err) {
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -31,7 +46,10 @@ const Dashboard = () => {
 
     const fetchRecent = async () => {
       try {
-        const res = await axios.get(`${backendUrl}/dashboard/recent-appointments`, { headers: { Authorization: `Bearer ${aToken}` } });
+        const res = await axios.get(
+          `${backendUrl}/dashboard/recent-appointments`,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
         setRecentAppointments(res.data);
       } catch (err) {
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -46,53 +64,76 @@ const Dashboard = () => {
     fetchRecent();
   }, [aToken, backendUrl, navigate, setAToken]);
 
-  if (!stats) return <p className="p-6">Loading dashboard...</p>;
+  if (!stats) return <p className="p-4">Loading dashboard...</p>;
 
   const COLORS = ["#0088FE", "#FF69B4", "#00C49F", "#FFBB28"];
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Top Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl shadow flex flex-col items-start justify-center">
-          <h2 className="text-sm md:text-base font-semibold">Total Patients</h2>
-          <p className="text-lg md:text-xl font-bold">{stats.totalPatients || 0}</p>
+    /* 🔒 Prevent global horizontal scroll */
+    <div className="w-full max-w-full overflow-x-hidden p-3 md:p-6 space-y-6">
+
+      {/* ================= TOP CARDS ================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="bg-white p-3 rounded-xl shadow">
+          <p className="text-xs text-gray-500">Total Patients</p>
+          <p className="text-lg font-bold">{stats.totalPatients || 0}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow flex flex-col items-start justify-center">
-          <h2 className="text-sm md:text-base font-semibold">Appointments</h2>
-          <p className="text-lg md:text-xl font-bold">{stats.totalAppointments || 0}</p>
+
+        <div className="bg-white p-3 rounded-xl shadow">
+          <p className="text-xs text-gray-500">Appointments</p>
+          <p className="text-lg font-bold">{stats.totalAppointments || 0}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow flex flex-col items-start justify-center">
-          <h2 className="text-sm md:text-base font-semibold">Revenue</h2>
-          <p className="text-lg md:text-xl font-bold">₱{stats.revenue?.toLocaleString() || 0}</p>
+
+        <div className="bg-white p-3 rounded-xl shadow">
+          <p className="text-xs text-gray-500">Revenue</p>
+          <p className="text-lg font-bold">
+            ₱{stats.revenue?.toLocaleString() || 0}
+          </p>
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-sm md:text-base font-semibold mb-2">Appointments Per Month</h2>
-          <div className="w-full h-64 md:h-80">
+      {/* ================= CHARTS ================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Line Chart */}
+        <div className="bg-white p-3 rounded-xl shadow">
+          <p className="text-sm font-semibold mb-2">Appointments Per Month</p>
+          <div className="w-full h-56 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats.monthlyAppointments || []}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="_id" tickFormatter={(m) => `Month ${m}`} />
+                <XAxis dataKey="_id" />
                 <YAxis />
                 <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="total" stroke="#4F46E5" />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="#4F46E5"
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-sm md:text-base font-semibold mb-2">Patient Demographics</h2>
-          <div className="w-full h-64 md:h-80">
+
+        {/* Pie Chart */}
+        <div className="bg-white p-3 rounded-xl shadow">
+          <p className="text-sm font-semibold mb-2">Patient Demographics</p>
+          <div className="w-full h-56 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={stats.demographics || []} cx="50%" cy="50%" outerRadius={60} fill="#8884d8" dataKey="value" label>
-                  {(stats.demographics || []).map((entry, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                <Pie
+                  data={stats.demographics || []}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={55}
+                  label
+                >
+                  {(stats.demographics || []).map((_, index) => (
+                    <Cell
+                      key={index}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -102,13 +143,13 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Recent Appointments */}
-      <div className="bg-white p-4 rounded-xl shadow overflow-x-auto">
-        <h2 className="text-sm md:text-base font-semibold mb-2">Recent Appointments</h2>
-        {recentAppointments.length === 0 ? (
-          <p className="text-sm md:text-base">No recent appointments found.</p>
-        ) : (
-          <table className="min-w-[600px] w-full border-collapse text-sm md:text-base">
+      {/* ================= RECENT APPOINTMENTS ================= */}
+      <div className="bg-white p-3 rounded-xl shadow">
+        <p className="text-sm font-semibold mb-2">Recent Appointments</p>
+
+        {/* 👇 Horizontal scroll ONLY inside table */}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-xs sm:text-sm border-collapse">
             <thead>
               <tr>
                 <th className="border p-2">Patient</th>
@@ -119,32 +160,44 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {recentAppointments.map((a) => (
-                <tr key={a._id}>
-                  <td className="border p-2">{a.user?.name || "N/A"}</td>
-                  <td className="border p-2">{a.doctor?.name || "N/A"}</td>
-                  <td className="border p-2">{a.date ? new Date(a.date).toLocaleString() : "Unknown"}</td>
-                  <td className="border p-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        a.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : a.status === "cancelled"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {a.status || "Unknown"}
-                    </span>
-                  </td>
-                  <td className="border p-2 font-semibold">
-                    ₱{a.finalPrice?.toLocaleString() || a.service?.price?.toLocaleString() || 0}
+              {recentAppointments.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center p-3">
+                    No recent appointments
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentAppointments.map((a) => (
+                  <tr key={a._id}>
+                    <td className="border p-2">{a.user?.name || "N/A"}</td>
+                    <td className="border p-2">{a.doctor?.name || "N/A"}</td>
+                    <td className="border p-2">
+                      {a.date
+                        ? new Date(a.date).toLocaleDateString()
+                        : "Unknown"}
+                    </td>
+                    <td className="border p-2">
+                      <span
+                        className={`px-2 py-1 rounded text-[10px] ${
+                          a.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : a.status === "cancelled"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {a.status || "Unknown"}
+                      </span>
+                    </td>
+                    <td className="border p-2 font-semibold">
+                      ₱{a.finalPrice?.toLocaleString() || 0}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
     </div>
   );
