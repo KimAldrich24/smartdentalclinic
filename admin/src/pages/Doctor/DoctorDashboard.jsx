@@ -50,7 +50,7 @@ const DoctorDashboard = () => {
     const fetchSchedule = async () => {
       if (!dToken) return;
       try {
-        const res = await fetch(`${backendUrl}/api/admin/my-schedule`, {
+        const res = await fetch(`${backendUrl}/api/admin/my-data`, {
           headers: { Authorization: `Bearer ${dToken}` },
         });
         const data = await res.json();
@@ -233,33 +233,34 @@ const DoctorDashboard = () => {
     📅 My Schedule (Set by Admin)
   </h2>
 
-  {Object.keys(schedule).length === 0 ? (
-    <p className="text-gray-500 text-center py-5">
-      No schedule set yet. Please contact admin.
-    </p>
-  ) : (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {Object.entries(schedule).map(([day, slots]) => (
-        <div key={day} className="border rounded-lg p-3">
-          <h3 className="font-semibold mb-2">{day}</h3>
-          {slots.length === 0 ? (
-            <p className="text-gray-500">No slots</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {slots.map((time) => (
-                <span
-                  key={time}
-                  className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
-                >
-                  {time}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )}
+  {schedule.length === 0 ? (
+  <p className="text-gray-500 text-center py-5">
+    No schedule set yet. Please contact admin.
+  </p>
+) : (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {schedule.map(s => (
+      <div key={s.date} className="border rounded-lg p-3">
+        <h3 className="font-semibold mb-2">{s.date}</h3>
+        {s.slots.length === 0 ? (
+          <p className="text-gray-500">No slots</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {s.slots.map((slot, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
+              >
+                {slot}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+)}
+
 </div>
     </div>
     
