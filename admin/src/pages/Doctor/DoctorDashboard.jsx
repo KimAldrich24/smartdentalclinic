@@ -12,6 +12,8 @@ const DoctorDashboard = () => {
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [schedule, setSchedule] = useState({});
+
 
   const handleLogout = () => {
     logoutDoctor();
@@ -43,6 +45,32 @@ const DoctorDashboard = () => {
   useEffect(() => {
     if (dToken) fetchAppointments();
   }, [dToken]);
+
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      if (!dToken) return;
+      try {
+        const res = await fetch(`${backendUrl}/api/admin/my-schedule`, {
+          headers: { Authorization: `Bearer ${dToken}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          setSchedule(data.schedule);
+        } else {
+          toast.error(data.message || "Failed to fetch schedule");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Error fetching schedule");
+      }
+    };
+  
+    if (dToken) {
+      fetchAppointments(); // already existing
+      fetchSchedule();      // ✅ fetch admin schedule
+    }
+  }, [dToken]);
+  
 
   return (
     <div className="min-h-[100dvh] max-w-6xl mx-auto px-4 py-6 md:p-6">
@@ -200,8 +228,45 @@ const DoctorDashboard = () => {
         )}
       </div>
     </div>
+    
   );
 };
+
+{/* ================= SCHEDULE ================= */}
+<div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mt-8">
+  <h2 className="text-xl md:text-2xl font-bold mb-5 border-b pb-2">
+    📅 My Schedule (Set by Admin)
+  </h2>
+
+  {Object.keys(schedule).length === 0 ? (
+    <p className="text-gray-500 text-center py-5">
+      No schedule set yet. Please contact admin.
+    </p>
+  ) : (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {Object.entries(schedule).map(([day, slots]) => (
+        <div key={day} className="border rounded-lg p-3">
+          <h3 className="font-semibold mb-2">{day}</h3>
+          {slots.length === 0 ? (
+            <p className="text-gray-500">No slots</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {slots.map((time) => (
+                <span
+                  key={time}
+                  className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
+                >
+                  {time}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
 
 /* ================= STAT CARD ================= */
 const StatCard = ({ icon, title, value, color }) => {

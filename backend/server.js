@@ -29,6 +29,7 @@ import staffRoutes from "./routes/staffRoutes.js"
 import adminStaffRoutes from "./routes/adminStaffRoutes.js"
 import { startScheduleCleanup } from './utils/scheduleCleanup.js' // ✅ ADD THIS
 import paymentProofRoutes from './routes/paymentProofRoutes.js';
+import scheduleRoutes from "./routes/scheduleRoutes.js"; // your new schedule router
 // Node Fetch for SMS
 import fetch from 'node-fetch'
 
@@ -89,6 +90,7 @@ app.use("/api/equipment", equipmentRoutes);
 app.use("/api/staff", staffRoutes)
 app.use("/api/admin/staff", adminStaffRoutes)
 app.use('/api/payment-proofs', paymentProofRoutes);
+app.use("/api/admin", scheduleRoutes); // ✅ important: same prefix as front-end expects
 app.use('/uploads', express.static('uploads'));
 // root endpoint
 app.get('/', (req, res) => {
