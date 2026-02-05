@@ -64,11 +64,12 @@ const AppContent = () => {
     return (
       <div>
         <Navbar />
-        <div className="flex w-full">
+        <div className="flex flex-col md:flex-row w-full">
+        <div className="hidden md:block">
           <Sidebar />
-
+         </div>
           {/* 🔥 THIS LINE FIXES MOBILE OVERFLOW */}
-          <div className="flex-1 min-w-0 overflow-x-hidden p-4">
+          <div className="flex-1 w-full min-w-0 p-4 overflow-auto">
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/all-appointment" element={<AllAppointments />} />
