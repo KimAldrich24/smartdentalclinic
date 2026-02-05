@@ -21,8 +21,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/dashboard"
@@ -34,8 +33,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/all-appointment"
@@ -47,8 +45,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/doctor-list"
@@ -60,8 +57,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/services"
@@ -73,8 +69,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/patients"
@@ -86,8 +81,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/promotions"
@@ -99,8 +93,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/patient-history"
@@ -112,8 +105,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/faqs"
@@ -125,8 +117,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/prescriptions"
@@ -141,8 +132,7 @@ const Sidebar = () => {
           <NavLink
             onClick={handleLinkClick}
             className={({ isActive }) =>
-              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-                isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
               }`
             }
             to="/add-doctor"
@@ -154,8 +144,24 @@ const Sidebar = () => {
           <NavLink
             onClick={handleLinkClick}
             className={({ isActive }) =>
-              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-                isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+              }`
+            }
+            to="/admin/schedules"
+          >
+            <img
+              className="w-5 h-5 md:w-auto md:h-auto"
+              src={assets.appointment_icon}
+              alt="Doctor Schedule"
+            />
+            <p className="text-sm md:text-base">Doctor Schedule</p>
+          </NavLink>
+
+
+          <NavLink
+            onClick={handleLinkClick}
+            className={({ isActive }) =>
+              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
               }`
             }
             to="/user-maintenance"
@@ -167,8 +173,7 @@ const Sidebar = () => {
           <NavLink
             onClick={handleLinkClick}
             className={({ isActive }) =>
-              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-                isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+              `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
               }`
             }
             to="/job-applications"
@@ -183,8 +188,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/contact"
@@ -225,8 +229,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/staff-management"
@@ -238,8 +241,7 @@ const Sidebar = () => {
       <NavLink
         onClick={handleLinkClick}
         className={({ isActive }) =>
-          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${
-            isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
           }`
         }
         to="/admin/payment-proofs"
