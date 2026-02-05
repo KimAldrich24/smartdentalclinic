@@ -5,7 +5,7 @@ import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js"; // ✅ 
 import { getAllPrescriptions } from "../controllers/prescriptionController.js";
 import User from "../models/userModel.js";
 import AuditTrail from "../models/auditModel.js";
-import { addDoctorSchedule, getDoctorSchedule } from "../controllers/adminScheduleController.js";
+import { addSchedule, getDoctorSchedule } from "../controllers/adminScheduleController.js";
 
 const router = express.Router();
 
@@ -70,7 +70,7 @@ router.put("/profile", adminAuthMiddleware, async (req, res) => {
 });
 
 // Save schedule for a doctor
-router.post("/add-schedule", adminAuthMiddleware, addDoctorSchedule);
+router.post("/add-schedule", adminAuthMiddleware, addSchedule);
 
 // Get schedule of a specific doctor
 router.get("/doctor-schedule/:doctorId", adminAuthMiddleware, getDoctorSchedule);
