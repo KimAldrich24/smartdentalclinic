@@ -1,31 +1,24 @@
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom"; // ✅ ADD THIS
+import { useParams } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
-import { AdminContext } from "../../context/AdminContext"; // ✅ ADD THIS
+import { AdminContext } from "../../context/AdminContext";
 
 const PatientHistory = () => {
   const { user, token } = useContext(AuthContext); // patient context
-  const { aToken } = useContext(AdminContext); // ✅ admin context
-  const { id } = useParams(); // ✅ get patient ID from URL
-  
+  const { aToken } = useContext(AdminContext); // admin context
+  const { id } = useParams(); // get patient ID from URL
+
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Determine which ID and token to use
-  const patientId = id || user?._id; // URL param takes priority
-  const authToken = aToken || token; // admin token or patient token
+  // Determine which ID and token to use
+  const patientId = id || user?._id;
+  const authToken = aToken || token;
 
-  console.log("🔍 PatientHistory component loaded");
-  console.log("👤 Patient ID from URL:", id);
-  console.log("👤 Patient ID from context:", user?._id);
-  console.log("📍 Using Patient ID:", patientId);
-  console.log("🔑 Using Token:", authToken);
-  
   useEffect(() => {
     const fetchRecords = async () => {
       if (!patientId) {
-        console.log("❌ No patient ID available");
         setLoading(false);
         return;
       }
@@ -38,7 +31,6 @@ const PatientHistory = () => {
           }
         );
 
-        console.log("📦 Patient Records Response:", res.data);
         setRecords(res.data.records || []);
       } catch (error) {
         console.error("❌ Error fetching records:", error);
@@ -50,23 +42,43 @@ const PatientHistory = () => {
     fetchRecords();
   }, [patientId, authToken]);
 
-  if (loading) return <p>Loading records...</p>;
+  if (loading)
+    return (
+      <div className="p-4 text-center text-gray-500">
+        Loading records...
+      </div>
+    );
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold mb-4">🦷 Tooth History</h2>
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
+      <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2">
+        🦷 Tooth History
+      </h2>
+
       {records.length === 0 ? (
-        <p>No completed dental history found.</p>
+        <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg text-center">
+          No completed dental history found.
+        </div>
       ) : (
-        <ul className="space-y-4">
+        <ul className="space-y-3 sm:space-y-4">
           {records.map((record) => (
             <li
               key={record._id}
-              className="p-4 border rounded-lg shadow-sm bg-white"
+              className="p-4 border rounded-xl shadow-sm bg-white flex flex-col gap-2 text-sm sm:text-base"
             >
-              <p><strong>Date:</strong> {new Date(record.date).toLocaleDateString()}</p>
-              <p><strong>Doctor:</strong> {record.doctor?.name || "N/A"}</p>
-              <p><strong>Notes:</strong> {record.notes}</p>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                <p className="font-medium text-gray-800">
+                  📅 {new Date(record.date).toLocaleDateString()}
+                </p>
+                <p className="text-gray-500 text-xs sm:text-sm">
+                  👨‍⚕️ {record.doctor?.name || "N/A"}
+                </p>
+              </div>
+
+              <div className="text-gray-700 leading-relaxed">
+                <span className="font-medium">Notes:</span>{" "}
+                {record.notes || "No notes provided."}
+              </div>
             </li>
           ))}
         </ul>
