@@ -49,42 +49,43 @@ const PatientHistory = () => {
   }
 
   return (
-    // ✅ KEY FIX: force width + allow scroll
-    <div className="w-full max-w-full overflow-x-auto">
-      <div className="p-4 sm:p-6 max-w-2xl mx-auto">
-        <h2 className="text-lg sm:text-xl font-semibold mb-4">
-          🦷 Tooth History
-        </h2>
+    <div className="w-full max-w-full px-3 sm:px-6">
+      <h2 className="text-lg font-semibold mb-4 text-gray-800">
+        🦷 Patient Dental History
+      </h2>
 
-        {records.length === 0 ? (
-          <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg text-center">
-            No completed dental history found.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {records.map((record) => (
-              <div
-                key={record._id}
-                className="w-full bg-white border rounded-xl shadow-sm p-4 text-sm sm:text-base"
-              >
-                <div className="flex flex-col gap-1 mb-2">
-                  <div className="font-semibold text-gray-800">
-                    📅 {new Date(record.date).toLocaleDateString()}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    👨‍⚕️ {record.doctor?.name || "N/A"}
-                  </div>
+      {records.length === 0 ? (
+        <div className="bg-gray-50 border rounded-lg p-4 text-center text-sm text-gray-500">
+          No dental history available.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {records.map((record) => (
+            <div
+              key={record._id}
+              className="w-full bg-white border rounded-2xl shadow-sm p-4 flex flex-col gap-3"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-start">
+                <div className="text-sm font-medium text-gray-800">
+                  📅 {new Date(record.date).toLocaleDateString()}
                 </div>
+                <div className="text-xs text-gray-500 text-right">
+                  👨‍⚕️ {record.doctor?.name || "N/A"}
+                </div>
+              </div>
 
-                <div className="text-gray-700 leading-relaxed break-words">
-                  <span className="font-medium">Notes:</span>{" "}
+              {/* Notes */}
+              <div className="text-sm text-gray-700 leading-relaxed break-words">
+                <span className="font-semibold text-gray-800">Notes:</span>
+                <div className="mt-1">
                   {record.notes || "No notes provided."}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
