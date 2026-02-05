@@ -1,7 +1,7 @@
 import express from "express";
 import Doctor from "../models/doctorModel.js"; // don't forget to import Doctor
 import { authMiddleware, protect } from "../middlewares/authMiddleware.js";
-import { addSchedule, getDoctorSchedule } from "../controllers/adminScheduleController.js";
+import { addSchedule, getDoctorSchedule, makeSlotAvailable } from "../controllers/adminScheduleController.js";
 
 
 const router = express.Router();
@@ -9,7 +9,7 @@ const router = express.Router();
 // Admin-only routes
 router.post("/add-schedule", authMiddleware, protect(["admin"]), addSchedule);
 router.get("/doctor-schedule/:doctorId", authMiddleware, protect(["admin"]), getDoctorSchedule);
-
+router.patch("/slot-available/:doctorId", authMiddleware, protect(["admin"]), makeSlotAvailable);
 // ✅ Doctor-only route to view their own schedule
 router.get("/my-schedule", authMiddleware, protect(["doctor"]), async (req, res) => {
     try {
