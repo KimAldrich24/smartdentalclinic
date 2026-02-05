@@ -15,20 +15,19 @@ const PromotionManagement = () => {
   });
   const [editingId, setEditingId] = useState(null);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL + "/api/promotions";
-  const servicesUrl = import.meta.env.VITE_BACKEND_URL + "/api/services";
+  const backendBase = import.meta.env.VITE_BACKEND_URL;
+  const promotionsUrl = backendBase + "/api/promotions";
+  const servicesUrl = backendBase + "/api/services";
 
-  // Fetch promotions
   const fetchPromotions = async () => {
     try {
-      const res = await axios.get(backendUrl);
+      const res = await axios.get(promotionsUrl);
       setPromotions(res.data);
     } catch (err) {
       console.error("Failed to fetch promotions:", err);
     }
   };
 
-  // Fetch services
   const fetchServices = async () => {
     try {
       const res = await axios.get(servicesUrl);
@@ -43,15 +42,14 @@ const PromotionManagement = () => {
     fetchServices();
   }, []);
 
-  // Add / Update promotion
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editingId) {
-        await axios.put(`${backendUrl}/${editingId}`, form);
+        await axios.put(`${promotionsUrl}/${editingId}`, form);
         setEditingId(null);
       } else {
-        await axios.post(backendUrl, form);
+        await axios.post(promotionsUrl, form);
       }
 
       setForm({
@@ -70,17 +68,16 @@ const PromotionManagement = () => {
     }
   };
 
-  // Delete promotion
   const handleDelete = async (id) => {
+    if (!window.confirm("Delete this promotion?")) return;
     try {
-      await axios.delete(`${backendUrl}/${id}`);
+      await axios.delete(`${promotionsUrl}/${id}`);
       fetchPromotions();
     } catch (err) {
       console.error("Error deleting promotion:", err);
     }
   };
 
-  // Edit promotion
   const handleEdit = (promo) => {
     setForm({
       title: promo.title,
@@ -94,19 +91,26 @@ const PromotionManagement = () => {
     setEditingId(promo._id);
   };
 
+  const getServiceNames = (ids = []) =>
+    ids
+      .map((id) => services.find((s) => s._id === id)?.name)
+      .filter(Boolean)
+      .join(", ") || "None";
+
   return (
-    <div className="p-4">
+    <div className="p-4 md:p-6">
       <h2 className="text-xl font-bold mb-4">Promotion Management</h2>
 
+      {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        className="mb-6 flex flex-wrap gap-3 items-end"
+        className="bg-white p-4 rounded shadow mb-6 grid grid-cols-1 md:grid-cols-2 gap-3"
       >
         <input
           placeholder="Title"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="border p-1"
+          className="border p-2 rounded"
           required
         />
 
@@ -114,30 +118,31 @@ const PromotionManagement = () => {
           placeholder="Description"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="border p-1"
+          className="border p-2 rounded"
           required
         />
 
-        {/* Discount Input + Helper Text */}
-        <div className="flex flex-col">
+        <div>
           <input
             type="number"
             placeholder="Discount %"
             value={form.discountPercentage}
-            onChange={(e) => {
-              const value = Number(e.target.value);
+            onChange={(e) =>
               setForm({
                 ...form,
-                discountPercentage: Math.min(50, Math.max(0, value)),
-              });
-            }}
-            className="border p-1 w-24"
+                discountPercentage: Math.min(
+                  50,
+                  Math.max(0, Number(e.target.value))
+                ),
+              })
+            }
+            className="border p-2 rounded w-full"
             min={0}
             max={50}
             required
           />
-          <p className="text-sm text-gray-500">
-            Maximum discount allowed is 50%
+          <p className="text-xs text-gray-500 mt-1">
+            Max discount is 50%
           </p>
         </div>
 
@@ -145,7 +150,7 @@ const PromotionManagement = () => {
           type="date"
           value={form.startDate}
           onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-          className="border p-1"
+          className="border p-2 rounded"
           required
         />
 
@@ -153,7 +158,7 @@ const PromotionManagement = () => {
           type="date"
           value={form.endDate}
           onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-          className="border p-1"
+          className="border p-2 rounded"
           required
         />
 
@@ -162,24 +167,25 @@ const PromotionManagement = () => {
           onChange={(e) =>
             setForm({ ...form, isActive: e.target.value === "true" })
           }
-          className="border p-1"
+          className="border p-2 rounded"
         >
           <option value="true">Active</option>
           <option value="false">Inactive</option>
         </select>
 
-        {/* Multi-select services */}
         <select
           multiple
           value={form.serviceIds}
-          onChange={(e) => {
-            const selected = Array.from(
-              e.target.selectedOptions,
-              (option) => option.value
-            );
-            setForm({ ...form, serviceIds: selected });
-          }}
-          className="border p-1 w-full md:w-1/2"
+          onChange={(e) =>
+            setForm({
+              ...form,
+              serviceIds: Array.from(
+                e.target.selectedOptions,
+                (o) => o.value
+              ),
+            })
+          }
+          className="border p-2 rounded md:col-span-2 h-32"
         >
           {services.map((s) => (
             <option key={s._id} value={s._id}>
@@ -188,71 +194,102 @@ const PromotionManagement = () => {
           ))}
         </select>
 
-        <p className="text-sm text-gray-500">
-          Hold Ctrl (Windows) or Cmd (Mac) to select multiple services
-        </p>
-
-        <button type="submit" className="bg-blue-500 text-white px-4 py-1">
-          {editingId ? "Update" : "Add"}
+        <button
+          type="submit"
+          className="bg-blue-500 text-white py-2 rounded md:col-span-2"
+        >
+          {editingId ? "Update Promotion" : "Add Promotion"}
         </button>
       </form>
 
-      <table className="table-auto border-collapse border border-gray-400 w-full">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="border p-2">Title</th>
-            <th className="border p-2">Description</th>
-            <th className="border p-2">Discount</th>
-            <th className="border p-2">Start Date</th>
-            <th className="border p-2">End Date</th>
-            <th className="border p-2">Status</th>
-            <th className="border p-2">Services</th>
-            <th className="border p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {promotions.map((p) => (
-            <tr key={p._id}>
-              <td className="border p-2">{p.title}</td>
-              <td className="border p-2">{p.description}</td>
-              <td className="border p-2">{p.discountPercentage}%</td>
-              <td className="border p-2">
-                {p.startDate.split("T")[0]}
-              </td>
-              <td className="border p-2">
-                {p.endDate.split("T")[0]}
-              </td>
-              <td className="border p-2">
-                {p.isActive ? "Active" : "Inactive"}
-              </td>
-              <td className="border p-2">
-                {p.serviceIds?.length
-                  ? p.serviceIds
-                      .map((id) => {
-                        const svc = services.find((s) => s._id === id);
-                        return svc ? svc.name : id;
-                      })
-                      .join(", ")
-                  : "None"}
-              </td>
-              <td className="border p-2 flex gap-1">
-                <button
-                  className="bg-yellow-500 text-white px-2"
-                  onClick={() => handleEdit(p)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="bg-red-500 text-white px-2"
-                  onClick={() => handleDelete(p._id)}
-                >
-                  Delete
-                </button>
-              </td>
+      {/* DESKTOP TABLE */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full border border-gray-300 bg-white rounded">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-2">Title</th>
+              <th className="border p-2">Description</th>
+              <th className="border p-2">Discount</th>
+              <th className="border p-2">Dates</th>
+              <th className="border p-2">Status</th>
+              <th className="border p-2">Services</th>
+              <th className="border p-2">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {promotions.map((p) => (
+              <tr key={p._id}>
+                <td className="border p-2">{p.title}</td>
+                <td className="border p-2">{p.description}</td>
+                <td className="border p-2">{p.discountPercentage}%</td>
+                <td className="border p-2">
+                  {p.startDate.split("T")[0]} →{" "}
+                  {p.endDate.split("T")[0]}
+                </td>
+                <td className="border p-2">
+                  {p.isActive ? "Active" : "Inactive"}
+                </td>
+                <td className="border p-2">
+                  {getServiceNames(p.serviceIds)}
+                </td>
+                <td className="border p-2 flex gap-2">
+                  <button
+                    onClick={() => handleEdit(p)}
+                    className="bg-yellow-500 text-white px-2 py-1 rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p._id)}
+                    className="bg-red-500 text-white px-2 py-1 rounded"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* MOBILE CARDS */}
+      <div className="md:hidden space-y-4">
+        {promotions.map((p) => (
+          <div
+            key={p._id}
+            className="bg-white p-4 rounded shadow border"
+          >
+            <p className="font-bold text-lg">{p.title}</p>
+            <p className="text-sm text-gray-600">{p.description}</p>
+
+            <div className="text-sm mt-2 space-y-1">
+              <p><b>Discount:</b> {p.discountPercentage}%</p>
+              <p>
+                <b>Dates:</b>{" "}
+                {p.startDate.split("T")[0]} →{" "}
+                {p.endDate.split("T")[0]}
+              </p>
+              <p><b>Status:</b> {p.isActive ? "Active" : "Inactive"}</p>
+              <p><b>Services:</b> {getServiceNames(p.serviceIds)}</p>
+            </div>
+
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => handleEdit(p)}
+                className="flex-1 bg-yellow-500 text-white py-1 rounded"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(p._id)}
+                className="flex-1 bg-red-500 text-white py-1 rounded"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
