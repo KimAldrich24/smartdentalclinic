@@ -2,47 +2,41 @@ import React, { useState, useEffect, useContext } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 
-const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const timeSlots = ["10:00 AM", "11:00 AM", "02:00 PM", "04:00 PM"];
-
 const AdminSchedule = () => {
-  const { doctors, aToken, backendUrl } = useContext(AdminContext);
-  const [selectedDoctor, setSelectedDoctor] = useState("");
-  const [schedule, setSchedule] = useState({});
+  const { doctors, backendUrl, aToken } = useContext(AdminContext);
 
-  // Fetch doctor schedule when a doctor is selected
+  const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [date, setDate] = useState("");
+  const [newSlot, setNewSlot] = useState("");
+  const [slots, setSlots] = useState([]);
+  const [schedule, setSchedule] = useState([]);
+
+  // Fetch doctor's schedule whenever a doctor is selected
   useEffect(() => {
-    const fetchSchedule = async () => {
-      if (!selectedDoctor) return;
-      try {
-        const res = await fetch(`${backendUrl}/api/admin/doctor-schedule/${selectedDoctor}`, {
-          headers: { Authorization: `Bearer ${aToken}` },
-        });
-        const data = await res.json();
-        if (res.ok && data.schedule) setSchedule(data.schedule);
-      } catch (err) {
-        console.error("Error fetching schedule:", err);
-      }
-    };
-    fetchSchedule();
+    if (!selectedDoctor) return;
+    fetch(`${backendUrl}/api/admin/doctor-schedule/${selectedDoctor}`, {
+      headers: { Authorization: `Bearer ${aToken}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setSchedule(data.schedule);
+      })
+      .catch(err => console.error(err));
   }, [selectedDoctor]);
 
-  // Toggle a time slot for a specific day
-  const toggleSlot = (day, time) => {
-    setSchedule(prev => {
-      const daySlots = prev[day] || [];
-      return {
-        ...prev,
-        [day]: daySlots.includes(time)
-          ? daySlots.filter(t => t !== time)
-          : [...daySlots, time],
-      };
-    });
+  // Add a slot for the selected date
+  const addSlot = () => {
+    if (!newSlot) return toast.error("Select a time first");
+    if (slots.includes(newSlot)) return toast.error("Time slot already added");
+    setSlots([...slots, newSlot]);
+    setNewSlot("");
   };
 
-  // Save schedule for selected doctor
+  // Save the schedule
   const saveSchedule = async () => {
-    if (!selectedDoctor) return toast.error("Select a doctor first");
+    if (!selectedDoctor || !date || slots.length === 0)
+      return toast.error("Select doctor, date, and add slots");
+
     try {
       const res = await fetch(`${backendUrl}/api/admin/add-schedule`, {
         method: "POST",
@@ -50,65 +44,128 @@ const AdminSchedule = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${aToken}`,
         },
-        body: JSON.stringify({ doctorId: selectedDoctor, schedule }),
+        body: JSON.stringify({ doctorId: selectedDoctor, schedule: { [date]: slots } }),
       });
       const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success("Schedule saved successfully!");
-      } else {
-        toast.error(data.message || "Failed to save schedule");
-      }
+      if (data.success) {
+        toast.success("Schedule added successfully!");
+        setSlots([]);
+        setDate("");
+        setSchedule(data.schedule);
+      } else toast.error(data.message);
     } catch (err) {
       console.error(err);
-      toast.error("Error saving schedule");
+      toast.error("Failed to save schedule");
+    }
+  };
+
+  // Admin can reset finished slots to available
+  const makeAvailable = async (date, time) => {
+    try {
+      const res = await fetch(`${backendUrl}/api/admin/slot-available/${selectedDoctor}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${aToken}`,
+        },
+        body: JSON.stringify({ date, time }),
+      });
+      const data = await res.json();
+      if (data.success) setSchedule(data.schedule);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update slot");
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-2xl p-6 space-y-6">
-      <h2 className="text-2xl font-semibold text-gray-700 border-b pb-2">Set Doctor Schedule</h2>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <h2 className="text-2xl font-bold mb-4">Admin Schedule</h2>
 
       {/* Doctor selector */}
       <select
         value={selectedDoctor}
-        onChange={(e) => setSelectedDoctor(e.target.value)}
-        className="w-full border rounded-lg p-2"
+        onChange={e => setSelectedDoctor(e.target.value)}
+        className="border p-2 rounded w-full"
       >
-        <option value="">Select a doctor</option>
-        {doctors.map(doc => (
-          <option key={doc._id} value={doc._id}>{doc.name}</option>
+        <option value="">Select Doctor</option>
+        {doctors.map(d => (
+          <option key={d._id} value={d._id}>{d.name}</option>
         ))}
       </select>
 
-      {/* Schedule UI */}
-      {selectedDoctor && weekdays.map(day => (
-        <div key={day} className="space-y-2">
-          <h3 className="font-medium">{day}</h3>
-          <div className="flex flex-wrap gap-2">
-            {timeSlots.map(time => (
-              <button
-                key={time}
-                type="button"
-                onClick={() => toggleSlot(day, time)}
-                className={`px-3 py-1 rounded-lg border ${
-                  schedule[day]?.includes(time)
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100"
-                }`}
-              >
-                {time}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+      {/* Date picker */}
+      <input
+        type="date"
+        value={date}
+        onChange={e => setDate(e.target.value)}
+        className="border p-2 rounded w-full mt-2"
+      />
 
+      {/* Time slot input */}
+      <div className="flex gap-2 mt-2">
+        <input
+          type="time"
+          value={newSlot}
+          onChange={e => setNewSlot(e.target.value)}
+          className="border p-2 rounded flex-1"
+        />
+        <button onClick={addSlot} className="bg-green-500 px-4 py-2 rounded text-white">
+          Add
+        </button>
+      </div>
+
+      {/* Added slots */}
+      {slots.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {slots.map(s => (
+            <span key={s} className="bg-blue-100 px-3 py-1 rounded">{s}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Save schedule */}
       <button
         onClick={saveSchedule}
-        className="w-full bg-blue-500 text-white font-medium py-2 rounded-lg hover:bg-blue-600 transition"
+        className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
       >
         Save Schedule
       </button>
+
+      {/* Existing schedule */}
+      <div className="mt-6">
+        <h3 className="font-semibold mb-2">Doctor Schedule</h3>
+        {schedule.length === 0 ? (
+          <p className="text-gray-500">No schedule yet.</p>
+        ) : (
+          schedule.map(s => (
+            <div key={s.date} className="border p-3 rounded mb-2">
+              <p className="font-semibold">{s.date}</p>
+              <div className="flex flex-wrap gap-2">
+                {s.slots.map(slot => (
+                  <span
+                    key={slot.time}
+                    className={`px-3 py-1 rounded ${
+                      slot.status === "finished" ? "bg-gray-300" :
+                      slot.status === "booked" ? "bg-blue-300" : "bg-green-200"
+                    }`}
+                  >
+                    {slot.time} ({slot.status})
+                    {slot.status === "finished" && (
+                      <button
+                        onClick={() => makeAvailable(s.date, slot.time)}
+                        className="ml-2 text-red-500"
+                      >
+                        Available
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
