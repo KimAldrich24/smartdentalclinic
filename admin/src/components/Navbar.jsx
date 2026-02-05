@@ -2,9 +2,9 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import { AdminContext } from "../context/AdminContext";
 import { assets } from "../assets/assets.js";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, User } from "lucide-react";
+import { ChevronDown, LogOut, User, Menu } from "lucide-react"; // ✅ Imported Menu icon
 
-const Navbar = () => {
+const Navbar = ({ onBurgerClick }) => { // ✅ Accept burger click prop
   const { aToken, setAToken, admin } = useContext(AdminContext);
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState(false);
@@ -30,8 +30,17 @@ const Navbar = () => {
   return (
     <div className="flex justify-between items-center px-3 sm:px-10 py-3 border-b bg-white shadow-sm">
 
-      {/* Logo */}
-      <div className="flex items-center gap-2 text-xs">
+      {/* Left: Burger + Logo */}
+      <div className="flex items-center gap-2">
+        {/* Burger button: visible only on mobile */}
+        <button
+          className="md:hidden p-2 mr-2 rounded-md hover:bg-gray-100"
+          onClick={onBurgerClick} // ✅ Trigger sidebar toggle
+        >
+          <Menu size={24} />
+        </button>
+
+        {/* Logo */}
         <img
           className="w-24 sm:w-28 md:w-32 cursor-pointer"
           src={assets.logo2}
@@ -48,14 +57,11 @@ const Navbar = () => {
           className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none p-2 rounded-lg hover:bg-gray-100"
           onClick={() => setOpenMenu(!openMenu)}
         >
-
-
           <img
             src={admin?.image || assets.defaultProfile}
             alt="profile"
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border"
           />
-
           <div className="hidden sm:flex flex-col text-sm text-gray-700">
             <span className="font-semibold">{admin?.name || "Admin"}</span>
             <span className="text-gray-500 text-xs">Administrator</span>
@@ -66,11 +72,10 @@ const Navbar = () => {
         {/* Dropdown menu */}
         {openMenu && (
           <div className="absolute right-0 mt-2 w-56 sm:w-44 bg-white border rounded-lg shadow-lg py-2 z-50">
-
             <button
               onClick={() => {
-                navigate("/profile"); // ✅ FIXED: Changed from /admin/profile to /profile
-                setOpenMenu(false); // ✅ Close menu after clicking
+                navigate("/profile");
+                setOpenMenu(false);
               }}
               className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
             >
