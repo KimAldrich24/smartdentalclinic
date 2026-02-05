@@ -29,7 +29,6 @@ import staffRoutes from "./routes/staffRoutes.js"
 import adminStaffRoutes from "./routes/adminStaffRoutes.js"
 import { startScheduleCleanup } from './utils/scheduleCleanup.js' // ✅ ADD THIS
 import paymentProofRoutes from './routes/paymentProofRoutes.js';
-import doctorScheduleRoutes from './routes/doctorScheduleRoutes.js';
 // Node Fetch for SMS
 import fetch from 'node-fetch'
 
