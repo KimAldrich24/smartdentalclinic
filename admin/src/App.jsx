@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -54,7 +54,9 @@ const AppContent = () => {
   const { sToken, staff } = useContext(StaffContext);
   const { user, token } = useContext(AuthContext);
 
-  // ✅ Wait until role is decoded
+  const [sidebarOpen, setSidebarOpen] = useState(false); // 🔥 MOBILE SIDEBAR STATE
+
+  // Wait until role is decoded
   if (aToken && userRole === null) {
     return <div className="p-6 text-center text-gray-600">Loading admin dashboard...</div>;
   }
@@ -62,40 +64,62 @@ const AppContent = () => {
   // ✅ ADMIN ROUTES
   if (aToken && userRole === "admin") {
     return (
-      <div>
-        <Navbar />
-        <div className="flex flex-col md:flex-row w-full">
-        <div className="hidden md:block">
-          <Sidebar />
-         </div>
-          {/* 🔥 THIS LINE FIXES MOBILE OVERFLOW */}
-          <div className="flex-1 w-full min-w-0 p-4 overflow-auto">
-            <Routes>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/all-appointment" element={<AllAppointments />} />
-              <Route path="/add-doctor" element={<AddDoctor />} />
-              <Route path="/doctor-list" element={<DoctorsList />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/patients" element={<Patients />} />
-              <Route path="/promotions" element={<PromotionManagement />} />
-              <Route path="/patient-history" element={<PatientsList />} />
-              <Route path="/patient-history/:id" element={<PatientHistory />} />
-              <Route path="/faqs" element={<AdminFaq />} />
-              <Route path="/profile" element={<AdminProfile />} />
-              <Route path="/contact" element={<AdminContact />} />
-              <Route path="/prescriptions" element={<AdminPrescriptions />} />
-              <Route path="/appointments" element={<AdminAppointments />} />
-              <Route path="/sales-report" element={<AdminSalesReport />} />
-              <Route path="/audit-trail" element={<AdminAuditTrail />} />
-              <Route path="/equipment" element={<AdminEquipment />} />
-              <Route path="/pending-users" element={<PendingUsers />} />
-              <Route path="/user-maintenance" element={<UserMaintenance />} />
-              <Route path="/job-applications" element={<AdminJobApplications />} />
-              <Route path="/staff-management" element={<StaffManagement />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/admin/payment-proofs" element={<AdminPaymentProofs />} />
-            </Routes>
+      <div className="flex flex-col md:flex-row w-full min-h-screen">
+        {/* Navbar */}
+        <Navbar onBurgerClick={() => setSidebarOpen(!sidebarOpen)} />
+
+        {/* Mobile Sidebar overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/25 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar */}
+        <div>
+          {/* Desktop Sidebar */}
+          <div className="hidden md:block w-64">
+            <Sidebar />
           </div>
+
+          {/* Mobile Sidebar */}
+          <div
+            className={`fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 md:hidden ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            <Sidebar />
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 w-full min-w-0 p-4 overflow-auto">
+          <Routes>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/all-appointment" element={<AllAppointments />} />
+            <Route path="/add-doctor" element={<AddDoctor />} />
+            <Route path="/doctor-list" element={<DoctorsList />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/patients" element={<Patients />} />
+            <Route path="/promotions" element={<PromotionManagement />} />
+            <Route path="/patient-history" element={<PatientsList />} />
+            <Route path="/patient-history/:id" element={<PatientHistory />} />
+            <Route path="/faqs" element={<AdminFaq />} />
+            <Route path="/profile" element={<AdminProfile />} />
+            <Route path="/contact" element={<AdminContact />} />
+            <Route path="/prescriptions" element={<AdminPrescriptions />} />
+            <Route path="/appointments" element={<AdminAppointments />} />
+            <Route path="/sales-report" element={<AdminSalesReport />} />
+            <Route path="/audit-trail" element={<AdminAuditTrail />} />
+            <Route path="/equipment" element={<AdminEquipment />} />
+            <Route path="/pending-users" element={<PendingUsers />} />
+            <Route path="/user-maintenance" element={<UserMaintenance />} />
+            <Route path="/job-applications" element={<AdminJobApplications />} />
+            <Route path="/staff-management" element={<StaffManagement />} />
+            <Route path="/admin/payment-proofs" element={<AdminPaymentProofs />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </div>
       </div>
     );
@@ -107,11 +131,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         <Route path="/doctor-schedule" element={<DoctorSchedule />} />
-
-        <Route
-          path="/doctor-change-password"
-          element={<DoctorChangePassword />}
-        />
+        <Route path="/doctor-change-password" element={<DoctorChangePassword />} />
         <Route path="*" element={<Navigate to="/doctor-dashboard" replace />} />
       </Routes>
     );
@@ -127,12 +147,12 @@ const AppContent = () => {
     );
   }
 
-  // ✅ PUBLIC ROUTES (INCLUDING ADMIN REGISTER)
+  // ✅ PUBLIC ROUTES
   return (
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/admin-register" element={<AdminRegister />} /> {/* ✅ MOVED HERE */}
+      <Route path="/admin-register" element={<AdminRegister />} />
       <Route path="/staff-login" element={<Login />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
