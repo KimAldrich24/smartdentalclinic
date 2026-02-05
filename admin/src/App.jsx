@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useContext, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -22,6 +23,7 @@ import Services from "./pages/Admin/ServicesMaintenance";
 import Patients from "./pages/Admin/Patients";
 import PromotionManagement from "./pages/Admin/PromotionManagement";
 import PatientsList from "./pages/Admin/PatientsList";
+import PatientHistory from "./pages/Admin/PatientHistory";
 import AdminFaq from "./pages/Admin/AdminFaq";
 import AdminPrescriptions from "./pages/Admin/AdminPrescriptions";
 import UserMaintenance from "./pages/Admin/UserMaintenance";
@@ -34,14 +36,14 @@ import AdminAuditTrail from "./pages/Admin/AdminAuditTrail";
 import AdminEquipment from "./pages/Admin/AdminEquipment";
 import PendingUsers from "./pages/Admin/PendingUsers";
 import StaffManagement from "./pages/Admin/StaffManagement";
-import PatientHistory from "./pages/Admin/PatientHistory";
-import AdminRegister from './pages/Admin/AdminRegister';
-import AdminPaymentProofs from './pages/Admin/AdminPaymentProofs';
+import AdminRegister from "./pages/Admin/AdminRegister";
+import AdminPaymentProofs from "./pages/Admin/AdminPaymentProofs";
 
 // Doctor Pages
 import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
 import DoctorSchedule from "./pages/Doctor/DoctorSchedule";
 import DoctorChangePassword from "./pages/Doctor/DoctorChangePassword";
+
 // Staff Pages
 import StaffDashboard from "./pages/Staff/StaffDashboard";
 
@@ -54,7 +56,7 @@ const AppContent = () => {
   const { sToken, staff } = useContext(StaffContext);
   const { user, token } = useContext(AuthContext);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false); // 🔥 MOBILE SIDEBAR STATE
+  const [sidebarOpen, setSidebarOpen] = useState(false); // MOBILE SIDEBAR STATE
 
   // Wait until role is decoded
   if (aToken && userRole === null) {
@@ -64,62 +66,65 @@ const AppContent = () => {
   // ✅ ADMIN ROUTES
   if (aToken && userRole === "admin") {
     return (
-      <div className="flex flex-col md:flex-row w-full min-h-screen">
-        {/* Navbar */}
-        <Navbar onBurgerClick={() => setSidebarOpen(!sidebarOpen)} />
-
-        {/* Mobile Sidebar overlay */}
+      <div className="flex h-screen overflow-hidden">
+        {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/25 z-40 md:hidden"
+            className="fixed inset-0 bg-black/30 z-40 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* Sidebar */}
-        <div>
-          {/* Desktop Sidebar */}
-          <div className="hidden md:block w-64">
+        <div className="flex-shrink-0">
+          {/* Desktop sidebar */}
+          <div className="hidden md:block w-64 border-r border-gray-200">
             <Sidebar />
           </div>
 
-          {/* Mobile Sidebar */}
+          {/* Mobile sidebar */}
           <div
-            className={`fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 md:hidden ${
+            className={`fixed inset-y-0 left-0 w-64 bg-white z-50 transform transition-transform duration-300 md:hidden ${
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
-            <Sidebar />
+            <Sidebar closeSidebar={() => setSidebarOpen(false)} />
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 w-full min-w-0 p-4 overflow-auto">
-          <Routes>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/all-appointment" element={<AllAppointments />} />
-            <Route path="/add-doctor" element={<AddDoctor />} />
-            <Route path="/doctor-list" element={<DoctorsList />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/patients" element={<Patients />} />
-            <Route path="/promotions" element={<PromotionManagement />} />
-            <Route path="/patient-history" element={<PatientsList />} />
-            <Route path="/patient-history/:id" element={<PatientHistory />} />
-            <Route path="/faqs" element={<AdminFaq />} />
-            <Route path="/profile" element={<AdminProfile />} />
-            <Route path="/contact" element={<AdminContact />} />
-            <Route path="/prescriptions" element={<AdminPrescriptions />} />
-            <Route path="/appointments" element={<AdminAppointments />} />
-            <Route path="/sales-report" element={<AdminSalesReport />} />
-            <Route path="/audit-trail" element={<AdminAuditTrail />} />
-            <Route path="/equipment" element={<AdminEquipment />} />
-            <Route path="/pending-users" element={<PendingUsers />} />
-            <Route path="/user-maintenance" element={<UserMaintenance />} />
-            <Route path="/job-applications" element={<AdminJobApplications />} />
-            <Route path="/staff-management" element={<StaffManagement />} />
-            <Route path="/admin/payment-proofs" element={<AdminPaymentProofs />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+        {/* Main content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Navbar */}
+          <Navbar onBurgerClick={() => setSidebarOpen(!sidebarOpen)} />
+
+          {/* Page content */}
+          <main className="flex-1 overflow-auto p-4 md:p-6 bg-gray-50">
+            <Routes>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/all-appointment" element={<AllAppointments />} />
+              <Route path="/add-doctor" element={<AddDoctor />} />
+              <Route path="/doctor-list" element={<DoctorsList />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/patients" element={<Patients />} />
+              <Route path="/promotions" element={<PromotionManagement />} />
+              <Route path="/patient-history" element={<PatientsList />} />
+              <Route path="/patient-history/:id" element={<PatientHistory />} />
+              <Route path="/faqs" element={<AdminFaq />} />
+              <Route path="/profile" element={<AdminProfile />} />
+              <Route path="/contact" element={<AdminContact />} />
+              <Route path="/prescriptions" element={<AdminPrescriptions />} />
+              <Route path="/appointments" element={<AdminAppointments />} />
+              <Route path="/sales-report" element={<AdminSalesReport />} />
+              <Route path="/audit-trail" element={<AdminAuditTrail />} />
+              <Route path="/equipment" element={<AdminEquipment />} />
+              <Route path="/pending-users" element={<PendingUsers />} />
+              <Route path="/user-maintenance" element={<UserMaintenance />} />
+              <Route path="/job-applications" element={<AdminJobApplications />} />
+              <Route path="/staff-management" element={<StaffManagement />} />
+              <Route path="/admin/payment-proofs" element={<AdminPaymentProofs />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </main>
         </div>
       </div>
     );
