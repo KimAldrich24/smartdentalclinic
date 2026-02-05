@@ -81,7 +81,7 @@ app.use("/api/prescriptions", prescriptionRoutes)
 app.use("/api/contact", contactRoutes)
 app.use("/api/doctors/auth", doctorAuthRoutes)
 app.use("/api/job-applications", jobApplicationRoutes)
-app.use("/api/doctor-schedule", doctorScheduleRoutes)
+
 app.use("/api/admin/appointments", adminAppointmentRoutes)
 app.use("/api/sales", salesRoutes);
 app.use("/api/audit", auditRoutes);
