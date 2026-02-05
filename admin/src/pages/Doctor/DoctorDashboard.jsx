@@ -227,12 +227,7 @@ const DoctorDashboard = () => {
           </div>
         )}
       </div>
-    </div>
-    
-  );
-};
-
-{/* ================= SCHEDULE ================= */}
+      {/* ================= SCHEDULE ================= */}
 <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mt-8">
   <h2 className="text-xl md:text-2xl font-bold mb-5 border-b pb-2">
     📅 My Schedule (Set by Admin)
@@ -266,6 +261,12 @@ const DoctorDashboard = () => {
     </div>
   )}
 </div>
+    </div>
+    
+  );
+};
+
+
 
 
 /* ================= STAT CARD ================= */
