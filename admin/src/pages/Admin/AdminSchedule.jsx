@@ -14,6 +14,7 @@ const AdminSchedule = () => {
   // ---------------- Fetch doctor's schedule ----------------
   const fetchDoctorSchedule = async (doctorId) => {
     if (!doctorId) return;
+  
     try {
       const res = await fetch(
         `${backendUrl}/api/admin/doctor-schedule/${doctorId}`,
@@ -21,24 +22,33 @@ const AdminSchedule = () => {
           headers: { Authorization: `Bearer ${aToken}` },
         }
       );
+  
       const data = await res.json();
+  
       if (data.success && data.schedule) {
-        // data.schedule is probably an object { "2026-02-06": ["09:00","10:00"] }
-        const normalizedSchedule = Object.entries(data.schedule).map(
+        // Ensure it's always an object, then convert to array
+        const scheduleObj = typeof data.schedule === "object" ? data.schedule : {};
+  
+        const normalizedSchedule = Object.entries(scheduleObj).map(
           ([dateKey, slotArr]) => ({
             date: dateKey,
-            slots: slotArr.map((time) => ({ time, status: "available" })),
+            slots: Array.isArray(slotArr)
+              ? slotArr.map((time) => ({ time, status: "available" }))
+              : [],
           })
         );
+  
         setSchedule(normalizedSchedule);
       } else {
-        setSchedule([]);
+        setSchedule([]); // fallback
       }
     } catch (err) {
       console.error(err);
+      setSchedule([]); // fallback
       toast.error("Failed to fetch schedule");
     }
   };
+  
 
   useEffect(() => {
     if (selectedDoctor) fetchDoctorSchedule(selectedDoctor);
