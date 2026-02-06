@@ -58,9 +58,7 @@ const AdminSchedule = () => {
       return toast.error("Select doctor, date, and add slots");
 
     try {
-      // --- FIXED: send array of strings ONLY ---
-      const slotsPayload = slots; // ["09:00", "10:00"]
-
+      // --- FIXED: send schedule array with date and slots strings ---
       const res = await fetch(`${backendUrl}/api/admin/add-schedule`, {
         method: "POST",
         headers: {
@@ -69,8 +67,12 @@ const AdminSchedule = () => {
         },
         body: JSON.stringify({
           doctorId: selectedDoctor,
-          date: date,
-          slots: slotsPayload,
+          schedule: [
+            {
+              date: date,
+              slots: slots, // ["09:00", "10:00"]
+            },
+          ],
         }),
       });
 
