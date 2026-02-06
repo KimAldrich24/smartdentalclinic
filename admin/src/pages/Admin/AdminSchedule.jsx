@@ -65,7 +65,7 @@ const AdminSchedule = () => {
       return toast.error("Select doctor, date, and add slots");
 
     try {
-      const res = await fetch(`${backendUrl}/api/admin/schedule`, {
+      const res = await fetch(`${backendUrl}/api/admin/add-schedule`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
