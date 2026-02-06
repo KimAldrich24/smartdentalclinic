@@ -5,28 +5,55 @@ export const addSchedule = async (req, res) => {
   try {
     const { doctorId, schedule } = req.body;
 
-    if (!doctorId || !schedule)
-      return res.status(400).json({ success: false, message: "Doctor and schedule are required" });
+    if (!doctorId || !schedule) {
+      return res.status(400).json({
+        success: false,
+        message: "Doctor and schedule are required",
+      });
+    }
 
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
 
-    // schedule expected as { "YYYY-MM-DD": ["10:00", "11:00"] }
+    // ✅ IMPORTANT FIX
+    if (!doctor.schedule) {
+      doctor.schedule = [];
+    }
+
+    // expected: { "YYYY-MM-DD": ["10:00", "11:00"] }
     const date = Object.keys(schedule)[0];
-    const slots = schedule[date].map(time => ({ time, status: "available" }));
+    const slots = schedule[date].map((time) => ({
+      time,
+      status: "available",
+    }));
 
-    if (!date || slots.length === 0)
-      return res.status(400).json({ success: false, message: "Date and slots are required" });
+    if (!date || slots.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Date and slots are required",
+      });
+    }
 
-    // Check if this date already exists in doctor's schedule
-    const existingIndex = doctor.schedule.findIndex(s => s.date === date);
+    const existingIndex = doctor.schedule.findIndex(
+      (s) => s.date === date
+    );
 
     if (existingIndex !== -1) {
       const existingSlots = doctor.schedule[existingIndex].slots;
+
       const mergedSlots = [
         ...existingSlots,
-        ...slots.filter(newSlot => !existingSlots.some(s => s.time === newSlot.time))
+        ...slots.filter(
+          (newSlot) =>
+            !existingSlots.some((s) => s.time === newSlot.time)
+        ),
       ];
+
       doctor.schedule[existingIndex].slots = mergedSlots;
     } else {
       doctor.schedule.push({ date, slots });
@@ -36,10 +63,14 @@ export const addSchedule = async (req, res) => {
 
     res.json({ success: true, schedule: doctor.schedule });
   } catch (err) {
-    console.error("Error adding schedule:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ ADD SCHEDULE ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
+
 
 // ----------------- Get Doctor Schedule -----------------
 export const getDoctorSchedule = async (req, res) => {
