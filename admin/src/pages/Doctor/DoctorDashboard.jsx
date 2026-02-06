@@ -12,7 +12,7 @@ const DoctorDashboard = () => {
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [schedule, setSchedule] = useState([]); // ✅ Initialize as array
+  const [schedule, setSchedule] = useState([]); // schedule array
 
   const handleLogout = () => {
     logoutDoctor();
@@ -20,7 +20,9 @@ const DoctorDashboard = () => {
     navigate('/login');
   };
 
+  // Fetch appointments
   const fetchAppointments = async () => {
+    if (!dToken) return;
     try {
       setLoading(true);
       const res = await fetch(`${backendUrl}/api/appointments/doctor/my-appointments`, {
@@ -41,33 +43,42 @@ const DoctorDashboard = () => {
     }
   };
 
+  // Fetch schedule
   const fetchSchedule = async () => {
     if (!dToken) return;
     try {
-      const res = await fetch(`${backendUrl}/api/doctor/my-data`, { // correct route
+      const res = await fetch(`${backendUrl}/api/doctor/my-data`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
-  
+
       if (data.success) {
-        const scheduleArray = (data.schedule || []).map(s => ({
-          _id: s._id,
-          date: s.date,
-          slots: s.slots || [],
-        }));
+        let scheduleArray = [];
+
+        if (Array.isArray(data.schedule)) {
+          scheduleArray = data.schedule.map(s => ({
+            _id: s._id,
+            date: s.date,
+            slots: s.slots || [],
+          }));
+        } else if (typeof data.schedule === 'object' && data.schedule !== null) {
+          scheduleArray = Object.entries(data.schedule).map(([date, slots]) => ({
+            date,
+            slots: Array.isArray(slots) ? slots : [],
+          }));
+        }
+
         setSchedule(scheduleArray);
       } else {
         toast.error(data.message || 'Failed to fetch schedule');
+        setSchedule([]);
       }
     } catch (err) {
       console.error('Error fetching schedule:', err);
       toast.error('Error fetching schedule');
+      setSchedule([]);
     }
   };
-
-  useEffect(() => {
-    if (dToken) fetchAppointments();
-  }, [dToken]);
 
   useEffect(() => {
     if (dToken) {
