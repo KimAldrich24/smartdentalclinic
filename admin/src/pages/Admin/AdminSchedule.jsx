@@ -11,17 +11,30 @@ const AdminSchedule = () => {
   const [slots, setSlots] = useState([]);
   const [schedule, setSchedule] = useState([]);
 
-  // Fetch doctor's schedule whenever a doctor is selected
+  // Fetch schedule for a doctor
+  const fetchDoctorSchedule = async (doctorId) => {
+    try {
+      const res = await fetch(`${backendUrl}/api/admin/doctor-schedule/${doctorId}`, {
+        headers: { Authorization: `Bearer ${aToken}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Ensure it's always an array of {date, slots}
+        const scheduleArray = Object.entries(data.schedule || {}).map(([date, slots]) => ({
+          date,
+          slots,
+        }));
+        setSchedule(scheduleArray);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch schedule");
+    }
+  };
+
+  // Fetch when selectedDoctor changes
   useEffect(() => {
-    if (!selectedDoctor) return;
-    fetch(`${backendUrl}/api/admin/doctor-schedule/${selectedDoctor}`, {
-      headers: { Authorization: `Bearer ${aToken}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setSchedule(data.schedule);
-      })
-      .catch(err => console.error(err));
+    if (selectedDoctor) fetchDoctorSchedule(selectedDoctor);
   }, [selectedDoctor]);
 
   // Add a slot for the selected date
@@ -32,7 +45,7 @@ const AdminSchedule = () => {
     setNewSlot("");
   };
 
-  // Save the schedule
+  // Save schedule
   const saveSchedule = async () => {
     if (!selectedDoctor || !date || slots.length === 0)
       return toast.error("Select doctor, date, and add slots");
@@ -51,15 +64,17 @@ const AdminSchedule = () => {
         toast.success("Schedule added successfully!");
         setSlots([]);
         setDate("");
-        setSchedule(data.schedule);
-      } else toast.error(data.message);
+        fetchDoctorSchedule(selectedDoctor); // ✅ re-fetch after save
+      } else {
+        toast.error(data.message);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to save schedule");
     }
   };
 
-  // Admin can reset finished slots to available
+  // Make finished slot available
   const makeAvailable = async (date, time) => {
     try {
       const res = await fetch(`${backendUrl}/api/admin/slot-available/${selectedDoctor}`, {
@@ -71,7 +86,7 @@ const AdminSchedule = () => {
         body: JSON.stringify({ date, time }),
       });
       const data = await res.json();
-      if (data.success) setSchedule(data.schedule);
+      if (data.success) fetchDoctorSchedule(selectedDoctor); // re-fetch after update
     } catch (err) {
       console.error(err);
       toast.error("Failed to update slot");
