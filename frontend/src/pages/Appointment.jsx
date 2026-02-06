@@ -179,6 +179,11 @@ const Appointment = () => {
           <p className="text-gray-600 mt-1">{docInfo.degree} • {docInfo.speciality || "General"}</p>
           <p className="mt-3 text-gray-500">Experience: {docInfo.experience}</p>
           <p className="mt-3 text-gray-700">{docInfo.about}</p>
+          <p className="mt-1 text-gray-500">
+            {docInfo.address
+              ? `${docInfo.address?.street || ""}, ${docInfo.address?.city || ""}, ${docInfo.address?.zip || ""}`
+              : ""}
+          </p>
         </div>
       </div>
 
@@ -203,7 +208,7 @@ const Appointment = () => {
                   }`}
                 >
                   <h4 className="font-semibold">{service.name}</h4>
-                  {service.description && <p className={`text-sm mt-1 ${selectedService === service._id ? "text-white" : "text-gray-600"}`}>{service.description}</p>}
+                  {service.description && <p className={`text-sm mt-1 ${selectedService === service._id ? "text-white" : "text-gray-600"}`}>{typeof service.description === "string" ? service.description : JSON.stringify(service.description)}</p>}
                   <p className={`text-sm mt-2 ${selectedService === service._id ? "text-white" : "text-gray-700"}`}>
                     ₱{discountedPrice}
                     {isDiscounted && <span className="text-red-500 ml-2 line-through text-sm">₱{service.price}</span>}
@@ -261,7 +266,9 @@ const Appointment = () => {
                     selectedDate === scheduleDay.date ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 hover:bg-gray-200"
                   }`}
                 >
-                  {new Date(scheduleDay.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {typeof scheduleDay.date === "string"
+                    ? new Date(scheduleDay.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                    : JSON.stringify(scheduleDay.date)}
                 </button>
               ))}
             </div>
@@ -282,7 +289,7 @@ const Appointment = () => {
                           selectedTime === time ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 hover:bg-gray-200"
                         }`}
                       >
-                        {time}
+                        {typeof time === "string" ? time : JSON.stringify(time)}
                       </button>
                     ))}
                   </div>
