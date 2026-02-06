@@ -47,7 +47,7 @@ const DoctorDashboard = () => {
   const fetchSchedule = async () => {
     if (!dToken) return;
     try {
-      const res = await fetch(`${backendUrl}/api/doctor/my-data`, {
+      const res = await fetch(`${backendUrl}/api/doctors/my-data`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
