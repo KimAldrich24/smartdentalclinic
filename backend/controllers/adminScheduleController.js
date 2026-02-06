@@ -11,7 +11,7 @@ export const addSchedule = async (req, res) => {
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
 
-    // schedule expected as { "2026-02-06": ["10:00", "11:00"] }
+    // schedule expected as { "YYYY-MM-DD": ["10:00", "11:00"] }
     const date = Object.keys(schedule)[0];
     const slots = schedule[date].map(time => ({ time, status: "available" }));
 
@@ -22,7 +22,6 @@ export const addSchedule = async (req, res) => {
     const existingIndex = doctor.schedule.findIndex(s => s.date === date);
 
     if (existingIndex !== -1) {
-      // Merge slots without duplicates
       const existingSlots = doctor.schedule[existingIndex].slots;
       const mergedSlots = [
         ...existingSlots,
