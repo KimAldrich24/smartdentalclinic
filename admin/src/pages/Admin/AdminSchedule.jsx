@@ -16,20 +16,21 @@ const AdminSchedule = () => {
     if (!doctorId) return;
 
     try {
-      const res = await fetch(
-        `${backendUrl}/api/admin/doctor-schedule/${doctorId}`,
-        {
-          headers: { Authorization: `Bearer ${aToken}` },
-        }
-      );
+      const res = await fetch(`${backendUrl}/api/admin/schedule/${doctorId}`, {
+        headers: { Authorization: `Bearer ${aToken}` },
+      });
       const data = await res.json();
 
       if (data.success && Array.isArray(data.schedule)) {
-        // Always normalize to array
+        // Normalize slots
         const normalizedSchedule = data.schedule.map((s) => ({
           date: s.date,
           slots: Array.isArray(s.slots)
-            ? s.slots.map((time) => ({ time, status: "available" }))
+            ? s.slots.map((slot) =>
+                typeof slot === "string"
+                  ? { time: slot, status: "available" }
+                  : slot
+              )
             : [],
         }));
         setSchedule(normalizedSchedule);
@@ -63,16 +64,15 @@ const AdminSchedule = () => {
       return toast.error("Select doctor, date, and add slots");
 
     try {
-      const res = await fetch(`${backendUrl}/api/admin/add-schedule`, {
+      const res = await fetch(`${backendUrl}/api/admin/schedule`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${aToken}`,
         },
         body: JSON.stringify({
-          doctor: selectedDoctor, // flat "doctor"
-          date: date,             // flat "date"
-          slots: slots,           // flat array of times
+          doctorId: selectedDoctor,
+          schedule: { [date]: slots }, // backend expects { "YYYY-MM-DD": ["10:00", "11:00"] }
         }),
       });
 
@@ -96,7 +96,7 @@ const AdminSchedule = () => {
   const makeAvailable = async (date, time) => {
     try {
       const res = await fetch(
-        `${backendUrl}/api/admin/slot-available/${selectedDoctor}`,
+        `${backendUrl}/api/admin/schedule/slot-available/${selectedDoctor}`,
         {
           method: "PATCH",
           headers: {
