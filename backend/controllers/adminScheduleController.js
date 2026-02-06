@@ -45,8 +45,8 @@ export const addSchedule = async (req, res) => {
 // ----------------- Get Doctor Schedule -----------------
 export const getDoctorSchedule = async (req, res) => {
   try {
-    // Use the logged-in doctor from auth middleware
-    const doctorId = req.doctor._id;
+    // Use doctorId from params if admin
+    const doctorId = req.params.doctorId || req.doctor?._id;
 
     const doctor = await Doctor.findById(doctorId).select("schedule name");
     if (!doctor)
