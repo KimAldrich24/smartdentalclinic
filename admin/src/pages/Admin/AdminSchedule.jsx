@@ -14,7 +14,7 @@ const AdminSchedule = () => {
   // ---------------- Fetch doctor's schedule ----------------
   const fetchDoctorSchedule = async (doctorId) => {
     if (!doctorId) return;
-  
+
     try {
       const res = await fetch(
         `${backendUrl}/api/admin/doctor-schedule/${doctorId}`,
@@ -22,33 +22,26 @@ const AdminSchedule = () => {
           headers: { Authorization: `Bearer ${aToken}` },
         }
       );
-  
       const data = await res.json();
-  
-      if (data.success && data.schedule) {
-        // Ensure it's always an object, then convert to array
-        const scheduleObj = typeof data.schedule === "object" ? data.schedule : {};
-  
-        const normalizedSchedule = Object.entries(scheduleObj).map(
-          ([dateKey, slotArr]) => ({
-            date: dateKey,
-            slots: Array.isArray(slotArr)
-              ? slotArr.map((time) => ({ time, status: "available" }))
-              : [],
-          })
-        );
-  
+
+      if (data.success && Array.isArray(data.schedule)) {
+        // Always normalize to array
+        const normalizedSchedule = data.schedule.map((s) => ({
+          date: s.date,
+          slots: Array.isArray(s.slots)
+            ? s.slots.map((time) => ({ time, status: "available" }))
+            : [],
+        }));
         setSchedule(normalizedSchedule);
       } else {
-        setSchedule([]); // fallback
+        setSchedule([]);
       }
     } catch (err) {
       console.error(err);
-      setSchedule([]); // fallback
+      setSchedule([]);
       toast.error("Failed to fetch schedule");
     }
   };
-  
 
   useEffect(() => {
     if (selectedDoctor) fetchDoctorSchedule(selectedDoctor);
@@ -70,7 +63,6 @@ const AdminSchedule = () => {
       return toast.error("Select doctor, date, and add slots");
 
     try {
-      // --- FIXED: send schedule as object with date key ---
       const res = await fetch(`${backendUrl}/api/admin/add-schedule`, {
         method: "POST",
         headers: {
@@ -78,10 +70,9 @@ const AdminSchedule = () => {
           Authorization: `Bearer ${aToken}`,
         },
         body: JSON.stringify({
-          doctorId: selectedDoctor,
-          schedule: {
-            [date]: slots, // { "2026-02-06": ["09:00","10:00"] }
-          },
+          doctor: selectedDoctor, // flat "doctor"
+          date: date,             // flat "date"
+          slots: slots,           // flat array of times
         }),
       });
 
@@ -93,7 +84,7 @@ const AdminSchedule = () => {
         setDate("");
         fetchDoctorSchedule(selectedDoctor); // re-fetch updated schedule
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to save schedule");
       }
     } catch (err) {
       console.error(err);
