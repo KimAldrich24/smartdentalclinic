@@ -26,26 +26,32 @@ const DoctorSchedule = () => {
   // Fetch doctor's schedule
   const fetchSchedule = async () => {
     if (!dToken) return;
+  
     try {
       const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
+  
       const data = await res.json();
+      console.log("Fetched schedule:", data);
+  
       if (data.success) {
-        // Convert slots strings to objects for UI display
         const normalizedSchedule = (data.schedule || []).map((s) => ({
           date: s.date,
-          slots: s.slots.map((slot) =>
+          slots: s.slots.map(slot =>
             typeof slot === "string" ? { time: slot, status: "available" } : slot
           ),
         }));
         setSchedule(normalizedSchedule);
+      } else {
+        toast.error(data.message || "Failed to fetch schedule");
       }
     } catch (err) {
       console.error("Error fetching schedule:", err);
       toast.error("Failed to load schedule");
     }
   };
+  
   
 
   useEffect(() => {
