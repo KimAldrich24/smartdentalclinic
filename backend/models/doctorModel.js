@@ -7,21 +7,42 @@ const addressSchema = new mongoose.Schema(
     line1: { type: String, default: "" },
     line2: { type: String, default: "" },
   },
- );
-// { _id: false } // keep _id false here, it's fine
+  { _id: false }
+);
+
+// ----------------- Slot Schema -----------------
+const slotSchema = new mongoose.Schema(
+  {
+    time: { type: String, required: true }, // "10:00"
+    status: {
+      type: String,
+      enum: ["available", "booked", "finished"],
+      default: "available",
+    },
+  },
+  { _id: false }
+);
 
 // ----------------- Schedule Schema -----------------
-const scheduleSchema = new mongoose.Schema({
-  date: { type: String, required: true }, // "2025-10-24"
-  slots: [{ type: String }], // ["09:00 AM", "10:00 AM"]
-});
-// ✅ Removed { _id: false } so each schedule has its own _id
+const scheduleSchema = new mongoose.Schema(
+  {
+    date: { type: String, required: true }, // "2026-02-06"
+    slots: { type: [slotSchema], default: [] },
+  },
+  { _id: true }
+);
 
 // ----------------- Doctor Schema -----------------
 const doctorSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     password: { type: String, required: true },
 
     degree: String,
@@ -29,27 +50,25 @@ const doctorSchema = new mongoose.Schema(
     about: String,
     address: { type: addressSchema, default: () => ({}) },
     image: String,
+
     available: { type: Boolean, default: true },
     date: { type: Date, default: Date.now },
 
-    // Services that this doctor offers
-    services: {
-      type: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Service",
-        },
-      ],
+    // Services offered
+    services: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Service",
+      },
+    ],
+
+    // ✅ FIXED schedule structure
+    schedule: {
+      type: [scheduleSchema],
       default: [],
     },
 
-    // Doctor's schedule (available time slots per date)
-    schedule: {
-      type: [scheduleSchema],
-      default: [], // initialize empty array
-    },
-
-    // Booked slots (to prevent double booking)
+    // Booked slots (legacy support)
     slots_book: {
       type: Map,
       of: [String],
@@ -71,7 +90,7 @@ const doctorSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ----------------- Hash password before saving -----------------
+// ----------------- Hash password -----------------
 doctorSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
@@ -79,11 +98,13 @@ doctorSchema.pre("save", async function (next) {
   next();
 });
 
-// ----------------- Match password method -----------------
+// ----------------- Match password -----------------
 doctorSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
 // ----------------- Export Model -----------------
-const Doctor = mongoose.models.Doctor || mongoose.model("Doctor", doctorSchema);
+const Doctor =
+  mongoose.models.Doctor || mongoose.model("Doctor", doctorSchema);
+
 export default Doctor;
