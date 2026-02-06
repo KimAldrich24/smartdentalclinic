@@ -1,25 +1,25 @@
 import express from "express";
-import Doctor from "../models/doctorModel.js"; // don't forget to import Doctor
-import { authMiddleware, protect } from "../middlewares/authMiddleware.js";
+import Doctor from "../models/doctorModel.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { addSchedule, getDoctorSchedule, makeSlotAvailable } from "../controllers/adminScheduleController.js";
-
 
 const router = express.Router();
 
-// Admin-only routes
-router.post("/add-schedule", authMiddleware, protect(["admin"]), addSchedule);
-router.get("/doctor-schedule/:doctorId", authMiddleware, protect(["admin"]), getDoctorSchedule);
-router.patch("/slot-available/:doctorId", authMiddleware, protect(["admin"]), makeSlotAvailable);
-// ✅ Doctor-only route to view their own schedule
-router.get("/my-schedule", authMiddleware, protect(["doctor"]), async (req, res) => {
-    try {
-      const doctor = await Doctor.findById(req.userId).select("schedule name");
-      if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
-  
-      res.json({ success: true, schedule: doctor.schedule });
-    } catch (err) {
-      res.status(500).json({ success: false, message: "Server error" });
-    }
-  });
+// Schedule routes (any logged-in user for now)
+router.post("/add-schedule", authMiddleware, addSchedule);
+router.get("/doctor-schedule/:doctorId", authMiddleware, getDoctorSchedule);
+router.patch("/slot-available/:doctorId", authMiddleware, makeSlotAvailable);
+
+// Doctor-only route to view their own schedule
+router.get("/my-schedule", authMiddleware, async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.userId).select("schedule name");
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+
+    res.json({ success: true, schedule: doctor.schedule });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 
 export default router;
