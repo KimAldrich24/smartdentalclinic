@@ -12,7 +12,7 @@ const DoctorDashboard = () => {
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [schedule, setSchedule] = useState([]); // schedule array
+  const [schedule, setSchedule] = useState([]);
 
   const handleLogout = () => {
     logoutDoctor();
@@ -31,16 +31,32 @@ const DoctorDashboard = () => {
       const data = await res.json();
 
       if (data.success) {
-        // Normalize time field to string
-        const normalizedAppointments = data.appointments.map(appt => ({
-          ...appt,
-          time: appt.time
-            ? typeof appt.time === 'object'
-              ? `${appt.time.start || ''} - ${appt.time.end || ''}`
-              : appt.time
-            : 'N/A',
-          status: appt.status || 'pending',
-        }));
+        const normalizedAppointments = data.appointments.map(appt => {
+          let timeStr = 'N/A';
+
+          if (appt.time) {
+            if (typeof appt.time === 'string') {
+              timeStr = appt.time;
+            } else if (typeof appt.time === 'object') {
+              // Handle common formats
+              if (appt.time.start && appt.time.end) {
+                timeStr = `${appt.time.start} - ${appt.time.end}`;
+              } else if (appt.time.from && appt.time.to) {
+                timeStr = `${appt.time.from} - ${appt.time.to}`;
+              } else {
+                // fallback: stringify object
+                timeStr = JSON.stringify(appt.time);
+              }
+            }
+          }
+
+          return {
+            ...appt,
+            time: timeStr,
+            status: appt.status || 'pending',
+          };
+        });
+
         setAppointments(normalizedAppointments);
       } else {
         toast.error(data.message || 'Failed to fetch appointments');
@@ -230,7 +246,13 @@ const DoctorDashboard = () => {
                   <div className="flex flex-wrap gap-2">
                     {s.slots.map((slot, index) => (
                       <span key={index} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                        {typeof slot === 'object' ? `${slot.start || ''} - ${slot.end || ''}` : slot}
+                        {typeof slot === 'object'
+                          ? slot.start && slot.end
+                            ? `${slot.start} - ${slot.end}`
+                            : slot.from && slot.to
+                            ? `${slot.from} - ${slot.to}`
+                            : JSON.stringify(slot)
+                          : slot}
                       </span>
                     ))}
                   </div>
