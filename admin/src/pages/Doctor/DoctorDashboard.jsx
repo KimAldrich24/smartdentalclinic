@@ -44,21 +44,24 @@ const DoctorDashboard = () => {
   const fetchSchedule = async () => {
     if (!dToken) return;
     try {
-      const res = await fetch(`${backendUrl}/api/admin/my-data`, {
+      const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
+  
       if (data.success) {
-        // Convert schedule object to array for mapping
-        const scheduleArray = Object.entries(data.schedule || {}).map(
-          ([date, slots]) => ({ date, slots })
-        );
+        // data.schedule is already an array
+        const scheduleArray = (data.schedule || []).map(s => ({
+          _id: s._id,      // keep ID in case you need delete/edit
+          date: s.date,
+          slots: s.slots || [],
+        }));
         setSchedule(scheduleArray);
       } else {
         toast.error(data.message || 'Failed to fetch schedule');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching schedule:', err);
       toast.error('Error fetching schedule');
     }
   };
