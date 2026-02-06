@@ -31,7 +31,17 @@ const DoctorDashboard = () => {
       const data = await res.json();
 
       if (data.success) {
-        setAppointments(data.appointments);
+        // Normalize time field to string
+        const normalizedAppointments = data.appointments.map(appt => ({
+          ...appt,
+          time: appt.time
+            ? typeof appt.time === 'object'
+              ? `${appt.time.start || ''} - ${appt.time.end || ''}`
+              : appt.time
+            : 'N/A',
+          status: appt.status || 'pending',
+        }));
+        setAppointments(normalizedAppointments);
       } else {
         toast.error(data.message || 'Failed to fetch appointments');
       }
@@ -59,7 +69,7 @@ const DoctorDashboard = () => {
           scheduleArray = data.schedule.map(s => ({
             _id: s._id,
             date: s.date,
-            slots: s.slots || [],
+            slots: Array.isArray(s.slots) ? s.slots : [],
           }));
         } else if (typeof data.schedule === 'object' && data.schedule !== null) {
           scheduleArray = Object.entries(data.schedule).map(([date, slots]) => ({
@@ -220,7 +230,7 @@ const DoctorDashboard = () => {
                   <div className="flex flex-wrap gap-2">
                     {s.slots.map((slot, index) => (
                       <span key={index} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                        {slot}
+                        {typeof slot === 'object' ? `${slot.start || ''} - ${slot.end || ''}` : slot}
                       </span>
                     ))}
                   </div>
