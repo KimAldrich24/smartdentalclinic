@@ -22,12 +22,14 @@ const AdminSchedule = () => {
         }
       );
       const data = await res.json();
-      if (data.success && Array.isArray(data.schedule)) {
-        // Transform slots strings into objects for display
-        const normalizedSchedule = data.schedule.map((s) => ({
-          date: s.date,
-          slots: s.slots.map((time) => ({ time, status: "available" })),
-        }));
+      if (data.success && data.schedule) {
+        // data.schedule is probably an object { "2026-02-06": ["09:00","10:00"] }
+        const normalizedSchedule = Object.entries(data.schedule).map(
+          ([dateKey, slotArr]) => ({
+            date: dateKey,
+            slots: slotArr.map((time) => ({ time, status: "available" })),
+          })
+        );
         setSchedule(normalizedSchedule);
       } else {
         setSchedule([]);
@@ -40,7 +42,7 @@ const AdminSchedule = () => {
 
   useEffect(() => {
     if (selectedDoctor) fetchDoctorSchedule(selectedDoctor);
-    setSlots([]); // Clear new slots when changing doctor
+    setSlots([]);
     setDate("");
   }, [selectedDoctor]);
 
@@ -58,7 +60,7 @@ const AdminSchedule = () => {
       return toast.error("Select doctor, date, and add slots");
 
     try {
-      // --- FIXED: send schedule array with date and slots strings ---
+      // --- FIXED: send schedule as object with date key ---
       const res = await fetch(`${backendUrl}/api/admin/add-schedule`, {
         method: "POST",
         headers: {
@@ -67,12 +69,9 @@ const AdminSchedule = () => {
         },
         body: JSON.stringify({
           doctorId: selectedDoctor,
-          schedule: [
-            {
-              date: date,
-              slots: slots, // ["09:00", "10:00"]
-            },
-          ],
+          schedule: {
+            [date]: slots, // { "2026-02-06": ["09:00","10:00"] }
+          },
         }),
       });
 
