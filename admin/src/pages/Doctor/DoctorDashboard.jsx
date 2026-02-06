@@ -44,15 +44,14 @@ const DoctorDashboard = () => {
   const fetchSchedule = async () => {
     if (!dToken) return;
     try {
-      const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
+      const res = await fetch(`${backendUrl}/api/doctor/my-data`, { // correct route
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
   
       if (data.success) {
-        // data.schedule is already an array
         const scheduleArray = (data.schedule || []).map(s => ({
-          _id: s._id,      // keep ID in case you need delete/edit
+          _id: s._id,
           date: s.date,
           slots: s.slots || [],
         }));
