@@ -16,9 +16,12 @@ const AdminSchedule = () => {
     if (!doctorId) return;
 
     try {
-      const res = await fetch(`${backendUrl}/api/admin/schedule/${doctorId}`, {
-        headers: { Authorization: `Bearer ${aToken}` },
-      });
+      const res = await fetch(
+        `${backendUrl}/api/admin/doctor-schedule/${doctorId}`,
+        {
+          headers: { Authorization: `Bearer ${aToken}` },
+        }
+      );
       const data = await res.json();
 
       if (data.success && Array.isArray(data.schedule)) {
@@ -27,9 +30,7 @@ const AdminSchedule = () => {
           date: s.date,
           slots: Array.isArray(s.slots)
             ? s.slots.map((slot) =>
-                typeof slot === "string"
-                  ? { time: slot, status: "available" }
-                  : slot
+                typeof slot === "string" ? { time: slot, status: "available" } : slot
               )
             : [],
         }));
