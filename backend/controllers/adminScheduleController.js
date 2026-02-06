@@ -45,9 +45,12 @@ export const addSchedule = async (req, res) => {
 // ----------------- Get Doctor Schedule -----------------
 export const getDoctorSchedule = async (req, res) => {
   try {
-    const doctorId = req.params.doctorId;
+    // Use the logged-in doctor from auth middleware
+    const doctorId = req.doctor._id;
+
     const doctor = await Doctor.findById(doctorId).select("schedule name");
-    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+    if (!doctor)
+      return res.status(404).json({ success: false, message: "Doctor not found" });
 
     res.json({ success: true, schedule: doctor.schedule });
   } catch (err) {
