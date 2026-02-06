@@ -2,13 +2,11 @@ import React, { useContext, useState, useEffect } from 'react';
 import { DoctorContext } from '../../context/DoctorContext';
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
-import { Trash2, Plus, Calendar, Clock, ArrowLeft, Home } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Trash2, Plus, Calendar, Clock } from 'lucide-react';
 
 const DoctorSchedule = () => {
   const { dToken } = useContext(DoctorContext);
   const { backendUrl } = useContext(AdminContext);
-  const navigate = useNavigate();
 
   const [schedule, setSchedule] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
@@ -27,13 +25,14 @@ const DoctorSchedule = () => {
 
   // Fetch doctor's schedule
   const fetchSchedule = async () => {
+    if (!dToken) return;
     try {
       const res = await fetch(`${backendUrl}/api/doctors/my-data`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
       if (data.success) {
-        // Normalize schedule: ensure slots are objects with {time, status}
+        // Convert slots strings to objects for UI display
         const normalizedSchedule = (data.schedule || []).map((s) => ({
           date: s.date,
           slots: s.slots.map((slot) =>
@@ -43,13 +42,13 @@ const DoctorSchedule = () => {
         setSchedule(normalizedSchedule);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching schedule:', err);
       toast.error('Failed to load schedule');
     }
   };
 
   useEffect(() => {
-    if (dToken) fetchSchedule();
+    fetchSchedule();
   }, [dToken]);
 
   // --- Time Slots Handlers ---
@@ -75,8 +74,8 @@ const DoctorSchedule = () => {
     }
 
     try {
-      // Prepare payload for backend
-      const slotsPayload = timeSlots.map((t) => ({ time: t, status: 'available' }));
+      // ✅ Send strings only to backend
+      const slotsPayload = timeSlots; // ["09:00", "10:00"]
 
       const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
         method: 'POST',
@@ -86,6 +85,7 @@ const DoctorSchedule = () => {
         },
         body: JSON.stringify({ date: selectedDate, slots: slotsPayload }),
       });
+
       const data = await res.json();
       if (data.success) {
         toast.success('Schedule saved!');
@@ -93,8 +93,11 @@ const DoctorSchedule = () => {
         setTimeSlots([]);
         setIsEditing(false);
         fetchSchedule();
-      } else toast.error(data.message);
-    } catch {
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err) {
+      console.error('Error saving schedule:', err);
       toast.error('Failed to save schedule');
     }
   };
@@ -104,6 +107,7 @@ const DoctorSchedule = () => {
     if (!sch) return;
     if (isPastDate(sch.date)) return toast.error('Cannot edit past schedule');
     setSelectedDate(sch.date);
+    // Convert slot objects to strings for editing
     setTimeSlots(sch.slots.map((s) => s.time));
     setIsEditing(true);
   };
@@ -120,7 +124,8 @@ const DoctorSchedule = () => {
         toast.success('Schedule deleted!');
         setSchedule((prev) => prev.filter((s) => s.date !== date));
       }
-    } catch {
+    } catch (err) {
+      console.error('Error deleting schedule:', err);
       toast.error('Failed to delete schedule');
     }
   };
@@ -154,7 +159,7 @@ const DoctorSchedule = () => {
             <button
               type="button"
               onClick={handleAddSlot}
-              className="bg-green-500 text-white px-4 py-2 rounded"
+              className="bg-green-500 text-white px-4 py-2 rounded flex items-center gap-1"
             >
               <Plus size={16} /> Add
             </button>

@@ -15,12 +15,20 @@ const AdminSchedule = () => {
   const fetchDoctorSchedule = async (doctorId) => {
     if (!doctorId) return;
     try {
-      const res = await fetch(`${backendUrl}/api/admin/doctor-schedule/${doctorId}`, {
-        headers: { Authorization: `Bearer ${aToken}` },
-      });
+      const res = await fetch(
+        `${backendUrl}/api/admin/doctor-schedule/${doctorId}`,
+        {
+          headers: { Authorization: `Bearer ${aToken}` },
+        }
+      );
       const data = await res.json();
       if (data.success && Array.isArray(data.schedule)) {
-        setSchedule(data.schedule);
+        // Transform slots strings into objects for display
+        const normalizedSchedule = data.schedule.map((s) => ({
+          date: s.date,
+          slots: s.slots.map((time) => ({ time, status: "available" })),
+        }));
+        setSchedule(normalizedSchedule);
       } else {
         setSchedule([]);
       }
@@ -48,11 +56,11 @@ const AdminSchedule = () => {
   const saveSchedule = async () => {
     if (!selectedDoctor || !date || slots.length === 0)
       return toast.error("Select doctor, date, and add slots");
-  
+
     try {
-      // convert slots to objects with time + status
-      const slotsPayload = slots.map((t) => ({ time: t, status: "available" }));
-  
+      // --- FIXED: send array of strings ONLY ---
+      const slotsPayload = slots; // ["09:00", "10:00"]
+
       const res = await fetch(`${backendUrl}/api/admin/add-schedule`, {
         method: "POST",
         headers: {
@@ -65,9 +73,9 @@ const AdminSchedule = () => {
           slots: slotsPayload,
         }),
       });
-  
+
       const data = await res.json();
-  
+
       if (data.success) {
         toast.success("Schedule added successfully!");
         setSlots([]);
@@ -81,17 +89,21 @@ const AdminSchedule = () => {
       toast.error("Failed to save schedule");
     }
   };
+
   // ---------------- Make finished slot available ----------------
   const makeAvailable = async (date, time) => {
     try {
-      const res = await fetch(`${backendUrl}/api/admin/slot-available/${selectedDoctor}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${aToken}`,
-        },
-        body: JSON.stringify({ date, time }),
-      });
+      const res = await fetch(
+        `${backendUrl}/api/admin/slot-available/${selectedDoctor}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${aToken}`,
+          },
+          body: JSON.stringify({ date, time }),
+        }
+      );
       const data = await res.json();
       if (data.success) fetchDoctorSchedule(selectedDoctor);
     } catch (err) {
