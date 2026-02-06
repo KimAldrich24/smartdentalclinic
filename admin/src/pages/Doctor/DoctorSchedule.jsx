@@ -27,7 +27,7 @@ const DoctorSchedule = () => {
   const fetchSchedule = async () => {
     if (!dToken) return;
     try {
-      const res = await fetch(`${backendUrl}/api/doctors/my-data`, {
+      const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
@@ -36,16 +36,17 @@ const DoctorSchedule = () => {
         const normalizedSchedule = (data.schedule || []).map((s) => ({
           date: s.date,
           slots: s.slots.map((slot) =>
-            typeof slot === 'string' ? { time: slot, status: 'available' } : slot
+            typeof slot === "string" ? { time: slot, status: "available" } : slot
           ),
         }));
         setSchedule(normalizedSchedule);
       }
     } catch (err) {
-      console.error('Error fetching schedule:', err);
-      toast.error('Failed to load schedule');
+      console.error("Error fetching schedule:", err);
+      toast.error("Failed to load schedule");
     }
   };
+  
 
   useEffect(() => {
     fetchSchedule();
