@@ -48,18 +48,26 @@ const AdminSchedule = () => {
   const saveSchedule = async () => {
     if (!selectedDoctor || !date || slots.length === 0)
       return toast.error("Select doctor, date, and add slots");
-
+  
     try {
+      // convert slots to objects with time + status
+      const slotsPayload = slots.map((t) => ({ time: t, status: "available" }));
+  
       const res = await fetch(`${backendUrl}/api/admin/add-schedule`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${aToken}`,
         },
-        body: JSON.stringify({ doctorId: selectedDoctor, schedule: { [date]: slots } }),
+        body: JSON.stringify({
+          doctorId: selectedDoctor,
+          date: date,
+          slots: slotsPayload,
+        }),
       });
+  
       const data = await res.json();
-
+  
       if (data.success) {
         toast.success("Schedule added successfully!");
         setSlots([]);
@@ -73,7 +81,6 @@ const AdminSchedule = () => {
       toast.error("Failed to save schedule");
     }
   };
-
   // ---------------- Make finished slot available ----------------
   const makeAvailable = async (date, time) => {
     try {
