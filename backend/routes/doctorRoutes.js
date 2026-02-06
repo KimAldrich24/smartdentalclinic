@@ -53,10 +53,14 @@ router.get("/:id", getDoctorById);
 router.get("/:id/slots", getDoctorSlots);
 router.post("/:id/book", bookDoctorSlot);
 // Edit a schedule (doctor only)
-router.put("/schedule/:scheduleId", doctorAuthMiddleware, editDoctorSchedule);
+// EDIT schedule by date
+router.put("/schedule/:date", doctorAuthMiddleware, editDoctorSchedule);
+
+// DELETE schedule by date
+router.delete("/schedule/:date", doctorAuthMiddleware, deleteDoctorSchedule);
+
 
 // Delete a schedule (doctor only)
-router.delete("/schedule/:scheduleId", doctorAuthMiddleware, deleteDoctorSchedule);
 
 
 router.delete("/:id", adminAuth, deleteDoctor);
