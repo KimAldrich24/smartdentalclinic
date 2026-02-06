@@ -11,18 +11,24 @@ const AdminSchedule = () => {
   const [slots, setSlots] = useState([]);
   const [schedule, setSchedule] = useState([]);
 
-  // Fetch schedule for a doctor
+  // Fetch doctor's schedule and normalize slots to array
   const fetchDoctorSchedule = async (doctorId) => {
+    if (!doctorId) return;
     try {
       const res = await fetch(`${backendUrl}/api/admin/doctor-schedule/${doctorId}`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
       const data = await res.json();
       if (data.success) {
-        // Ensure it's always an array of {date, slots}
-        const scheduleArray = Object.entries(data.schedule || {}).map(([date, slots]) => ({
+        // Normalize schedule
+        const scheduleArray = Object.entries(data.schedule || {}).map(([date, slotsObj]) => ({
           date,
-          slots,
+          slots: Array.isArray(slotsObj)
+            ? slotsObj
+            : Object.entries(slotsObj || {}).map(([time, info]) => ({
+                time,
+                status: info.status || "available",
+              })),
         }));
         setSchedule(scheduleArray);
       }
@@ -100,12 +106,14 @@ const AdminSchedule = () => {
       {/* Doctor selector */}
       <select
         value={selectedDoctor}
-        onChange={e => setSelectedDoctor(e.target.value)}
+        onChange={(e) => setSelectedDoctor(e.target.value)}
         className="border p-2 rounded w-full"
       >
         <option value="">Select Doctor</option>
-        {doctors.map(d => (
-          <option key={d._id} value={d._id}>{d.name}</option>
+        {doctors.map((d) => (
+          <option key={d._id} value={d._id}>
+            {d.name}
+          </option>
         ))}
       </select>
 
@@ -113,7 +121,7 @@ const AdminSchedule = () => {
       <input
         type="date"
         value={date}
-        onChange={e => setDate(e.target.value)}
+        onChange={(e) => setDate(e.target.value)}
         className="border p-2 rounded w-full mt-2"
       />
 
@@ -122,7 +130,7 @@ const AdminSchedule = () => {
         <input
           type="time"
           value={newSlot}
-          onChange={e => setNewSlot(e.target.value)}
+          onChange={(e) => setNewSlot(e.target.value)}
           className="border p-2 rounded flex-1"
         />
         <button onClick={addSlot} className="bg-green-500 px-4 py-2 rounded text-white">
@@ -133,8 +141,10 @@ const AdminSchedule = () => {
       {/* Added slots */}
       {slots.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
-          {slots.map(s => (
-            <span key={s} className="bg-blue-100 px-3 py-1 rounded">{s}</span>
+          {slots.map((s) => (
+            <span key={s} className="bg-blue-100 px-3 py-1 rounded">
+              {s}
+            </span>
           ))}
         </div>
       )}
@@ -153,16 +163,19 @@ const AdminSchedule = () => {
         {schedule.length === 0 ? (
           <p className="text-gray-500">No schedule yet.</p>
         ) : (
-          schedule.map(s => (
+          schedule.map((s) => (
             <div key={s.date} className="border p-3 rounded mb-2">
               <p className="font-semibold">{s.date}</p>
               <div className="flex flex-wrap gap-2">
-                {s.slots.map(slot => (
+                {s.slots.map((slot) => (
                   <span
                     key={slot.time}
                     className={`px-3 py-1 rounded ${
-                      slot.status === "finished" ? "bg-gray-300" :
-                      slot.status === "booked" ? "bg-blue-300" : "bg-green-200"
+                      slot.status === "finished"
+                        ? "bg-gray-300"
+                        : slot.status === "booked"
+                        ? "bg-blue-300"
+                        : "bg-green-200"
                     }`}
                   >
                     {slot.time} ({slot.status})
