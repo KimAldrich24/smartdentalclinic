@@ -32,7 +32,7 @@ const Appointment = () => {
   const [booking, setBooking] = useState(false);
   const [successAnim, setSuccessAnim] = useState(false);
 
-  // Fetch doctor info
+  // Fetch doctor info and schedule
   const fetchDoctor = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}`);
@@ -51,7 +51,7 @@ const Appointment = () => {
     }
   };
 
-  // Fetch promotions
+  // Fetch active promotions
   const fetchPromotions = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/promotions`);
@@ -71,10 +71,13 @@ const Appointment = () => {
     if (!selectedDate || !docInfo || !doctorSchedule) return [];
     const scheduleForDate = doctorSchedule.find((s) => s.date === selectedDate);
     if (!scheduleForDate || !scheduleForDate.slots?.length) return [];
+
     const bookedSlots = docInfo.slots_book?.[selectedDate] || [];
 
-    // Filter slots that are booked
-    return scheduleForDate.slots.filter((slot) => !bookedSlots.includes(slot.time));
+    // Filter slots that are already booked
+    return scheduleForDate.slots.filter(
+      (slot) => !bookedSlots.includes(slot.time || slot)
+    );
   };
 
   // Calculate discounted price
@@ -84,7 +87,7 @@ const Appointment = () => {
       (p) =>
         p._id === selectedPromotion &&
         Array.isArray(p.serviceIds) &&
-        p.serviceIds.includes(service._id)
+        p.serviceIds.some((id) => id.toString() === service._id.toString())
     );
     if (!promo) return service.price;
     return (service.price * (1 - promo.discountPercentage / 100)).toFixed(2);
@@ -116,11 +119,10 @@ const Appointment = () => {
         `${backendUrl}/api/appointments/book`,
         {
           doctorId: docId,
-          serviceId: selectedService || null,
+          serviceId: selectedService,
           date: selectedDate,
           time: selectedTime,
-          promotionId: selectedPromotion || null,
-          patientId: user?._id || null,
+          promotionId: selectedPromotion || null
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -210,7 +212,7 @@ const Appointment = () => {
                   }`}
                 >
                   <h4 className="font-semibold">{service.name}</h4>
-                  {service.description && <p className={`text-sm mt-1 ${selectedService === service._id ? "text-white" : "text-gray-600"}`}>{typeof service.description === "string" ? service.description : JSON.stringify(service.description)}</p>}
+                  {service.description && <p className={`text-sm mt-1 ${selectedService === service._id ? "text-white" : "text-gray-600"}`}>{service.description}</p>}
                   <p className={`text-sm mt-2 ${selectedService === service._id ? "text-white" : "text-gray-700"}`}>
                     ₱{discountedPrice}
                     {isDiscounted && <span className="text-red-500 ml-2 line-through text-sm">₱{service.price}</span>}
@@ -237,7 +239,7 @@ const Appointment = () => {
               <option
                 key={promo._id}
                 value={promo._id}
-                disabled={selectedService && (!promo.serviceIds || !promo.serviceIds.includes(selectedService))}
+                disabled={selectedService && (!promo.serviceIds || !promo.serviceIds.some(id => id.toString() === selectedService))}
               >
                 {promo.title} ({promo.discountPercentage}% off)
               </option>
@@ -268,9 +270,7 @@ const Appointment = () => {
                     selectedDate === scheduleDay.date ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 hover:bg-gray-200"
                   }`}
                 >
-                  {typeof scheduleDay.date === "string"
-                    ? new Date(scheduleDay.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                    : JSON.stringify(scheduleDay.date)}
+                  {new Date(scheduleDay.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </button>
               ))}
             </div>
@@ -283,17 +283,20 @@ const Appointment = () => {
                   <p className="text-red-500 font-semibold">All slots for this date are already booked.</p>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {getAvailableSlots().map((slotObj, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setSelectedTime(slotObj.time)}
-                        className={`px-3 py-2 border rounded-lg shadow hover:scale-105 transform transition ${
-                          selectedTime === slotObj.time ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 hover:bg-gray-200"
-                        }`}
-                      >
-                        {slotObj.time}
-                      </button>
-                    ))}
+                    {getAvailableSlots().map((slotObj, i) => {
+                      const slotTime = slotObj.time || slotObj;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => setSelectedTime(slotTime)}
+                          className={`px-3 py-2 border rounded-lg shadow hover:scale-105 transform transition ${
+                            selectedTime === slotTime ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 hover:bg-gray-200"
+                          }`}
+                        >
+                          {slotTime}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

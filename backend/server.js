@@ -27,10 +27,18 @@ import auditRoutes from "./routes/auditRoutes.js";
 import equipmentRoutes from "./routes/equipmentRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js"
 import adminStaffRoutes from "./routes/adminStaffRoutes.js"
-import { startScheduleCleanup } from './utils/scheduleCleanup.js' // ✅ ADD THIS
-import paymentProofRoutes from './routes/paymentProofRoutes.js';
+import { startScheduleCleanup } from './utils/scheduleCleanup.js'
+import paymentProofRoutes from './routes/paymentProofRoutes.js'
+
 // Node Fetch for SMS
 import fetch from 'node-fetch'
+
+// For serving React client
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // app config
 const app = express()
@@ -41,13 +49,13 @@ connectDB()
 connectCloudinary()
 
 // middlewares
-app.use(express.json());
+app.use(express.json())
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
-    'https://www.smartdental.site',  // ✅ add www
+    'https://www.smartdental.site',
     'https://smartdental.site',
     'https://admin.smartdental.site',
     'https://smartdentalclinic-1.onrender.com',
@@ -56,16 +64,15 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
+}))
 
 // logging middleware
 app.use((req, res, next) => {
-    console.log(`➡️ Incoming request: ${req.method} ${req.originalUrl}`);
-    next();
-});
+    console.log(`➡️ Incoming request: ${req.method} ${req.originalUrl}`)
+    next()
+})
 
-// api endpoints
+// API routes
 app.use('/api/admin', adminRoutes)
 app.use('/api/doctors', doctorRouter)
 app.use('/api/services', serviceRoutes)
@@ -81,18 +88,18 @@ app.use("/api/prescriptions", prescriptionRoutes)
 app.use("/api/contact", contactRoutes)
 app.use("/api/doctors/auth", doctorAuthRoutes)
 app.use("/api/job-applications", jobApplicationRoutes)
-
 app.use("/api/admin/appointments", adminAppointmentRoutes)
-app.use("/api/sales", salesRoutes);
-app.use("/api/audit", auditRoutes);
-app.use("/api/equipment", equipmentRoutes);
+app.use("/api/sales", salesRoutes)
+app.use("/api/audit", auditRoutes)
+app.use("/api/equipment", equipmentRoutes)
 app.use("/api/staff", staffRoutes)
 app.use("/api/admin/staff", adminStaffRoutes)
-app.use('/api/payment-proofs', paymentProofRoutes);
-app.use("/api/admin/schedule", doctorScheduleRoutes); // endpoint prefix
-app.use('/uploads', express.static('uploads'));
-// root endpoint
-app.get('/', (req, res) => {
+app.use('/api/payment-proofs', paymentProofRoutes)
+app.use("/api/admin/schedule", doctorScheduleRoutes)
+app.use('/uploads', express.static('uploads'))
+
+// root endpoint for API
+app.get('/api', (req, res) => {
     res.send('API WORKING')
 })
 
@@ -111,7 +118,7 @@ app.post('/api/send-sms', async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                api_token: process.env.IPROGTECH_API_KEY, // Your iprogtech API key
+                api_token: process.env.IPROGTECH_API_KEY,
                 phone_number: phone,
                 message: message
             })
@@ -125,7 +132,17 @@ app.post('/api/send-sms', async (req, res) => {
         res.status(500).json({ success: false, error: err.message })
     }
 })
-// ✅ ADD THIS before app.listen()
-startScheduleCleanup();
-// start server
+
+// Serve React frontend
+app.use(express.static(path.join(__dirname, 'client/build')))
+
+// Catch-all for React routes (so refresh works)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/build', 'index.html'))
+})
+
+// Start cleanup job
+startScheduleCleanup()
+
+// Start server
 app.listen(port, () => console.log(`Server Started on port ${port}`))

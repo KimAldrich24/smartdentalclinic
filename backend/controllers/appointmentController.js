@@ -40,7 +40,7 @@ export const bookAppointment = async (req, res) => {
 
     if (promotionId) {
       const promo = await Promotion.findById(promotionId);
-    
+
       if (!promo) {
         console.log("⚠️ Promotion not found.");
       } else {
@@ -50,7 +50,7 @@ export const bookAppointment = async (req, res) => {
         const now = new Date();
         const withinDateRange =
           new Date(promo.startDate) <= now && new Date(promo.endDate) >= now;
-    
+
         console.log("🔍 Promo debug:", {
           promoTitle: promo.title,
           isActive: promo.isActive,
@@ -58,7 +58,7 @@ export const bookAppointment = async (req, res) => {
           withinDateRange,
           discount: promo.discountPercentage,
         });
-    
+
         if (promo.isActive && serviceMatch && withinDateRange) {
           appliedPromo = promo;
           finalPrice = service.price * (1 - promo.discountPercentage / 100);
@@ -70,7 +70,7 @@ export const bookAppointment = async (req, res) => {
         }
       }
     }
-    
+
 
     // ✅ Create appointment record
     const appointment = await Appointment.create({
@@ -81,43 +81,44 @@ export const bookAppointment = async (req, res) => {
       time,
       finalPrice,
       promotion: appliedPromo?._id || null,
-      status: "booked",
+      status: "PENDING_ADMIN",
+
     });
 
     // ✅ Block the slot
-    doctor.slots_book[date] = [...bookedSlots, time];
-    await doctor.save();
+    // doctor.slots_book[date] = [...bookedSlots, time];
+    // await doctor.save();
 
-    // ✅ Send SMS confirmation (using your helper)
-    try {
-      const patientName = req.user.name || "Patient";
-      const doctorName = doctor.name;
-      const serviceName = service.name;
-      const formattedDate = new Date(date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-      const smsMessage = formatAppointmentConfirmationSMS(
-        patientName,
-        doctorName,
-        appliedPromo
-          ? `${serviceName} (${appliedPromo.title} ${appliedPromo.discountPercentage}% off)`
-          : serviceName,
-        formattedDate,
-        time,
-        finalPrice.toFixed(2)
-      );
+    // // ✅ Send SMS confirmation (using your helper)
+    // try {
+    //   const patientName = req.user.name || "Patient";
+    //   const doctorName = doctor.name;
+    //   const serviceName = service.name;
+    //   const formattedDate = new Date(date).toLocaleDateString("en-US", {
+    //     month: "short",
+    //     day: "numeric",
+    //     year: "numeric",
+    //   });
+    //   const smsMessage = formatAppointmentConfirmationSMS(
+    //     patientName,
+    //     doctorName,
+    //     appliedPromo
+    //       ? `${serviceName} (${appliedPromo.title} ${appliedPromo.discountPercentage}% off)`
+    //       : serviceName,
+    //     formattedDate,
+    //     time,
+    //     finalPrice.toFixed(2)
+    //   );
 
-      if (req.user.phone) {
-        await sendSMS(req.user.phone, smsMessage);
-        console.log("📱 SMS sent successfully to:", req.user.phone);
-      } else {
-        console.log("⚠️ No phone number found, skipping SMS");
-      }
-    } catch (smsErr) {
-      console.error("❌ SMS sending error:", smsErr.message);
-    }
+    //   if (req.user.phone) {
+    //     await sendSMS(req.user.phone, smsMessage);
+    //     console.log("📱 SMS sent successfully to:", req.user.phone);
+    //   } else {
+    //     console.log("⚠️ No phone number found, skipping SMS");
+    //   }
+    // } catch (smsErr) {
+    //   console.error("❌ SMS sending error:", smsErr.message);
+    // }
 
     res.status(201).json({
       success: true,
@@ -230,7 +231,7 @@ export const completeAppointment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Appointment not found" });
     }
 
-    appointment.status = "completed";
+    appointment.status = "COMPLETED";
     await appointment.save();
 
     await PatientRecord.create({
@@ -259,11 +260,11 @@ export const cancelAppointment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Appointment not found" });
     }
 
-    if (appointment.status !== "booked") {
+    if (appointment.status !== "PENDING_ADMIN") {
       return res.status(400).json({ success: false, message: "Cannot cancel this appointment" });
     }
 
-    appointment.status = "cancelled";
+    appointment.status = "CANCELLED";
     await appointment.save();
 
     return res.json({ success: true, message: "Appointment cancelled", appointment });
@@ -277,15 +278,19 @@ export const cancelAppointment = async (req, res) => {
 export const getDoctorAppointments = async (req, res) => {
   try {
     const doctorId = req.doctor.id;
-    
+
     console.log("📋 Fetching appointments for doctor:", doctorId);
-    
-    const appointments = await Appointment.find({ doctor: doctorId })
+
+    const appointments = await Appointment.find({
+      doctor: doctorId,
+      status: "APPROVED_ADMIN"
+    })
+
       .populate('user', 'name email phone')
       .populate('doctor', 'name degree speciality')
       .populate('service', 'name price duration')
       .sort({ date: -1, time: -1 });
-    
+
     console.log(`✅ Found ${appointments.length} appointments for doctor`);
     if (appointments.length > 0) {
       console.log("📋 Sample appointment:", {
@@ -296,10 +301,51 @@ export const getDoctorAppointments = async (req, res) => {
         time: appointments[0].time
       });
     }
-    
+
     res.json({ success: true, appointments });
   } catch (err) {
     console.error("❌ Error fetching doctor appointments:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+export const approveAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const appointment = await Appointment.findById(id)
+      .populate("user", "name phone")
+      .populate("doctor", "name") // only name populated
+      .populate("service", "name");
+
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+
+    if (appointment.status !== "PENDING_ADMIN") {
+      return res.status(400).json({ success: false, message: "Invalid appointment status" });
+    }
+
+    // ✅ Change status
+    appointment.status = "APPROVED_ADMIN";
+    await appointment.save();
+
+    // ✅ Block the slot: fetch real doctor document
+    const doctor = await Doctor.findById(appointment.doctor._id);
+    const bookedSlots = doctor.slots_book[appointment.date] || [];
+    doctor.slots_book[appointment.date] = [...bookedSlots, appointment.time];
+    await doctor.save();
+
+    // ✅ Send SMS
+    if (appointment.user.phone) {
+      const msg = `Hi ${appointment.user.name}, your appointment with Dr. ${doctor.name} has been approved.`;
+      await sendSMS(appointment.user.phone, msg);
+    }
+
+    res.json({ success: true, message: "Appointment approved" });
+  } catch (err) {
+    console.error("Approve Appointment Error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
