@@ -7,8 +7,6 @@ import fetch from 'node-fetch'; // ✅ Add this import at the top
 import { sendSMS, formatAppointmentConfirmationSMS } from "../utils/smsHelper.js"; // ✅ use your
 
 // ✅ Book an appointment (with service price + promotions + SMS)
-
-import Doctor from "../models/doctorModel.js";
 // ❌ SMS imports intentionally commented
 // import { sendSMS, formatAppointmentConfirmationSMS } from "../utils/smsHelper.js";
 
