@@ -71,31 +71,41 @@ app.use((req, res, next) => {
     console.log(`➡️ Incoming request: ${req.method} ${req.originalUrl}`)
     next()
 })
-
-// API routes
-app.use('/api/admin', adminRoutes)
-app.use('/api/doctors', doctorRouter)
-app.use('/api/services', serviceRoutes)
-app.use("/api/users", userRoutes)
-app.use("/api/patient-records", patientRecordsRoutes)
-app.use("/api/promotions", promotionRoutes)
-app.use('/api/patients', patientRoutes)
-app.use("/api/appointments", appointmentRoutes)
-app.use("/api/faqs", faqRoutes)
-app.use("/dashboard", dashboardRoutes)
-app.use("/api/auth", authRoutes)
-app.use("/api/prescriptions", prescriptionRoutes)
-app.use("/api/contact", contactRoutes)
-app.use("/api/doctors/auth", doctorAuthRoutes)
-app.use("/api/job-applications", jobApplicationRoutes)
-app.use("/api/admin/appointments", adminAppointmentRoutes)
-app.use("/api/sales", salesRoutes)
-app.use("/api/audit", auditRoutes)
-app.use("/api/equipment", equipmentRoutes)
-app.use("/api/staff", staffRoutes)
-app.use("/api/admin/staff", adminStaffRoutes)
-app.use('/api/payment-proofs', paymentProofRoutes)
-app.use("/api/admin/schedule", doctorScheduleRoutes)
+// Helper to safely mount routes
+const safeUse = (path, router, name) => {
+    try {
+      app.use(path, router)
+      console.log(`✅ Mounted ${name} at ${path}`)
+    } catch (err) {
+      console.error(`❌ Failed to mount ${name} at ${path}:`, err.message)
+    }
+  }
+  
+  // Safe route mounting
+  safeUse('/api/admin', adminRoutes, 'adminRoutes')
+  safeUse('/api/doctors', doctorRouter, 'doctorRoutes')
+  safeUse('/api/services', serviceRoutes, 'serviceRoutes')
+  safeUse("/api/users", userRoutes, 'userRoutes')
+  safeUse("/api/patient-records", patientRecordsRoutes, 'patientRecordsRoutes')
+  safeUse("/api/promotions", promotionRoutes, 'promotionRoutes')
+  safeUse("/api/patients", patientRoutes, 'patientRoutes')
+  safeUse("/api/appointments", appointmentRoutes, 'appointmentRoutes')
+  safeUse("/api/faqs", faqRoutes, 'faqRoutes')
+  safeUse("/dashboard", dashboardRoutes, 'dashboardRoutes')
+  safeUse("/api/auth", authRoutes, 'authRoutes')
+  safeUse("/api/prescriptions", prescriptionRoutes, 'prescriptionRoutes')
+  safeUse("/api/contact", contactRoutes, 'contactRoutes')
+  safeUse("/api/doctors/auth", doctorAuthRoutes, 'doctorAuthRoutes')
+  safeUse("/api/job-applications", jobApplicationRoutes, 'jobApplicationRoutes')
+  safeUse("/api/admin/appointments", adminAppointmentRoutes, 'adminAppointmentRoutes')
+  safeUse("/api/sales", salesRoutes, 'salesRoutes')
+  safeUse("/api/audit", auditRoutes, 'auditRoutes')
+  safeUse("/api/equipment", equipmentRoutes, 'equipmentRoutes')
+  safeUse("/api/staff", staffRoutes, 'staffRoutes')
+  safeUse("/api/admin/staff", adminStaffRoutes, 'adminStaffRoutes')
+  safeUse('/api/payment-proofs', paymentProofRoutes, 'paymentProofRoutes')
+  safeUse("/api/admin/schedule", doctorScheduleRoutes, 'doctorScheduleRoutes')
+  
 app.use('/uploads', express.static('uploads'))
 
 // root endpoint for API
@@ -137,7 +147,7 @@ app.post('/api/send-sms', async (req, res) => {
 app.use(express.static(path.join(__dirname, 'client/build')))
 
 // Catch-all for React routes (so refresh works)
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'client/build', 'index.html'))
 })
 
