@@ -11,11 +11,9 @@ const Appointment = () => {
   const { token } = useContext(AuthContext);
 
   const [docInfo, setDocInfo] = useState(null);
-  const [doctorServices, setDoctorServices] = useState([]);
   const [doctorSchedule, setDoctorSchedule] = useState([]);
   const [promotions, setPromotions] = useState([]);
 
-  const [selectedService, setSelectedService] = useState("");
   const [selectedPromotion, setSelectedPromotion] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -32,7 +30,6 @@ const Appointment = () => {
         return;
       }
       setDocInfo(data.doctor);
-      setDoctorServices(Array.isArray(data.doctor.services) ? data.doctor.services : []);
       setDoctorSchedule(Array.isArray(data.doctor.schedule) ? data.doctor.schedule : []);
     } catch (err) {
       toast.error("Failed to load doctor");
@@ -69,7 +66,6 @@ const Appointment = () => {
       ? docInfo.slots_book[selectedDate]
       : [];
 
-    // Handle both string slots ["09:00"] or object slots [{ time: "09:00", status: "available" }]
     return day.slots.filter((slot) => {
       if (!slot) return false;
       const time = typeof slot === "string" ? slot : slot.time;
@@ -80,34 +76,33 @@ const Appointment = () => {
 
   // ================= BOOK APPOINTMENT =================
   const handleBooking = async () => {
-    console.log("Booking clicked:", { selectedService, selectedDate, selectedTime });
+    console.log("Booking clicked:", { selectedDate, selectedTime });
     if (!token) {
       toast.error("Please login first");
       navigate("/login");
       return;
     }
-  
-    if (!selectedService) return toast.error("Select a service");
+
     if (!selectedDate) return toast.error("Select a date");
     if (!selectedTime) return toast.error("Select a time");
-  
+
     try {
       setBooking(true);
-  
+
       const { data } = await axios.post(
         `${backendUrl}/api/appointments/book`,
         {
           doctorId: docId,
-          serviceId: selectedService,
+          serviceId: null, // patients do NOT pick service
           date: selectedDate,
           time: selectedTime,
           promotionId: selectedPromotion || null,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-  
-      console.log("Booking response:", data); // ✅ ADD THIS
-  
+
+      console.log("Booking response:", data);
+
       if (data?.success) {
         toast.success("Appointment booked successfully!");
         navigate("/my-appointments");
@@ -121,7 +116,6 @@ const Appointment = () => {
       setBooking(false);
     }
   };
-  
 
   // ================= RENDER =================
   if (loading) return <p className="text-center mt-10">Loading...</p>;
@@ -135,30 +129,6 @@ const Appointment = () => {
           <h2 className="text-2xl font-bold text-gray-800">Book Appointment</h2>
           <p className="text-gray-600 mt-1">Dr. {docInfo.name}</p>
         </div>
-
-        {/* SERVICES */}
-        {doctorServices.length > 0 && (
-          <div>
-            <h3 className="font-semibold mb-3">Select Service</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {doctorServices.map((s) => (
-                <button
-                  key={s._id}
-                  type="button"
-                  onClick={() => setSelectedService(s._id)}
-                  className={`p-4 rounded-xl border text-left transition ${
-                    selectedService === s._id
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  }`}
-                >
-                  <p className="font-semibold">{s.name}</p>
-                  <p className="text-sm opacity-80">₱{s.price}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* PROMOTIONS */}
         {promotions.length > 0 && (
