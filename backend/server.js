@@ -22,33 +22,26 @@ import doctorAuthRoutes from "./routes/doctorAuthRoutes.js"
 import jobApplicationRoutes from "./routes/jobApplicationRoutes.js"
 import doctorScheduleRoutes from "./routes/doctorScheduleRoutes.js"
 import adminAppointmentRoutes from "./routes/adminAppointmentRoutes.js"
-import salesRoutes from "./routes/salesRoutes.js";
-import auditRoutes from "./routes/auditRoutes.js";
-import equipmentRoutes from "./routes/equipmentRoutes.js";
+import salesRoutes from "./routes/salesRoutes.js"
+import auditRoutes from "./routes/auditRoutes.js"
+import equipmentRoutes from "./routes/equipmentRoutes.js"
 import staffRoutes from "./routes/staffRoutes.js"
 import adminStaffRoutes from "./routes/adminStaffRoutes.js"
-import { startScheduleCleanup } from './utils/scheduleCleanup.js'
 import paymentProofRoutes from './routes/paymentProofRoutes.js'
+import { startScheduleCleanup } from './utils/scheduleCleanup.js'
 
-// Node Fetch for SMS
+// SMS
 import fetch from 'node-fetch'
 
-// For serving React client
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// app config
+// App config
 const app = express()
 const port = process.env.PORT || 4000
 
-// connect to DB and Cloudinary
+// DB & Cloudinary
 connectDB()
 connectCloudinary()
 
-// middlewares
+// Middlewares
 app.use(express.json())
 app.use(cors({
   origin: [
@@ -66,93 +59,86 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
-// logging middleware
+// Logger
 app.use((req, res, next) => {
-    console.log(`➡️ Incoming request: ${req.method} ${req.originalUrl}`)
-    next()
+  console.log(`➡️ ${req.method} ${req.originalUrl}`)
+  next()
 })
-// Helper to safely mount routes
+
+// Helper to mount routes safely
 const safeUse = (path, router, name) => {
-    try {
-      app.use(path, router)
-      console.log(`✅ Mounted ${name} at ${path}`)
-    } catch (err) {
-      console.error(`❌ Failed to mount ${name} at ${path}:`, err.message)
-    }
+  try {
+    app.use(path, router)
+    console.log(`✅ Mounted ${name} at ${path}`)
+  } catch (err) {
+    console.error(`❌ Failed to mount ${name}:`, err.message)
   }
-  
-  // Safe route mounting
-  safeUse('/api/admin', adminRoutes, 'adminRoutes')
-  safeUse('/api/doctors', doctorRouter, 'doctorRoutes')
-  safeUse('/api/services', serviceRoutes, 'serviceRoutes')
-  safeUse("/api/users", userRoutes, 'userRoutes')
-  safeUse("/api/patient-records", patientRecordsRoutes, 'patientRecordsRoutes')
-  safeUse("/api/promotions", promotionRoutes, 'promotionRoutes')
-  safeUse("/api/patients", patientRoutes, 'patientRoutes')
-  safeUse("/api/appointments", appointmentRoutes, 'appointmentRoutes')
-  safeUse("/api/faqs", faqRoutes, 'faqRoutes')
-  safeUse("/dashboard", dashboardRoutes, 'dashboardRoutes')
-  safeUse("/api/auth", authRoutes, 'authRoutes')
-  safeUse("/api/prescriptions", prescriptionRoutes, 'prescriptionRoutes')
-  safeUse("/api/contact", contactRoutes, 'contactRoutes')
-  safeUse("/api/doctors/auth", doctorAuthRoutes, 'doctorAuthRoutes')
-  safeUse("/api/job-applications", jobApplicationRoutes, 'jobApplicationRoutes')
-  safeUse("/api/admin/appointments", adminAppointmentRoutes, 'adminAppointmentRoutes')
-  safeUse("/api/sales", salesRoutes, 'salesRoutes')
-  safeUse("/api/audit", auditRoutes, 'auditRoutes')
-  safeUse("/api/equipment", equipmentRoutes, 'equipmentRoutes')
-  safeUse("/api/staff", staffRoutes, 'staffRoutes')
-  safeUse("/api/admin/staff", adminStaffRoutes, 'adminStaffRoutes')
-  safeUse('/api/payment-proofs', paymentProofRoutes, 'paymentProofRoutes')
-  safeUse("/api/admin/schedule", doctorScheduleRoutes, 'doctorScheduleRoutes')
-  
+}
+
+// Routes
+safeUse('/api/admin', adminRoutes, 'adminRoutes')
+safeUse('/api/doctors', doctorRouter, 'doctorRoutes')
+safeUse('/api/services', serviceRoutes, 'serviceRoutes')
+safeUse('/api/users', userRoutes, 'userRoutes')
+safeUse('/api/patient-records', patientRecordsRoutes, 'patientRecordsRoutes')
+safeUse('/api/promotions', promotionRoutes, 'promotionRoutes')
+safeUse('/api/patients', patientRoutes, 'patientRoutes')
+safeUse('/api/appointments', appointmentRoutes, 'appointmentRoutes')
+safeUse('/api/faqs', faqRoutes, 'faqRoutes')
+safeUse('/dashboard', dashboardRoutes, 'dashboardRoutes')
+safeUse('/api/auth', authRoutes, 'authRoutes')
+safeUse('/api/prescriptions', prescriptionRoutes, 'prescriptionRoutes')
+safeUse('/api/contact', contactRoutes, 'contactRoutes')
+safeUse('/api/doctors/auth', doctorAuthRoutes, 'doctorAuthRoutes')
+safeUse('/api/job-applications', jobApplicationRoutes, 'jobApplicationRoutes')
+safeUse('/api/admin/appointments', adminAppointmentRoutes, 'adminAppointmentRoutes')
+safeUse('/api/sales', salesRoutes, 'salesRoutes')
+safeUse('/api/audit', auditRoutes, 'auditRoutes')
+safeUse('/api/equipment', equipmentRoutes, 'equipmentRoutes')
+safeUse('/api/staff', staffRoutes, 'staffRoutes')
+safeUse('/api/admin/staff', adminStaffRoutes, 'adminStaffRoutes')
+safeUse('/api/payment-proofs', paymentProofRoutes, 'paymentProofRoutes')
+safeUse('/api/admin/schedule', doctorScheduleRoutes, 'doctorScheduleRoutes')
+
+// Static uploads only
 app.use('/uploads', express.static('uploads'))
 
-// root endpoint for API
+// Health check
 app.get('/api', (req, res) => {
-    res.send('API WORKING')
+  res.send('API WORKING')
 })
 
-/* ==========================
-   🔹 IPROGTECH SMS ROUTE
-=========================== */
+// SMS route
 app.post('/api/send-sms', async (req, res) => {
-    const { phone, message } = req.body
+  const { phone, message } = req.body
 
-    if (!phone || !message) {
-        return res.status(400).json({ success: false, error: 'Phone and message are required' })
-    }
+  if (!phone || !message) {
+    return res.status(400).json({ success: false, error: 'Phone and message are required' })
+  }
 
-    try {
-        const response = await fetch('https://sms.iprogtech.com/api/v1/sms_messages/send_bulk', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                api_token: process.env.IPROGTECH_API_KEY,
-                phone_number: phone,
-                message: message
-            })
-        })
+  try {
+    const response = await fetch('https://sms.iprogtech.com/api/v1/sms_messages/send_bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_token: process.env.IPROGTECH_API_KEY,
+        phone_number: phone,
+        message
+      })
+    })
 
-        const data = await response.json()
-        console.log('📱 iprogtech SMS response:', data)
-        res.json({ success: true, data })
-    } catch (err) {
-        console.error('❌ SMS Error:', err)
-        res.status(500).json({ success: false, error: err.message })
-    }
+    const data = await response.json()
+    res.json({ success: true, data })
+  } catch (err) {
+    console.error('❌ SMS Error:', err)
+    res.status(500).json({ success: false, error: err.message })
+  }
 })
 
-// Serve React frontend
-app.use(express.static(path.join(__dirname, 'client/build')))
-
-// Catch-all for React routes (so refresh works)
-app.get('/*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/build', 'index.html'))
-})
-
-// Start cleanup job
+// Cleanup job
 startScheduleCleanup()
 
 // Start server
-app.listen(port, () => console.log(`Server Started on port ${port}`))
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`)
+})
