@@ -23,20 +23,21 @@ const Appointment = () => {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
 
-  // ================= FETCH DOCTOR =================
+  /* ================= FETCH DOCTOR ================= */
   const fetchDoctor = async () => {
     try {
       const { data } = await axios.get(
         `${backendUrl}/api/doctors/${docId}`
       );
 
-      if (data.success) {
-        setDocInfo(data.doctor);
-        setDoctorServices(data.doctor.services || []);
-        setDoctorSchedule(data.doctor.schedule || []);
-      } else {
+      if (!data?.success || !data?.doctor) {
         toast.error("Doctor not found");
+        return;
       }
+
+      setDocInfo(data.doctor);
+      setDoctorServices(Array.isArray(data.doctor.services) ? data.doctor.services : []);
+      setDoctorSchedule(Array.isArray(data.doctor.schedule) ? data.doctor.schedule : []);
     } catch (err) {
       toast.error("Failed to load doctor");
     } finally {
@@ -44,13 +45,15 @@ const Appointment = () => {
     }
   };
 
-  // ================= FETCH PROMOS =================
+  /* ================= FETCH PROMOS ================= */
   const fetchPromotions = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/promotions`);
-      setPromotions(data.filter((p) => p.isActive));
+      if (Array.isArray(data)) {
+        setPromotions(data.filter((p) => p.isActive));
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Promo fetch error:", err);
     }
   };
 
@@ -59,22 +62,29 @@ const Appointment = () => {
     fetchPromotions();
   }, [docId]);
 
-  // ================= AVAILABLE SLOTS =================
+  /* ================= AVAILABLE SLOTS ================= */
   const getAvailableSlots = () => {
-    if (!selectedDate) return [];
+    if (!selectedDate || !Array.isArray(doctorSchedule)) return [];
 
     const day = doctorSchedule.find((d) => d.date === selectedDate);
-    if (!day || !day.slots) return [];
+    if (!day || !Array.isArray(day.slots)) return [];
 
-    const booked = docInfo?.slots_book?.[selectedDate] || [];
+    const bookedTimes =
+      docInfo?.slots_book?.[selectedDate] &&
+      Array.isArray(docInfo.slots_book[selectedDate])
+        ? docInfo.slots_book[selectedDate]
+        : [];
 
     return day.slots.filter(
       (slot) =>
-        slot.status === "available" && !booked.includes(slot.time)
+        slot &&
+        slot.status === "available" &&
+        typeof slot.time === "string" &&
+        !bookedTimes.includes(slot.time)
     );
   };
 
-  // ================= BOOK APPOINTMENT =================
+  /* ================= BOOK APPOINTMENT ================= */
   const handleBooking = async () => {
     if (!token) {
       toast.error("Please login first");
@@ -82,10 +92,9 @@ const Appointment = () => {
       return;
     }
 
-    if (!selectedService || !selectedDate || !selectedTime) {
-      toast.error("Please complete all fields");
-      return;
-    }
+    if (!selectedService) return toast.error("Select a service");
+    if (!selectedDate) return toast.error("Select a date");
+    if (!selectedTime) return toast.error("Select a time");
 
     try {
       setBooking(true);
@@ -106,11 +115,11 @@ const Appointment = () => {
         }
       );
 
-      if (data.success) {
+      if (data?.success) {
         toast.success("Appointment booked successfully!");
         navigate("/my-appointments");
       } else {
-        toast.error(data.message);
+        toast.error(data?.message || "Booking failed");
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Booking failed");
@@ -119,7 +128,7 @@ const Appointment = () => {
     }
   };
 
-  // ================= RENDER =================
+  /* ================= RENDER ================= */
   if (loading) {
     return <p className="text-center mt-10">Loading...</p>;
   }
@@ -134,7 +143,6 @@ const Appointment = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      {/* CARD */}
       <div className="bg-white shadow-xl rounded-2xl p-6 space-y-6">
         {/* HEADER */}
         <div className="border-b pb-4">
@@ -153,6 +161,7 @@ const Appointment = () => {
             {doctorServices.map((s) => (
               <button
                 key={s._id}
+                type="button"
                 onClick={() => setSelectedService(s._id)}
                 className={`p-4 rounded-xl border text-left transition ${
                   selectedService === s._id
@@ -161,9 +170,7 @@ const Appointment = () => {
                 }`}
               >
                 <p className="font-semibold">{s.name}</p>
-                <p className="text-sm opacity-80">
-                  ₱{s.price}
-                </p>
+                <p className="text-sm opacity-80">₱{s.price}</p>
               </button>
             ))}
           </div>
@@ -177,9 +184,7 @@ const Appointment = () => {
             </h3>
             <select
               value={selectedPromotion}
-              onChange={(e) =>
-                setSelectedPromotion(e.target.value)
-              }
+              onChange={(e) => setSelectedPromotion(e.target.value)}
               className="border p-3 rounded-lg w-full"
             >
               <option value="">No promotion</option>
@@ -199,6 +204,7 @@ const Appointment = () => {
             {doctorSchedule.map((d) => (
               <button
                 key={d.date}
+                type="button"
                 onClick={() => {
                   setSelectedDate(d.date);
                   setSelectedTime("");
@@ -218,24 +224,30 @@ const Appointment = () => {
         {/* TIME */}
         {selectedDate && (
           <div>
-            <h3 className="font-semibold mb-2">
-              Select Time
-            </h3>
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-              {getAvailableSlots().map((slot, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedTime(slot.time)}
-                  className={`p-2 rounded-lg border ${
-                    selectedTime === slot.time
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  {slot.time}
-                </button>
-              ))}
-            </div>
+            <h3 className="font-semibold mb-2">Select Time</h3>
+
+            {getAvailableSlots().length === 0 ? (
+              <p className="text-sm text-gray-500">
+                No available slots for this date
+              </p>
+            ) : (
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                {getAvailableSlots().map((slot, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setSelectedTime(slot.time)}
+                    className={`p-2 rounded-lg border transition ${
+                      selectedTime === slot.time
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                  >
+                    {slot.time}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -243,7 +255,7 @@ const Appointment = () => {
         <button
           onClick={handleBooking}
           disabled={booking}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60"
         >
           {booking ? "Booking..." : "Confirm Appointment"}
         </button>
