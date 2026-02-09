@@ -80,17 +80,20 @@ const Appointment = () => {
 
   // ================= BOOK APPOINTMENT =================
   const handleBooking = async () => {
+    console.log("Booking clicked:", { selectedService, selectedDate, selectedTime });
     if (!token) {
       toast.error("Please login first");
       navigate("/login");
       return;
     }
+  
     if (!selectedService) return toast.error("Select a service");
     if (!selectedDate) return toast.error("Select a date");
     if (!selectedTime) return toast.error("Select a time");
-
+  
     try {
       setBooking(true);
+  
       const { data } = await axios.post(
         `${backendUrl}/api/appointments/book`,
         {
@@ -102,7 +105,9 @@ const Appointment = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+  
+      console.log("Booking response:", data); // ✅ ADD THIS
+  
       if (data?.success) {
         toast.success("Appointment booked successfully!");
         navigate("/my-appointments");
@@ -110,11 +115,13 @@ const Appointment = () => {
         toast.error(data?.message || "Booking failed");
       }
     } catch (err) {
+      console.error("Booking error:", err);
       toast.error(err.response?.data?.message || "Booking failed");
     } finally {
       setBooking(false);
     }
   };
+  
 
   // ================= RENDER =================
   if (loading) return <p className="text-center mt-10">Loading...</p>;
