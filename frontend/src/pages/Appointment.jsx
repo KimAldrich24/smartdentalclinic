@@ -77,34 +77,46 @@ const Appointment = () => {
   // ================= BOOK APPOINTMENT =================
   const handleBooking = async () => {
     console.log("Booking clicked:", { selectedDate, selectedTime });
+  
     if (!token) {
       toast.error("Please login first");
       navigate("/login");
       return;
     }
-
-    if (!selectedDate) return toast.error("Select a date");
-    if (!selectedTime) return toast.error("Select a time");
-
+  
+    if (!selectedDate) {
+      toast.error("Select a date");
+      return;
+    }
+  
+    if (!selectedTime) {
+      toast.error("Select a time");
+      return;
+    }
+  
     try {
       setBooking(true);
-
+  
       const { data } = await axios.post(
         `${backendUrl}/api/appointments/book`,
         {
           doctorId: docId,
-          serviceId: null, // patients do NOT pick service
           date: selectedDate,
           time: selectedTime,
+          serviceId: null,        // ✅ IMPORTANT
           promotionId: selectedPromotion || null,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-
+  
       console.log("Booking response:", data);
-
+  
       if (data?.success) {
-        toast.success("Appointment booked successfully!");
+        toast.success("Appointment submitted for admin approval");
         navigate("/my-appointments");
       } else {
         toast.error(data?.message || "Booking failed");
@@ -116,6 +128,7 @@ const Appointment = () => {
       setBooking(false);
     }
   };
+  
 
   // ================= RENDER =================
   if (loading) return <p className="text-center mt-10">Loading...</p>;
