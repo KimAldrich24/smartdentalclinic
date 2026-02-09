@@ -231,7 +231,7 @@ export const getDoctorAppointments = async (req, res) => {
 
     const appointments = await Appointment.find({
       doctor: doctorId,
-      status: "APPROVED_ADMIN"
+      status: { $in: ["PENDING_ADMIN", "APPROVED_ADMIN"] } // ✅ now doctor sees both
     })
 
       .populate('user', 'name email phone')
