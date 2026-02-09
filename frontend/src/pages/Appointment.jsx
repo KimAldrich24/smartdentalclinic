@@ -23,18 +23,14 @@ const Appointment = () => {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
 
-  /* ================= FETCH DOCTOR ================= */
+  // ================= FETCH DOCTOR =================
   const fetchDoctor = async () => {
     try {
-      const { data } = await axios.get(
-        `${backendUrl}/api/doctors/${docId}`
-      );
-
+      const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}`);
       if (!data?.success || !data?.doctor) {
         toast.error("Doctor not found");
         return;
       }
-
       setDocInfo(data.doctor);
       setDoctorServices(Array.isArray(data.doctor.services) ? data.doctor.services : []);
       setDoctorSchedule(Array.isArray(data.doctor.schedule) ? data.doctor.schedule : []);
@@ -45,7 +41,7 @@ const Appointment = () => {
     }
   };
 
-  /* ================= FETCH PROMOS ================= */
+  // ================= FETCH PROMOTIONS =================
   const fetchPromotions = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/promotions`);
@@ -62,43 +58,39 @@ const Appointment = () => {
     fetchPromotions();
   }, [docId]);
 
-  /* ================= AVAILABLE SLOTS ================= */
+  // ================= AVAILABLE SLOTS =================
   const getAvailableSlots = () => {
     if (!selectedDate || !Array.isArray(doctorSchedule)) return [];
 
     const day = doctorSchedule.find((d) => d.date === selectedDate);
     if (!day || !Array.isArray(day.slots)) return [];
 
-    const bookedTimes =
-      docInfo?.slots_book?.[selectedDate] &&
-      Array.isArray(docInfo.slots_book[selectedDate])
-        ? docInfo.slots_book[selectedDate]
-        : [];
+    const bookedTimes = Array.isArray(docInfo?.slots_book?.[selectedDate])
+      ? docInfo.slots_book[selectedDate]
+      : [];
 
-    return day.slots.filter(
-      (slot) =>
-        slot &&
-        slot.status === "available" &&
-        typeof slot.time === "string" &&
-        !bookedTimes.includes(slot.time)
-    );
+    // Handle both string slots ["09:00"] or object slots [{ time: "09:00", status: "available" }]
+    return day.slots.filter((slot) => {
+      if (!slot) return false;
+      const time = typeof slot === "string" ? slot : slot.time;
+      const status = typeof slot === "string" ? "available" : slot.status;
+      return status === "available" && !bookedTimes.includes(time);
+    });
   };
 
-  /* ================= BOOK APPOINTMENT ================= */
+  // ================= BOOK APPOINTMENT =================
   const handleBooking = async () => {
     if (!token) {
       toast.error("Please login first");
       navigate("/login");
       return;
     }
-
     if (!selectedService) return toast.error("Select a service");
     if (!selectedDate) return toast.error("Select a date");
     if (!selectedTime) return toast.error("Select a time");
 
     try {
       setBooking(true);
-
       const { data } = await axios.post(
         `${backendUrl}/api/appointments/book`,
         {
@@ -108,11 +100,7 @@ const Appointment = () => {
           time: selectedTime,
           promotionId: selectedPromotion || null,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (data?.success) {
@@ -128,60 +116,47 @@ const Appointment = () => {
     }
   };
 
-  /* ================= RENDER ================= */
-  if (loading) {
-    return <p className="text-center mt-10">Loading...</p>;
-  }
-
-  if (!docInfo) {
-    return (
-      <p className="text-center mt-10 text-red-500">
-        Doctor not found
-      </p>
-    );
-  }
+  // ================= RENDER =================
+  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (!docInfo) return <p className="text-center mt-10 text-red-500">Doctor not found</p>;
 
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="bg-white shadow-xl rounded-2xl p-6 space-y-6">
         {/* HEADER */}
         <div className="border-b pb-4">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Book Appointment
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Dr. {docInfo.name}
-          </p>
+          <h2 className="text-2xl font-bold text-gray-800">Book Appointment</h2>
+          <p className="text-gray-600 mt-1">Dr. {docInfo.name}</p>
         </div>
 
         {/* SERVICES */}
-        <div>
-          <h3 className="font-semibold mb-3">Select Service</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {doctorServices.map((s) => (
-              <button
-                key={s._id}
-                type="button"
-                onClick={() => setSelectedService(s._id)}
-                className={`p-4 rounded-xl border text-left transition ${
-                  selectedService === s._id
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-50 hover:bg-gray-100"
-                }`}
-              >
-                <p className="font-semibold">{s.name}</p>
-                <p className="text-sm opacity-80">₱{s.price}</p>
-              </button>
-            ))}
+        {doctorServices.length > 0 && (
+          <div>
+            <h3 className="font-semibold mb-3">Select Service</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {doctorServices.map((s) => (
+                <button
+                  key={s._id}
+                  type="button"
+                  onClick={() => setSelectedService(s._id)}
+                  className={`p-4 rounded-xl border text-left transition ${
+                    selectedService === s._id
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-50 hover:bg-gray-100"
+                  }`}
+                >
+                  <p className="font-semibold">{s.name}</p>
+                  <p className="text-sm opacity-80">₱{s.price}</p>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* PROMOTIONS */}
         {promotions.length > 0 && (
           <div>
-            <h3 className="font-semibold mb-2">
-              Promotion (optional)
-            </h3>
+            <h3 className="font-semibold mb-2">Promotion (optional)</h3>
             <select
               value={selectedPromotion}
               onChange={(e) => setSelectedPromotion(e.target.value)}
@@ -225,33 +200,33 @@ const Appointment = () => {
         {selectedDate && (
           <div>
             <h3 className="font-semibold mb-2">Select Time</h3>
-
             {getAvailableSlots().length === 0 ? (
-              <p className="text-sm text-gray-500">
-                No available slots for this date
-              </p>
+              <p className="text-sm text-gray-500">No available slots for this date</p>
             ) : (
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                {getAvailableSlots().map((slot, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setSelectedTime(slot.time)}
-                    className={`p-2 rounded-lg border transition ${
-                      selectedTime === slot.time
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 hover:bg-gray-200"
-                    }`}
-                  >
-                    {slot.time}
-                  </button>
-                ))}
+                {getAvailableSlots().map((slot, i) => {
+                  const time = typeof slot === "string" ? slot : slot.time;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setSelectedTime(time)}
+                      className={`p-2 rounded-lg border transition ${
+                        selectedTime === time
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 hover:bg-gray-200"
+                      }`}
+                    >
+                      {time}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
-        {/* BOOK */}
+        {/* BOOK BUTTON */}
         <button
           onClick={handleBooking}
           disabled={booking}
