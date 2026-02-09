@@ -8,7 +8,7 @@ const Appointment = () => {
   const { docId } = useParams();
   const navigate = useNavigate();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const { token, user } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
 
   const [docInfo, setDocInfo] = useState(null);
   const [doctorServices, setDoctorServices] = useState([]);
@@ -26,7 +26,10 @@ const Appointment = () => {
   // ================= FETCH DOCTOR =================
   const fetchDoctor = async () => {
     try {
-      const { data } = await axios.get(`${backendUrl}/api/doctors/${docId}`);
+      const { data } = await axios.get(
+        `${backendUrl}/api/doctors/${docId}`
+      );
+
       if (data.success) {
         setDocInfo(data.doctor);
         setDoctorServices(data.doctor.services || []);
@@ -58,14 +61,17 @@ const Appointment = () => {
 
   // ================= AVAILABLE SLOTS =================
   const getAvailableSlots = () => {
-    if (!selectedDate || !doctorSchedule) return [];
+    if (!selectedDate) return [];
 
     const day = doctorSchedule.find((d) => d.date === selectedDate);
     if (!day || !day.slots) return [];
 
     const booked = docInfo?.slots_book?.[selectedDate] || [];
 
-    return day.slots.filter((slot) => !booked.includes(slot));
+    return day.slots.filter(
+      (slot) =>
+        slot.status === "available" && !booked.includes(slot.time)
+    );
   };
 
   // ================= BOOK APPOINTMENT =================
@@ -77,7 +83,7 @@ const Appointment = () => {
     }
 
     if (!selectedService || !selectedDate || !selectedTime) {
-      toast.error("Please select service, date, and time");
+      toast.error("Please complete all fields");
       return;
     }
 
@@ -91,22 +97,18 @@ const Appointment = () => {
           serviceId: selectedService,
           date: selectedDate,
           time: selectedTime,
-          promotionId: selectedPromotion || null
+          promotionId: selectedPromotion || null,
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
       if (data.success) {
         toast.success("Appointment booked successfully!");
-        setSelectedService("");
-        setSelectedPromotion("");
-        setSelectedDate("");
-        setSelectedTime("");
-        fetchDoctor();
+        navigate("/my-appointments");
       } else {
         toast.error(data.message);
       }
@@ -118,104 +120,134 @@ const Appointment = () => {
   };
 
   // ================= RENDER =================
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
-  if (!docInfo) return <p className="text-center mt-10 text-red-500">Doctor not found</p>;
+  if (loading) {
+    return <p className="text-center mt-10">Loading...</p>;
+  }
+
+  if (!docInfo) {
+    return (
+      <p className="text-center mt-10 text-red-500">
+        Doctor not found
+      </p>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">{docInfo.name}</h2>
+    <div className="max-w-5xl mx-auto p-6">
+      {/* CARD */}
+      <div className="bg-white shadow-xl rounded-2xl p-6 space-y-6">
+        {/* HEADER */}
+        <div className="border-b pb-4">
+          <h2 className="text-2xl font-bold text-gray-800">
+            Book Appointment
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Dr. {docInfo.name}
+          </p>
+        </div>
 
-      {/* SERVICES */}
-      {doctorServices.length > 0 && (
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Select Service</h3>
+        {/* SERVICES */}
+        <div>
+          <h3 className="font-semibold mb-3">Select Service</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {doctorServices.map((s) => (
               <button
                 key={s._id}
                 onClick={() => setSelectedService(s._id)}
-                className={`p-3 border rounded ${
+                className={`p-4 rounded-xl border text-left transition ${
                   selectedService === s._id
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-50 hover:bg-gray-100"
                 }`}
               >
                 <p className="font-semibold">{s.name}</p>
-                <p>₱{s.price}</p>
+                <p className="text-sm opacity-80">
+                  ₱{s.price}
+                </p>
               </button>
             ))}
           </div>
         </div>
-      )}
 
-      {/* PROMOTIONS */}
-      {promotions.length > 0 && (
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Promotion (optional)</h3>
-          <select
-            value={selectedPromotion}
-            onChange={(e) => setSelectedPromotion(e.target.value)}
-            className="border p-2 rounded w-full"
-          >
-            <option value="">No promotion</option>
-            {promotions.map((p) => (
-              <option key={p._id} value={p._id}>
-                {p.title} ({p.discountPercentage}% off)
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* DATE */}
-      <div className="mb-4">
-        <h3 className="font-semibold mb-2">Select Date</h3>
-        <div className="flex gap-2 overflow-x-auto">
-          {doctorSchedule.map((d) => (
-            <button
-              key={d.date}
-              onClick={() => {
-                setSelectedDate(d.date);
-                setSelectedTime("");
-              }}
-              className={`px-4 py-2 border rounded ${
-                selectedDate === d.date ? "bg-blue-500 text-white" : "bg-gray-100"
-              }`}
+        {/* PROMOTIONS */}
+        {promotions.length > 0 && (
+          <div>
+            <h3 className="font-semibold mb-2">
+              Promotion (optional)
+            </h3>
+            <select
+              value={selectedPromotion}
+              onChange={(e) =>
+                setSelectedPromotion(e.target.value)
+              }
+              className="border p-3 rounded-lg w-full"
             >
-              {new Date(d.date).toLocaleDateString()}
-            </button>
-          ))}
-        </div>
-      </div>
+              <option value="">No promotion</option>
+              {promotions.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.title} ({p.discountPercentage}% off)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      {/* TIME */}
-      {selectedDate && (
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Select Time</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {getAvailableSlots().map((t, i) => (
+        {/* DATE */}
+        <div>
+          <h3 className="font-semibold mb-2">Select Date</h3>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {doctorSchedule.map((d) => (
               <button
-                key={i}
-                onClick={() => setSelectedTime(t)}
-                className={`p-2 border rounded ${
-                  selectedTime === t ? "bg-blue-500 text-white" : "bg-gray-100"
+                key={d.date}
+                onClick={() => {
+                  setSelectedDate(d.date);
+                  setSelectedTime("");
+                }}
+                className={`px-4 py-2 rounded-lg border whitespace-nowrap ${
+                  selectedDate === d.date
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100"
                 }`}
               >
-                {t}
+                {new Date(d.date).toLocaleDateString()}
               </button>
             ))}
           </div>
         </div>
-      )}
 
-      {/* BOOK BUTTON */}
-      <button
-        onClick={handleBooking}
-        disabled={booking}
-        className="w-full bg-blue-600 text-white py-3 rounded font-semibold hover:bg-blue-700"
-      >
-        {booking ? "Booking..." : "Book Appointment"}
-      </button>
+        {/* TIME */}
+        {selectedDate && (
+          <div>
+            <h3 className="font-semibold mb-2">
+              Select Time
+            </h3>
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+              {getAvailableSlots().map((slot, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedTime(slot.time)}
+                  className={`p-2 rounded-lg border ${
+                    selectedTime === slot.time
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100"
+                  }`}
+                >
+                  {slot.time}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* BOOK */}
+        <button
+          onClick={handleBooking}
+          disabled={booking}
+          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+        >
+          {booking ? "Booking..." : "Confirm Appointment"}
+        </button>
+      </div>
     </div>
   );
 };
