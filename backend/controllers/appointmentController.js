@@ -7,128 +7,78 @@ import fetch from 'node-fetch'; // ✅ Add this import at the top
 import { sendSMS, formatAppointmentConfirmationSMS } from "../utils/smsHelper.js"; // ✅ use your
 
 // ✅ Book an appointment (with service price + promotions + SMS)
+import Appointment from "../models/appointmentModel.js";
+import Doctor from "../models/doctorModel.js";
+// ❌ SMS imports intentionally commented
+// import { sendSMS, formatAppointmentConfirmationSMS } from "../utils/smsHelper.js";
+
 export const bookAppointment = async (req, res) => {
   console.log("\n🎯 ====== BOOKING ENDPOINT HIT ======");
   console.log("📥 Request body:", req.body);
   console.log("👤 User from auth middleware:", req.user);
 
   try {
-    const { doctorId, serviceId, date, time, promotionId } = req.body; // ✅ includes promotionId
+    const { doctorId, date, time } = req.body;
     const userId = req.user._id;
 
-    if (!doctorId || !serviceId || !date || !time) {
+    // ✅ Validate required fields (NO service)
+    if (!doctorId || !date || !time) {
       return res.status(400).json({
         success: false,
-        message: "Doctor, service, date, and time are required",
+        message: "Doctor, date, and time are required",
       });
     }
 
+    // ✅ Validate doctor
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
-
-    const service = await Service.findById(serviceId);
-    if (!service) return res.status(404).json({ success: false, message: "Service not found" });
-
-    const bookedSlots = doctor.slots_book[date] || [];
-    if (bookedSlots.includes(time)) {
-      return res.status(400).json({ success: false, message: "This slot is already booked" });
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
     }
 
-    // ✅ Determine final price (service price or discounted)
-    let finalPrice = service.price;
-    let appliedPromo = null;
+    // ❌ Do NOT block slot yet (admin approval first)
 
-    if (promotionId) {
-      const promo = await Promotion.findById(promotionId);
-
-      if (!promo) {
-        console.log("⚠️ Promotion not found.");
-      } else {
-        const serviceMatch = promo.serviceIds.some(
-          id => id.toString() === serviceId.toString()
-        );
-        const now = new Date();
-        const withinDateRange =
-          new Date(promo.startDate) <= now && new Date(promo.endDate) >= now;
-
-        console.log("🔍 Promo debug:", {
-          promoTitle: promo.title,
-          isActive: promo.isActive,
-          serviceMatch,
-          withinDateRange,
-          discount: promo.discountPercentage,
-        });
-
-        if (promo.isActive && serviceMatch && withinDateRange) {
-          appliedPromo = promo;
-          finalPrice = service.price * (1 - promo.discountPercentage / 100);
-          console.log(
-            `🎉 Promotion applied: ${promo.title} (${promo.discountPercentage}% OFF)`
-          );
-        } else {
-          console.log("⚠️ Promotion conditions not met.");
-        }
-      }
-    }
-
-
-    // ✅ Create appointment record
+    // ✅ Create appointment (service assigned later by doctor)
     const appointment = await Appointment.create({
       user: userId,
-      doctor: doctor._id,
-      service: service._id,
+      doctor: doctorId,
+      service: null,                 // doctor assigns later
       date,
       time,
-      finalPrice,
-      promotion: appliedPromo?._id || null,
-      status: "PENDING_ADMIN",
-
+      status: "PENDING_ADMIN",       // admin approval required
+      finalPrice: 0,
+      additionalPayment: 0,
+      totalPrice: 0,
+      paymentStatus: "pending",
+      createdBy: userId,
     });
 
-    // ✅ Block the slot
-    // doctor.slots_book[date] = [...bookedSlots, time];
-    // await doctor.save();
+    // ❌ SMS intentionally disabled
+    /*
+    try {
+      if (req.user.phone) {
+        const msg = `Your appointment request has been received and is pending admin approval.`;
+        await sendSMS(req.user.phone, msg);
+      }
+    } catch (smsErr) {
+      console.error("SMS skipped:", smsErr.message);
+    }
+    */
 
-    // // ✅ Send SMS confirmation (using your helper)
-    // try {
-    //   const patientName = req.user.name || "Patient";
-    //   const doctorName = doctor.name;
-    //   const serviceName = service.name;
-    //   const formattedDate = new Date(date).toLocaleDateString("en-US", {
-    //     month: "short",
-    //     day: "numeric",
-    //     year: "numeric",
-    //   });
-    //   const smsMessage = formatAppointmentConfirmationSMS(
-    //     patientName,
-    //     doctorName,
-    //     appliedPromo
-    //       ? `${serviceName} (${appliedPromo.title} ${appliedPromo.discountPercentage}% off)`
-    //       : serviceName,
-    //     formattedDate,
-    //     time,
-    //     finalPrice.toFixed(2)
-    //   );
-
-    //   if (req.user.phone) {
-    //     await sendSMS(req.user.phone, smsMessage);
-    //     console.log("📱 SMS sent successfully to:", req.user.phone);
-    //   } else {
-    //     console.log("⚠️ No phone number found, skipping SMS");
-    //   }
-    // } catch (smsErr) {
-    //   console.error("❌ SMS sending error:", smsErr.message);
-    // }
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "Appointment booked successfully",
+      message: "Appointment submitted for admin approval",
       appointment,
     });
 
   } catch (err) {
     console.error("❌ BOOKING ERROR:", err);
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to book appointment",
+    });
   }
 };
 
