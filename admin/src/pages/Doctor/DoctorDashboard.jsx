@@ -112,7 +112,7 @@ const DoctorDashboard = () => {
         return { serviceId: id, price: finalPrice || (svc?.price ?? 0) };
       });
 
-      const res = await fetch(`${backendUrl}/api/appointments/${apptId}/assign-services`, {
+      const res = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${dToken}`,
