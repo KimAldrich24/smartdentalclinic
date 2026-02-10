@@ -1,12 +1,32 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 
 const AddPrescription = ({ patientId, doctorId }) => {
   const { aToken, backendUrl } = useContext(AdminContext);
 
+  const [appointments, setAppointments] = useState([]);
+  const [selectedAppointment, setSelectedAppointment] = useState("");
   const [medicines, setMedicines] = useState([{ name: "", dosage: "", instructions: "" }]);
   const [notes, setNotes] = useState("");
+
+  // Fetch completed appointments for this patient
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const res = await axios.get(
+          `${backendUrl}/api/appointments/completed/${patientId}`,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
+
+        setAppointments(res.data.records || res.data.appointments || []);
+      } catch (err) {
+        console.error("Error fetching completed appointments:", err.response?.data || err.message);
+      }
+    };
+
+    if (patientId) fetchAppointments();
+  }, [patientId, aToken, backendUrl]);
 
   const handleMedicineChange = (index, field, value) => {
     const newMedicines = [...medicines];
@@ -18,75 +38,100 @@ const AddPrescription = ({ patientId, doctorId }) => {
     setMedicines([...medicines, { name: "", dosage: "", instructions: "" }]);
   };
 
-  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const addPrescription = async (userId) => {
+    if (!selectedAppointment) {
+      alert("Please select an appointment to attach the prescription to.");
+      return;
+    }
+
     try {
       const res = await axios.post(
-        `${backendUrl}/api/prescriptions/add/${userId}`,
+        `${backendUrl}/api/prescriptions/add/${patientId}`,
         {
-          medicines: [
-            { name: "Paracetamol", dosage: "500mg", instructions: "Take twice daily" },
-          ],
-          notes: "Take after food"
+          appointment: selectedAppointment,
+          doctor: doctorId,
+          medicines,
+          notes,
         },
         { headers: { Authorization: `Bearer ${aToken}` } }
       );
-  
+
       console.log("Prescription added:", res.data.prescription);
       alert("Prescription added successfully!");
+      // Reset form
+      setMedicines([{ name: "", dosage: "", instructions: "" }]);
+      setNotes("");
+      setSelectedAppointment("");
     } catch (err) {
       console.error(err.response?.data || err.message);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post(
-        `${backendUrl}/api/prescriptions`,
-        { patient: patientId, doctor: doctorId, medicines, notes },
-        { headers: { Authorization: `Bearer ${aToken}` } }
-      );
-      console.log("Prescription added:", res.data);
-    } catch (err) {
-      console.error(err);
+      alert("Failed to add prescription");
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      {/* Appointment select */}
+      <div>
+        <label>Select Completed Appointment:</label>
+        <select
+          value={selectedAppointment}
+          onChange={(e) => setSelectedAppointment(e.target.value)}
+          required
+        >
+          <option value="">-- Select Appointment --</option>
+          {appointments.map((appt) => (
+            <option key={appt._id} value={appt._id}>
+              {new Date(appt.date).toLocaleDateString()} at {appt.time} with{" "}
+              {appt.doctor?.name || "N/A"}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Medicines */}
       {medicines.map((med, i) => (
-        <div key={i}>
+        <div key={i} style={{ marginTop: "10px" }}>
           <input
             type="text"
             placeholder="Medicine Name"
             value={med.name}
             onChange={(e) => handleMedicineChange(i, "name", e.target.value)}
+            required
           />
           <input
             type="text"
             placeholder="Dosage"
             value={med.dosage}
             onChange={(e) => handleMedicineChange(i, "dosage", e.target.value)}
+            required
           />
           <input
             type="text"
             placeholder="Instructions"
             value={med.instructions}
             onChange={(e) => handleMedicineChange(i, "instructions", e.target.value)}
+            required
           />
         </div>
       ))}
-      <button type="button" onClick={addMedicine}>
+
+      <button type="button" onClick={addMedicine} style={{ marginTop: "10px" }}>
         Add Another Medicine
       </button>
-      <textarea
-        placeholder="Notes"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-      />
-      <button type="submit">Save Prescription</button>
+
+      <div style={{ marginTop: "10px" }}>
+        <textarea
+          placeholder="Notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+
+      <button type="submit" style={{ marginTop: "10px" }}>
+        Save Prescription
+      </button>
     </form>
   );
 };
