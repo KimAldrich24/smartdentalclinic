@@ -25,11 +25,12 @@ const PatientHistory = () => {
 
       try {
         // ✅ Updated route to match backend reroute
-        const res = await axios.get(`${VITE_BACKEND_URL}/api/users/${patientId}/patient-records`,
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/users/${patientId}/patient-records`,
           {
             headers: { Authorization: `Bearer ${authToken}` },
           }
-        );
+        );  
 
         setRecords(res.data.records || []);
       } catch (err) {
