@@ -281,20 +281,29 @@ export const adminCompleteAppointment = async (req, res) => {
 };
 
 // controllers/appointmentController.js
-import Appointment from "../models/appointmentModel.js";
 
+// Fetch completed appointments for a patient
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const records = await Appointment.find({ user: userId, status: "COMPLETED" })
-      .populate("doctor", "name image speciality")
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "User ID is required" });
+    }
+
+    // Only fetch COMPLETED appointments
+    const appointments = await Appointment.find({
+      user: userId,
+      status: "COMPLETED",
+    })
+      .populate("doctor", "name email speciality")
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
 
-    res.json({ success: true, records });
+    res.json({ success: true, records: appointments });
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching patient completed appointments:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
