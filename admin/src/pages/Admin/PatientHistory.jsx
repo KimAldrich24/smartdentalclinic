@@ -12,7 +12,7 @@ const PatientHistory = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Use either the param ID (admin view) or the logged-in user ID
+  // Decide which ID and token to use
   const patientId = id || user?._id;
   const authToken = aToken || token;
 
@@ -24,15 +24,22 @@ const PatientHistory = () => {
       }
 
       try {
-        // Fetch completed appointments instead of old patient-records
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/appointments/completed/${patientId}`,
-          { headers: { Authorization: `Bearer ${authToken}` } }
-        );
+        // Choose route based on admin or patient
+        const url = aToken
+          ? `${import.meta.env.VITE_BACKEND_URL}/api/appointments/admin/completed/${patientId}`
+          : `${import.meta.env.VITE_BACKEND_URL}/api/appointments/completed/${patientId}`;
 
-        setRecords(res.data.records || []);
+        const res = await axios.get(url, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+
+        // Admin and patient route returns `records`
+        setRecords(res.data.records || res.data.appointments || []);
       } catch (err) {
-        console.error("Error fetching patient appointments:", err.response?.data || err.message);
+        console.error(
+          "Error fetching patient appointments:",
+          err.response?.data || err.message
+        );
         setRecords([]);
       } finally {
         setLoading(false);
@@ -40,7 +47,7 @@ const PatientHistory = () => {
     };
 
     fetchRecords();
-  }, [patientId, authToken]);
+  }, [patientId, authToken, aToken]);
 
   if (loading) {
     return (
@@ -80,9 +87,7 @@ const PatientHistory = () => {
               {/* Notes */}
               <div className="text-sm text-gray-700 leading-relaxed break-words">
                 <span className="font-semibold text-gray-800">Notes:</span>
-                <div className="mt-1">
-                  {record.notes || "No notes provided."}
-                </div>
+                <div className="mt-1">{record.notes || "No notes provided."}</div>
               </div>
 
               {/* Services */}
@@ -102,7 +107,8 @@ const PatientHistory = () => {
               {/* Payment Info */}
               <div className="mt-2 text-sm text-gray-700">
                 <span className="font-semibold">Total Price:</span> ₱{record.totalPrice || 0} <br />
-                <span className="font-semibold">Payment Status:</span> {record.paymentStatus || "N/A"}
+                <span className="font-semibold">Payment Status:</span>{" "}
+                {record.paymentStatus || "N/A"}
               </div>
             </div>
           ))}

@@ -10,7 +10,7 @@ import {
   approveAppointment,
   doctorAssignServices,
   adminCompleteAppointment,
-  getPatientCompletedAppointments, // ✅ import controller
+  getPatientCompletedAppointments, // ✅
 } from "../controllers/appointmentController.js";
 
 import Appointment from "../models/appointmentModel.js";
@@ -24,13 +24,13 @@ const router = express.Router();
    PATIENT ROUTES
 =========================== */
 
-// Patient books appointment
+// Book appointment
 router.post("/book", protect(), bookAppointment);
 
 // Get my appointments
 router.get("/my", protect(), getMyAppointments);
 
-// Cancel appointment (pending)
+// Cancel appointment
 router.put("/:id/cancel", protect(), cancelAppointment);
 
 /* ===========================
@@ -79,14 +79,13 @@ router.put("/doctor/:id/assign-services", doctorAuthMiddleware, doctorAssignServ
 router.put("/doctor/:id/complete", doctorAuthMiddleware, completeAppointment);
 
 /* ===========================
-   PATIENT COMPLETED APPOINTMENTS
+   COMPLETED APPOINTMENTS
 =========================== */
 
-// ✅ Protected route: fetch only COMPLETED appointments for a patient
-router.get(
-  "/completed/:userId",
-  protect(), // patient must be logged in
-  getPatientCompletedAppointments
-);
+// Patient view (protected)
+router.get("/completed/:userId", protect(), getPatientCompletedAppointments);
+
+// Admin view (protected)
+router.get("/admin/completed/:userId", adminAuthMiddleware, getPatientCompletedAppointments);
 
 export default router;
