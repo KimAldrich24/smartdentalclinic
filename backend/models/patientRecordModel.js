@@ -7,14 +7,27 @@ const patientRecordSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  service: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Service",
-    required: true,
-  },
   doctor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Doctor",
+    required: true,
+  },
+  services: [
+    {
+      service: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Service",
+        required: true,
+      },
+      price: {
+        type: Number,
+        required: true,
+      },
+    },
+  ],
+  appointment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Appointment",
     required: true,
   },
   date: {

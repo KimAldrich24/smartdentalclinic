@@ -263,12 +263,15 @@ export const adminCompleteAppointment = async (req, res) => {
 
     // Create patient history
     await PatientRecord.create({
-      user: appointment.user._id,
-      doctor: appointment.doctor._id,
-      services: appointment.services,
-      date: appointment.date,
-      notes: "Treatment completed, payment pending",
+      user: appointment.user,
+      doctor: appointment.doctor,
+      appointment: appointment._id,
+      services: appointment.services.map(s => ({
+        service: s.service,
+        price: s.price,
+      })),
     });
+    
 
     res.json({ success: true, message: "Appointment marked as completed", appointment });
   } catch (err) {

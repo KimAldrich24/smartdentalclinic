@@ -80,7 +80,7 @@ const MyProfile = () => {
         console.log("📦 Appointments response:", data);
   
         if (data.success) {
-          const completed = data.appointments.filter((a) => a.status === "completed");
+          const completed = data.appointments.filter((a) => a.status === "COMPLETED");
           console.log("✔️ Completed appointments:", completed.length);
           setRecords(completed);
         }
