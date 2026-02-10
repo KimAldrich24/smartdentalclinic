@@ -16,9 +16,10 @@ const AllAppointments = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // ✅ Fetch all appointments
   const fetchAppointments = async () => {
     try {
-      const { data } = await axios.get(`${backendUrl}/api/appointments/all`, {
+      const { data } = await axios.get(`${backendUrl}/api/appointments`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
 
@@ -33,6 +34,7 @@ const AllAppointments = () => {
     }
   };
 
+  // ✅ Delete appointment
   const deleteAppointment = async (id) => {
     if (!window.confirm("Delete this appointment?")) return;
 
@@ -53,12 +55,13 @@ const AllAppointments = () => {
     }
   };
 
+  // ✅ Mark appointment as completed
   const markAsDone = async (appt) => {
     if (!window.confirm("Mark appointment as completed?")) return;
 
     try {
       const { data } = await axios.put(
-        `${backendUrl}/api/appointments/${appt._id}/complete`,
+        `${backendUrl}/api/appointments/doctor/${appt._id}/complete`,
         {},
         { headers: { Authorization: `Bearer ${aToken}` } }
       );
@@ -74,10 +77,33 @@ const AllAppointments = () => {
     }
   };
 
+  // ✅ Approve appointment (Admin)
+  const approveAppointment = async (appt) => {
+    if (!window.confirm("Approve this appointment?")) return;
+
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/appointments/${appt._id}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+
+      if (data.success) {
+        toast.success("Appointment approved");
+        fetchAppointments();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+    }
+  };
+
   useEffect(() => {
     if (aToken) fetchAppointments();
   }, [aToken, backendUrl]);
 
+  // ✅ Filter and sort appointments
   const filteredAppointments = appointments
     .filter((appt) => {
       const term = searchTerm.toLowerCase();
@@ -87,7 +113,7 @@ const AllAppointments = () => {
       );
     })
     .filter((appt) =>
-      statusFilter === "all" ? true : appt.status === statusFilter
+      statusFilter === "all" ? true : appt.status === statusFilter.toUpperCase()
     )
     .filter((appt) => {
       const apptDate = new Date(appt.date);
@@ -109,11 +135,9 @@ const AllAppointments = () => {
 
   return (
     <div className="w-full min-w-0 overflow-x-hidden p-4 md:p-6">
-      <p className="text-xl md:text-2xl font-semibold mb-4">
-        All Appointments
-      </p>
+      <p className="text-xl md:text-2xl font-semibold mb-4">All Appointments</p>
 
-      {/* 🔥 FILTER BAR (SCROLLABLE ON MOBILE) */}
+      {/* FILTER BAR */}
       <div className="flex gap-3 overflow-x-auto pb-3 mb-6">
         <input
           type="text"
@@ -129,9 +153,11 @@ const AllAppointments = () => {
           className="border rounded-lg px-3 py-2 text-sm min-w-[150px]"
         >
           <option value="all">All Status</option>
-          <option value="booked">Pending</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="PENDING_ADMIN">Pending</option>
+          <option value="APPROVED_ADMIN">Approved</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
         </select>
 
         <input
@@ -179,28 +205,16 @@ const AllAppointments = () => {
               />
 
               <div className="flex-1 text-sm">
-                <p className="text-lg font-semibold">
-                  Dr. {appt.doctor?.name}
-                </p>
-                <p className="text-gray-500">
-                  {appt.doctor?.speciality}
-                </p>
-
-                <p className="mt-2">
-                  <b>Patient:</b> {appt.user?.name}
-                </p>
-
-                <p>
-                  <b>Date:</b> {appt.date} | {appt.time}
-                </p>
-
-                <p>
-                  <b>Status:</b>{" "}
+                <p className="text-lg font-semibold">Dr. {appt.doctor?.name}</p>
+                <p className="text-gray-500">{appt.doctor?.speciality}</p>
+                <p className="mt-2"><b>Patient:</b> {appt.user?.name}</p>
+                <p><b>Date:</b> {appt.date} | {appt.time}</p>
+                <p><b>Status:</b>{" "}
                   <span
                     className={
-                      appt.status === "completed"
+                      appt.status === "COMPLETED"
                         ? "text-green-600"
-                        : appt.status === "cancelled"
+                        : appt.status === "CANCELLED"
                         ? "text-red-500"
                         : "text-blue-500"
                     }
@@ -211,7 +225,15 @@ const AllAppointments = () => {
               </div>
 
               <div className="flex flex-col gap-2 w-full md:w-auto">
-                {appt.status !== "completed" && (
+                {appt.status === "PENDING_ADMIN" && (
+                  <button
+                    onClick={() => approveAppointment(appt)}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg w-full"
+                  >
+                    Approve
+                  </button>
+                )}
+                {appt.status !== "COMPLETED" && (
                   <button
                     onClick={() => markAsDone(appt)}
                     className="bg-green-500 text-white px-4 py-2 rounded-lg w-full"
