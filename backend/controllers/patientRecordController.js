@@ -20,9 +20,9 @@ export const addRecord = async (req, res) => {
 
 export const getUserRecords = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { id } = req.params; // <-- use "id" because your route is "/:id/patient-records"
 
-    const records = await PatientRecord.find({ user: userId })
+    const records = await PatientRecord.find({ user: id })
       .populate("service")
       .populate("doctor", "name")
       .sort({ date: -1 });
