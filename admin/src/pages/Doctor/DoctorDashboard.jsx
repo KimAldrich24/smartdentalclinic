@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DoctorContext } from "../../context/DoctorContext";
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
-import { Calendar, Clock, Users, LogOut } from 'lucide-react';
+import { Calendar, LogOut } from 'lucide-react';
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
@@ -104,17 +104,10 @@ const DoctorDashboard = () => {
     }
   }, [dToken]);
 
-  // Update appointment with selected services and final price
-  const handleUpdateAppointment = async (apptId, selectedServiceIds, finalPrice) => {
+  // Update appointment with selected services
+  const handleUpdateAppointment = async (apptId, selectedServiceIds) => {
     try {
-      // Map selected services to backend expected format
-      const servicesPayload = selectedServiceIds.map(id => {
-        const svc = services.find(s => s._id === id);
-        return {
-          serviceId: id,
-          price: finalPrice || (svc?.price ?? 0),
-        };
-      });
+      const servicesPayload = selectedServiceIds.map(id => ({ serviceId: id }));
 
       const res = await fetch(`${backendUrl}/api/appointments/${apptId}/assign-services`, {
         method: 'PUT',
@@ -219,9 +212,6 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
   const [selectedServices, setSelectedServices] = useState(
     appointment.services?.map(s => s.service?._id) || []
   );
-  const [finalPrice, setFinalPrice] = useState(
-    appointment.services?.reduce((acc, s) => acc + (s.price ?? 0), 0) || 0
-  );
 
   const toggleService = (serviceId) => {
     setSelectedServices(prev =>
@@ -233,7 +223,7 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
 
   const handleSave = () => {
     if (selectedServices.length === 0) return alert('Select at least one service');
-    onUpdate(appointment._id, selectedServices, finalPrice);
+    onUpdate(appointment._id, selectedServices);
   };
 
   return (
@@ -262,7 +252,7 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
           </div>
 
           {/* Services selection */}
-          {appointment.status === 'APPROVED_ADMIN' || appointment.status === 'IN_PROGRESS' ? (
+          {(appointment.status === 'APPROVED_ADMIN' || appointment.status === 'IN_PROGRESS') && (
             <div className="mt-3">
               <p className="font-semibold">Select Services:</p>
               <div className="flex flex-wrap gap-2 mt-1">
@@ -276,27 +266,20 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
                         : 'bg-gray-100 text-gray-800'
                     }`}
                   >
-                    {svc.name} ₱{svc.price}
+                    {svc.name}
                   </button>
                 ))}
               </div>
               <div className="mt-2">
-                <label className="font-semibold">Final Price: </label>
-                <input
-                  type="number"
-                  className="border px-2 py-1 rounded w-32"
-                  value={finalPrice}
-                  onChange={e => setFinalPrice(Number(e.target.value))}
-                />
                 <button
-                  className="ml-2 bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
+                  className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
                   onClick={handleSave}
                 >
                   Save
                 </button>
               </div>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
