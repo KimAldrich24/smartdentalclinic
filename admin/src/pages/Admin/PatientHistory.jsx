@@ -12,6 +12,7 @@ const PatientHistory = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Use either the param ID (admin view) or the logged-in user ID
   const patientId = id || user?._id;
   const authToken = aToken || token;
 
@@ -23,15 +24,18 @@ const PatientHistory = () => {
       }
 
       try {
+        // ✅ Updated route to match backend reroute
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/patient-records/${patientId}`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/users/${patientId}/patient-records`,
           {
             headers: { Authorization: `Bearer ${authToken}` },
           }
         );
+
         setRecords(res.data.records || []);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching patient records:", err.response?.data || err.message);
+        setRecords([]);
       } finally {
         setLoading(false);
       }
@@ -82,6 +86,20 @@ const PatientHistory = () => {
                   {record.notes || "No notes provided."}
                 </div>
               </div>
+
+              {/* Services (Optional) */}
+              {record.services && record.services.length > 0 && (
+                <div className="mt-2 text-sm text-gray-600">
+                  <span className="font-semibold text-gray-800">Services:</span>
+                  <ul className="list-disc pl-5 mt-1">
+                    {record.services.map((s, idx) => (
+                      <li key={idx}>
+                        {s.service?.name || "Unknown Service"} - ₱{s.price || "N/A"}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>
