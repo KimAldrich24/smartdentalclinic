@@ -10,22 +10,21 @@ const AddPrescription = ({ patientId, doctorId }) => {
   const [medicines, setMedicines] = useState([{ name: "", dosage: "", instructions: "" }]);
   const [notes, setNotes] = useState("");
 
-  // Fetch completed appointments for this patient
+  // Fetch completed appointments for this patient (admin can view)
   useEffect(() => {
     const fetchAppointments = async () => {
+      if (!patientId) return;
       try {
         const res = await axios.get(
           `${backendUrl}/api/appointments/completed/${patientId}`,
           { headers: { Authorization: `Bearer ${aToken}` } }
         );
-
-        setAppointments(res.data.records || res.data.appointments || []);
+        setAppointments(res.data.records || []); // `records` key from backend
       } catch (err) {
         console.error("Error fetching completed appointments:", err.response?.data || err.message);
       }
     };
-
-    if (patientId) fetchAppointments();
+    fetchAppointments();
   }, [patientId, aToken, backendUrl]);
 
   const handleMedicineChange = (index, field, value) => {
@@ -60,6 +59,7 @@ const AddPrescription = ({ patientId, doctorId }) => {
 
       console.log("Prescription added:", res.data.prescription);
       alert("Prescription added successfully!");
+
       // Reset form
       setMedicines([{ name: "", dosage: "", instructions: "" }]);
       setNotes("");
@@ -71,7 +71,7 @@ const AddPrescription = ({ patientId, doctorId }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} style={{ maxWidth: "600px", margin: "auto" }}>
       {/* Appointment select */}
       <div>
         <label>Select Completed Appointment:</label>
@@ -121,6 +121,7 @@ const AddPrescription = ({ patientId, doctorId }) => {
         Add Another Medicine
       </button>
 
+      {/* Notes */}
       <div style={{ marginTop: "10px" }}>
         <textarea
           placeholder="Notes"
