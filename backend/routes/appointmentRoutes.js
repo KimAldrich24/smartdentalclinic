@@ -9,6 +9,7 @@ import {
   getDoctorAppointments,
   approveAppointment,
   doctorAssignServices,
+  adminCompleteAppointment,
 } from "../controllers/appointmentController.js";
 
 import Appointment from "../models/appointmentModel.js";
@@ -103,5 +104,9 @@ router.put(
   doctorAuthMiddleware,
   completeAppointment
 );
+
+// ✅ Admin marks appointment as done
+router.put("/:id/admin-complete", adminAuthMiddleware, adminCompleteAppointment);
+
 
 export default router;

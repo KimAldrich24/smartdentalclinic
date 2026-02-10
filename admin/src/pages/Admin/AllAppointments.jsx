@@ -55,19 +55,19 @@ const AllAppointments = () => {
     }
   };
 
-  // ✅ Mark appointment as completed
+  // ✅ Mark appointment as completed (admin route)
   const markAsDone = async (appt) => {
     if (!window.confirm("Mark appointment as completed?")) return;
 
     try {
       const { data } = await axios.put(
-        `${backendUrl}/api/appointments/doctor/${appt._id}/complete`,
+        `${backendUrl}/api/appointments/${appt._id}/admin-complete`,
         {},
         { headers: { Authorization: `Bearer ${aToken}` } }
       );
 
       if (data.success) {
-        toast.success("Appointment completed");
+        toast.success("Appointment marked as completed ✅");
         fetchAppointments();
       } else {
         toast.error(data.message);
@@ -89,7 +89,7 @@ const AllAppointments = () => {
       );
 
       if (data.success) {
-        toast.success("Appointment approved");
+        toast.success("Appointment approved ✅");
         fetchAppointments();
       } else {
         toast.error(data.message);
@@ -209,7 +209,8 @@ const AllAppointments = () => {
                 <p className="text-gray-500">{appt.doctor?.speciality}</p>
                 <p className="mt-2"><b>Patient:</b> {appt.user?.name}</p>
                 <p><b>Date:</b> {appt.date} | {appt.time}</p>
-                <p><b>Status:</b>{" "}
+                <p>
+                  <b>Status:</b>{" "}
                   <span
                     className={
                       appt.status === "COMPLETED"
@@ -233,7 +234,7 @@ const AllAppointments = () => {
                     Approve
                   </button>
                 )}
-                {appt.status !== "COMPLETED" && (
+                {appt.status === "IN_PROGRESS" && (
                   <button
                     onClick={() => markAsDone(appt)}
                     className="bg-green-500 text-white px-4 py-2 rounded-lg w-full"

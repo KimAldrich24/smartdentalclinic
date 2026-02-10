@@ -241,3 +241,39 @@ export const deleteAppointment = async (req, res) => {
   await Appointment.findByIdAndDelete(req.params.id);
   res.json({ success: true, message: "Appointment deleted" });
 };
+// =================== ADMIN COMPLETE APPOINTMENT ===================
+export const adminCompleteAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id)
+      .populate("user", "_id name phone email")
+      .populate("doctor", "_id name");
+
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+
+    if (appointment.status !== "IN_PROGRESS") {
+      return res.status(400).json({ success: false, message: "Appointment is not in progress" });
+    }
+
+    // Mark as COMPLETED for admin
+    appointment.status = "COMPLETED";
+    appointment.paymentStatus = "pending"; // patient needs to pay
+    await appointment.save();
+
+    // Create patient history
+    await PatientRecord.create({
+      user: appointment.user._id,
+      doctor: appointment.doctor._id,
+      services: appointment.services,
+      date: appointment.date,
+      notes: "Treatment completed, payment pending",
+    });
+
+    res.json({ success: true, message: "Appointment marked as completed", appointment });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
