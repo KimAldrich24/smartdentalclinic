@@ -14,6 +14,7 @@ import {
 } from "../controllers/userController.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import protect from "../middlewares/authMiddleware.js";
+import { getUserRecords } from "../controllers/patientRecordController.js";
 
 const router = express.Router();
 
@@ -33,5 +34,9 @@ router.delete("/:id", adminAuthMiddleware, deleteUser);
 router.get("/pending", adminAuthMiddleware, getPendingUsers);
 router.put("/approve/:id", adminAuthMiddleware, approveUser);
 router.put("/reject/:id", adminAuthMiddleware, rejectUser);
+
+
+// Add this below your other routes (doesn't matter exact position, as long as it's before `export default router`)
+router.get("/:id/patient-records", protect(), getUserRecords);
 
 export default router;
