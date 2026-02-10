@@ -13,14 +13,16 @@ const DoctorDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [schedule, setSchedule] = useState([]);
+  const [services, setServices] = useState([]);
 
+  // Logout
   const handleLogout = () => {
     logoutDoctor();
     toast.success('Logged out successfully');
     navigate('/login');
   };
 
-  // Fetch appointments
+  // Fetch appointments for doctor
   const fetchAppointments = async () => {
     if (!dToken) return;
     try {
@@ -29,35 +31,8 @@ const DoctorDashboard = () => {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
-
       if (data.success) {
-        const normalizedAppointments = data.appointments.map(appt => {
-          let timeStr = 'N/A';
-
-          if (appt.time) {
-            if (typeof appt.time === 'string') {
-              timeStr = appt.time;
-            } else if (typeof appt.time === 'object') {
-              // Handle common formats
-              if (appt.time.start && appt.time.end) {
-                timeStr = `${appt.time.start} - ${appt.time.end}`;
-              } else if (appt.time.from && appt.time.to) {
-                timeStr = `${appt.time.from} - ${appt.time.to}`;
-              } else {
-                // fallback: stringify object
-                timeStr = JSON.stringify(appt.time);
-              }
-            }
-          }
-
-          return {
-            ...appt,
-            time: timeStr,
-            status: appt.status || 'pending',
-          };
-        });
-
-        setAppointments(normalizedAppointments);
+        setAppointments(data.appointments);
       } else {
         toast.error(data.message || 'Failed to fetch appointments');
       }
@@ -77,10 +52,8 @@ const DoctorDashboard = () => {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
-
       if (data.success) {
         let scheduleArray = [];
-
         if (Array.isArray(data.schedule)) {
           scheduleArray = data.schedule.map(s => ({
             _id: s._id,
@@ -93,7 +66,6 @@ const DoctorDashboard = () => {
             slots: Array.isArray(slots) ? slots : [],
           }));
         }
-
         setSchedule(scheduleArray);
       } else {
         toast.error(data.message || 'Failed to fetch schedule');
@@ -106,16 +78,69 @@ const DoctorDashboard = () => {
     }
   };
 
+  // Fetch available services for doctor to pick
+  const fetchServices = async () => {
+    try {
+      const res = await fetch(`${backendUrl}/api/services`, {
+        headers: { Authorization: `Bearer ${dToken}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setServices(data.services);
+      } else {
+        toast.error(data.message || 'Failed to fetch services');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error fetching services');
+    }
+  };
+
   useEffect(() => {
     if (dToken) {
       fetchAppointments();
       fetchSchedule();
+      fetchServices();
     }
   }, [dToken]);
 
+  // Update appointment with selected services and final price
+  const handleUpdateAppointment = async (apptId, selectedServiceIds, finalPrice) => {
+    try {
+      // Map selected services to backend expected format
+      const servicesPayload = selectedServiceIds.map(id => {
+        const svc = services.find(s => s._id === id);
+        return {
+          serviceId: id,
+          price: finalPrice || (svc?.price ?? 0),
+        };
+      });
+
+      const res = await fetch(`${backendUrl}/api/appointments/${apptId}/assign-services`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${dToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ services: servicesPayload }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Appointment updated successfully');
+        fetchAppointments();
+      } else {
+        toast.error(data.message || 'Failed to update appointment');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error updating appointment');
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] max-w-6xl mx-auto px-4 py-6 md:p-6">
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl p-5 md:p-6 mb-8 shadow-lg">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
           <h1 className="text-2xl md:text-3xl font-bold">👨‍⚕️ Doctor Dashboard</h1>
@@ -135,7 +160,7 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
-        {/* Profile Section */}
+        {/* Profile */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
           <div className="flex items-center gap-4">
             {doctor?.image ? (
@@ -149,7 +174,6 @@ const DoctorDashboard = () => {
                 👨‍⚕️
               </div>
             )}
-
             <div>
               <h2 className="text-xl md:text-2xl font-semibold">{doctor?.name || 'Doctor'}</h2>
               <p className="text-green-100">{doctor?.degree}</p>
@@ -167,120 +191,112 @@ const DoctorDashboard = () => {
         </div>
       </div>
 
-      {/* ================= STATS ================= */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-        <StatCard icon={<Users size={24} />} title="Total Appointments" value={appointments.length} color="blue" />
-        <StatCard icon={<Clock size={24} />} title="Scheduled" value={appointments.filter(a => a.status === 'booked').length} color="green" />
-        <StatCard icon={<Calendar size={24} />} title="Completed" value={appointments.filter(a => a.status === 'completed').length} color="purple" />
-      </div>
-
-      {/* ================= APPOINTMENTS ================= */}
-      <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6">
+      {/* APPOINTMENTS */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mb-8">
         <h2 className="text-xl md:text-2xl font-bold mb-5 border-b pb-2">📅 My Appointments</h2>
 
         {loading ? (
           <p className="text-center text-gray-500 py-10">Loading appointments...</p>
         ) : appointments.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-gray-500">No appointments scheduled yet.</p>
-            <button
-              onClick={() => navigate('/doctor-schedule')}
-              className="mt-5 bg-blue-500 text-white px-6 py-2 rounded-lg"
-            >
-              Set Up Schedule
-            </button>
-          </div>
+          <p className="text-center text-gray-500 py-10">No appointments yet.</p>
         ) : (
-          <div className="space-y-5">
-            {appointments.map(appt => (
-              <div key={appt._id} className="border rounded-xl p-4 md:p-5 hover:shadow-md transition">
-                <div className="flex flex-col md:flex-row md:justify-between gap-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
-                      <span className="font-semibold text-gray-800">{appt.user?.name || 'Patient'}</span>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          appt.status === 'completed'
-                            ? 'bg-green-100 text-green-700'
-                            : appt.status === 'cancelled'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-blue-100 text-blue-700'
-                        }`}
-                      >
-                        {appt.status}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>📧 {appt.user?.email}</p>
-                      <p>📞 {appt.user?.phone || 'No phone'}</p>
-                      <p>🦷 {appt.service?.name}</p>
-                      <p>📅 {appt.date}</p>
-                      <p>🕐 {appt.time}</p>
-                      <p>💰 ₱{appt.finalPrice}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 md:text-right">
-                    Booked: {new Date(appt.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ================= SCHEDULE ================= */}
-      <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mt-8">
-        <h2 className="text-xl md:text-2xl font-bold mb-5 border-b pb-2">📅 My Schedule (Set by Admin)</h2>
-
-        {schedule.length === 0 ? (
-          <p className="text-gray-500 text-center py-5">No schedule set yet. Please contact admin.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {schedule.map(s => (
-              <div key={s.date} className="border rounded-lg p-3">
-                <h3 className="font-semibold mb-2">{s.date}</h3>
-                {s.slots.length === 0 ? (
-                  <p className="text-gray-500">No slots</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {s.slots.map((slot, index) => (
-                      <span key={index} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                        {typeof slot === 'object'
-                          ? slot.start && slot.end
-                            ? `${slot.start} - ${slot.end}`
-                            : slot.from && slot.to
-                            ? `${slot.from} - ${slot.to}`
-                            : JSON.stringify(slot)
-                          : slot}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          appointments.map(appt => (
+            <AppointmentCard
+              key={appt._id}
+              appointment={appt}
+              services={services}
+              onUpdate={handleUpdateAppointment}
+            />
+          ))
         )}
       </div>
     </div>
   );
 };
 
-/* ================= STAT CARD ================= */
-const StatCard = ({ icon, title, value, color }) => {
-  const colors = {
-    blue: "border-blue-500 bg-blue-100 text-blue-600",
-    green: "border-green-500 bg-green-100 text-green-600",
-    purple: "border-purple-500 bg-purple-100 text-purple-600",
+// ================= Appointment Card Component =================
+const AppointmentCard = ({ appointment, services, onUpdate }) => {
+  const [selectedServices, setSelectedServices] = useState(
+    appointment.services?.map(s => s.service?._id) || []
+  );
+  const [finalPrice, setFinalPrice] = useState(
+    appointment.services?.reduce((acc, s) => acc + (s.price ?? 0), 0) || 0
+  );
+
+  const toggleService = (serviceId) => {
+    setSelectedServices(prev =>
+      prev.includes(serviceId)
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  };
+
+  const handleSave = () => {
+    if (selectedServices.length === 0) return alert('Select at least one service');
+    onUpdate(appointment._id, selectedServices, finalPrice);
   };
 
   return (
-    <div className={`bg-white rounded-xl shadow p-4 border-l-4 ${colors[color].split(" ")[0]}`}>
-      <div className="flex items-center gap-3">
-        <div className={`p-3 rounded-lg ${colors[color].split(" ").slice(1).join(" ")}`}>{icon}</div>
+    <div className="border rounded-xl p-4 md:p-5 mb-4 hover:shadow-md transition">
+      <div className="flex flex-col md:flex-row md:justify-between gap-4">
         <div>
-          <p className="text-gray-500 text-sm">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="font-semibold text-gray-800">{appointment.user?.name}</span>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                appointment.status === 'COMPLETED'
+                  ? 'bg-green-100 text-green-700'
+                  : appointment.status === 'CANCELLED'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}
+            >
+              {appointment.status}
+            </span>
+          </div>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>📧 {appointment.user?.email}</p>
+            <p>📞 {appointment.user?.phone || 'No phone'}</p>
+            <p>📅 {appointment.date}</p>
+            <p>🕐 {appointment.time}</p>
+          </div>
+
+          {/* Services selection */}
+          {appointment.status === 'APPROVED_ADMIN' || appointment.status === 'IN_PROGRESS' ? (
+            <div className="mt-3">
+              <p className="font-semibold">Select Services:</p>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {services.map(svc => (
+                  <button
+                    key={svc._id}
+                    onClick={() => toggleService(svc._id)}
+                    className={`px-3 py-1 border rounded-full text-sm ${
+                      selectedServices.includes(svc._id)
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {svc.name} ₱{svc.price}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2">
+                <label className="font-semibold">Final Price: </label>
+                <input
+                  type="number"
+                  className="border px-2 py-1 rounded w-32"
+                  value={finalPrice}
+                  onChange={e => setFinalPrice(Number(e.target.value))}
+                />
+                <button
+                  className="ml-2 bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
+                  onClick={handleSave}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

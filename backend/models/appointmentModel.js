@@ -1,95 +1,114 @@
 import mongoose from "mongoose";
 
-const appointmentSchema = new mongoose.Schema({
-  doctor: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Doctor",
-    required: true
-  },
+const appointmentSchema = new mongoose.Schema(
+  {
+    doctor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Doctor",
+      required: true,
+    },
 
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
-  // ❗ Service is assigned later by doctor
-  service: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Service",
-    default: null
-  },
-
-  date: {
-    type: String,
-    required: true
-  },
-
-  time: {
-    type: String,
-    required: true
-  },
-
-  // ✅ New status flow
-  status: {
-    type: String,
-    enum: [
-      "PENDING_ADMIN",
-      "APPROVED_ADMIN",
-      "IN_PROGRESS",
-      "COMPLETED",
-      "CANCELLED"
+    /* ===========================
+       SERVICES (Assigned by Doctor)
+       Multiple services supported
+    ============================ */
+    services: [
+      {
+        service: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Service",
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+      },
     ],
-    default: "PENDING_ADMIN"
-  },
 
-  // 💰 Pricing (filled later)
-  finalPrice: {
-    type: Number,
-    default: 0
-  },
+    date: {
+      type: String,
+      required: true,
+    },
 
-  additionalPayment: {
-    type: Number,
-    default: 0
-  },
+    time: {
+      type: String,
+      required: true,
+    },
 
-  additionalPaymentNote: {
-    type: String
-  },
+    /* ===========================
+       STATUS FLOW
+    ============================ */
+    status: {
+      type: String,
+      enum: [
+        "PENDING_ADMIN",
+        "APPROVED_ADMIN",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELLED",
+      ],
+      default: "PENDING_ADMIN",
+    },
 
-  totalPrice: {
-    type: Number,
-    default: 0
-  },
+    /* ===========================
+       PRICING
+    ============================ */
+    totalPrice: {
+      type: Number,
+      default: 0,
+    },
 
-  // 💳 Payment tracking
-  paymentStatus: {
-    type: String,
-    enum: ["pending", "paid_cash", "paid_online"],
-    default: "pending"
-  },
+    additionalPayment: {
+      type: Number,
+      default: 0,
+    },
 
-  paymentProofId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "PaymentProof",
-    default: null
-  },
+    additionalPaymentNote: {
+      type: String,
+    },
 
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
+    /* ===========================
+       PAYMENT TRACKING
+    ============================ */
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid_cash", "paid_online"],
+      default: "pending",
+    },
 
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+    paymentProofId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PaymentProof",
+      default: null,
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  },
+  {
+    timestamps: true,
   }
-});
+);
 
-// ✅ Safe total price calculation
+/* ===========================
+   AUTO TOTAL PRICE CALCULATION
+=========================== */
 appointmentSchema.pre("save", function (next) {
-  this.totalPrice = (this.finalPrice || 0) + (this.additionalPayment || 0);
+  const servicesTotal = this.services.reduce(
+    (sum, s) => sum + (s.price || 0),
+    0
+  );
+
+  this.totalPrice = servicesTotal + (this.additionalPayment || 0);
   next();
 });
 
