@@ -280,3 +280,21 @@ export const adminCompleteAppointment = async (req, res) => {
   }
 };
 
+// controllers/appointmentController.js
+import Appointment from "../models/appointmentModel.js";
+
+export const getPatientCompletedAppointments = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const records = await Appointment.find({ user: userId, status: "COMPLETED" })
+      .populate("doctor", "name image speciality")
+      .populate("services.service", "name price duration")
+      .sort({ date: -1, time: -1 });
+
+    res.json({ success: true, records });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

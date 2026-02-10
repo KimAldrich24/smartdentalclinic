@@ -24,15 +24,15 @@ const PatientHistory = () => {
       }
 
       try {
-        // ✅ Updated route to match backend reroute
+        // Fetch completed appointments instead of old patient-records
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/patient-records/${patientId}`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/appointments/completed/${patientId}`,
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
 
         setRecords(res.data.records || []);
       } catch (err) {
-        console.error("Error fetching patient records:", err.response?.data || err.message);
+        console.error("Error fetching patient appointments:", err.response?.data || err.message);
         setRecords([]);
       } finally {
         setLoading(false);
@@ -45,7 +45,7 @@ const PatientHistory = () => {
   if (loading) {
     return (
       <div className="w-full p-4 text-center text-gray-500">
-        Loading records...
+        Loading patient appointments...
       </div>
     );
   }
@@ -58,7 +58,7 @@ const PatientHistory = () => {
 
       {records.length === 0 ? (
         <div className="bg-gray-50 border rounded-lg p-4 text-center text-sm text-gray-500">
-          No dental history available.
+          No completed appointments available.
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -70,7 +70,7 @@ const PatientHistory = () => {
               {/* Header */}
               <div className="flex justify-between items-start">
                 <div className="text-sm font-medium text-gray-800">
-                  📅 {new Date(record.date).toLocaleDateString()}
+                  📅 {new Date(record.date).toLocaleDateString()} 🕒 {record.time}
                 </div>
                 <div className="text-xs text-gray-500 text-right">
                   👨‍⚕️ {record.doctor?.name || "N/A"}
@@ -85,7 +85,7 @@ const PatientHistory = () => {
                 </div>
               </div>
 
-              {/* Services (Optional) */}
+              {/* Services */}
               {record.services && record.services.length > 0 && (
                 <div className="mt-2 text-sm text-gray-600">
                   <span className="font-semibold text-gray-800">Services:</span>
@@ -98,6 +98,12 @@ const PatientHistory = () => {
                   </ul>
                 </div>
               )}
+
+              {/* Payment Info */}
+              <div className="mt-2 text-sm text-gray-700">
+                <span className="font-semibold">Total Price:</span> ₱{record.totalPrice || 0} <br />
+                <span className="font-semibold">Payment Status:</span> {record.paymentStatus || "N/A"}
+              </div>
             </div>
           ))}
         </div>

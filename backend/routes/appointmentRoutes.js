@@ -16,6 +16,7 @@ import Appointment from "../models/appointmentModel.js";
 import protect from "../middlewares/authMiddleware.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
+import { getPatientCompletedAppointments } from "../controllers/appointmentController.js";
 
 const router = express.Router();
 
@@ -107,6 +108,9 @@ router.put(
 
 // ✅ Admin marks appointment as done
 router.put("/:id/admin-complete", adminAuthMiddleware, adminCompleteAppointment);
+
+// Fetch completed appointments for a patient
+router.get("/completed/:userId", getPatientCompletedAppointments);
 
 
 export default router;
