@@ -44,7 +44,7 @@ const DoctorDashboard = () => {
     }
   };
 
-  // Fetch schedule
+  // Fetch doctor's schedule
   const fetchSchedule = async () => {
     if (!dToken) return;
     try {
@@ -78,7 +78,7 @@ const DoctorDashboard = () => {
     }
   };
 
-  // Fetch available services for doctor to pick
+  // Fetch available services
   const fetchServices = async () => {
     try {
       const res = await fetch(`${backendUrl}/api/services`, {
@@ -104,10 +104,13 @@ const DoctorDashboard = () => {
     }
   }, [dToken]);
 
-  // Update appointment with selected services
-  const handleUpdateAppointment = async (apptId, selectedServiceIds) => {
+  // Update appointment with selected services and final price
+  const handleUpdateAppointment = async (apptId, selectedServiceIds, finalPrice) => {
     try {
-      const servicesPayload = selectedServiceIds.map(id => ({ serviceId: id }));
+      const servicesPayload = selectedServiceIds.map(id => {
+        const svc = services.find(s => s._id === id);
+        return { serviceId: id, price: finalPrice || (svc?.price ?? 0) };
+      });
 
       const res = await fetch(`${backendUrl}/api/appointments/${apptId}/assign-services`, {
         method: 'PUT',
@@ -212,6 +215,9 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
   const [selectedServices, setSelectedServices] = useState(
     appointment.services?.map(s => s.service?._id) || []
   );
+  const [finalPrice, setFinalPrice] = useState(
+    appointment.services?.reduce((acc, s) => acc + (s.price ?? 0), 0) || 0
+  );
 
   const toggleService = (serviceId) => {
     setSelectedServices(prev =>
@@ -223,7 +229,7 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
 
   const handleSave = () => {
     if (selectedServices.length === 0) return alert('Select at least one service');
-    onUpdate(appointment._id, selectedServices);
+    onUpdate(appointment._id, selectedServices, finalPrice);
   };
 
   return (
@@ -244,6 +250,7 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
               {appointment.status}
             </span>
           </div>
+
           <div className="text-sm text-gray-600 space-y-1">
             <p>📧 {appointment.user?.email}</p>
             <p>📞 {appointment.user?.phone || 'No phone'}</p>
@@ -266,11 +273,19 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
                         : 'bg-gray-100 text-gray-800'
                     }`}
                   >
-                    {svc.name}
+                    {svc.name} ₱{svc.price}
                   </button>
                 ))}
               </div>
-              <div className="mt-2">
+
+              <div className="mt-2 flex items-center gap-2">
+                <label className="font-semibold">Final Price:</label>
+                <input
+                  type="number"
+                  className="border px-2 py-1 rounded w-32"
+                  value={finalPrice}
+                  onChange={e => setFinalPrice(Number(e.target.value))}
+                />
                 <button
                   className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
                   onClick={handleSave}
