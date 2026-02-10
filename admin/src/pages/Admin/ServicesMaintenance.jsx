@@ -8,10 +8,10 @@ const ServicesMaintenance = () => {
   const [services, setServices] = useState([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
   const [duration, setDuration] = useState("");
   const [editingId, setEditingId] = useState(null);
 
+  // Fetch all services
   const fetchServices = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/services`, {
@@ -27,9 +27,11 @@ const ServicesMaintenance = () => {
     fetchServices();
   }, []);
 
+  // Handle add/update service
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Check for duplicate name
     const duplicate = services.find(
       (s) =>
         s.name.toLowerCase() === name.trim().toLowerCase() &&
@@ -42,7 +44,7 @@ const ServicesMaintenance = () => {
     }
 
     try {
-      const payload = { name, description, price, duration };
+      const payload = { name, description, duration };
 
       const res = editingId
         ? await axios.put(
@@ -58,7 +60,6 @@ const ServicesMaintenance = () => {
         toast.success(res.data.message);
         setName("");
         setDescription("");
-        setPrice("");
         setDuration("");
         setEditingId(null);
         fetchServices();
@@ -68,14 +69,15 @@ const ServicesMaintenance = () => {
     }
   };
 
+  // Populate form for editing
   const handleEdit = (service) => {
     setName(service.name);
     setDescription(service.description);
-    setPrice(service.price);
     setDuration(service.duration);
     setEditingId(service._id);
   };
 
+  // Delete a service
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this service?")) return;
     try {
@@ -118,15 +120,6 @@ const ServicesMaintenance = () => {
         />
 
         <input
-          type="number"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-          required
-        />
-
-        <input
           type="text"
           placeholder="Duration"
           value={duration}
@@ -146,7 +139,6 @@ const ServicesMaintenance = () => {
             <tr>
               <th className="border p-2">Name</th>
               <th className="border p-2">Description</th>
-              <th className="border p-2">Price</th>
               <th className="border p-2">Duration</th>
               <th className="border p-2">Actions</th>
             </tr>
@@ -156,7 +148,6 @@ const ServicesMaintenance = () => {
               <tr key={s._id}>
                 <td className="border p-2">{s.name}</td>
                 <td className="border p-2">{s.description}</td>
-                <td className="border p-2">{s.price}</td>
                 <td className="border p-2">{s.duration}</td>
                 <td className="border p-2 flex gap-2">
                   <button
@@ -181,15 +172,9 @@ const ServicesMaintenance = () => {
       {/* MOBILE CARDS */}
       <div className="md:hidden space-y-4">
         {services.map((s) => (
-          <div
-            key={s._id}
-            className="bg-white p-4 rounded-lg shadow border"
-          >
+          <div key={s._id} className="bg-white p-4 rounded-lg shadow border">
             <p className="font-bold">{s.name}</p>
             <p className="text-sm text-gray-600">{s.description}</p>
-            <p className="mt-1">
-              <span className="font-semibold">Price:</span> {s.price}
-            </p>
             <p>
               <span className="font-semibold">Duration:</span> {s.duration}
             </p>

@@ -5,11 +5,11 @@ import Service from "../models/serviceModel.js";
 // --------------------------
 export const addService = async (req, res) => {
   try {
-    const { name, description, price, duration } = req.body;
+    const { name, description, duration } = req.body;
 
     // Validation
-    if (!name || !price) {
-      return res.status(400).json({ success: false, message: "Name and price required" });
+    if (!name) {
+      return res.status(400).json({ success: false, message: "Name is required" });
     }
 
     // ✅ Check for duplicate (case-insensitive)
@@ -18,7 +18,7 @@ export const addService = async (req, res) => {
       return res.status(400).json({ success: false, message: "Service with this name already exists" });
     }
 
-    const service = new Service({ name, description, price, duration });
+    const service = new Service({ name, description, duration });
     await service.save();
 
     res.json({ success: true, message: "Service added successfully", service });
