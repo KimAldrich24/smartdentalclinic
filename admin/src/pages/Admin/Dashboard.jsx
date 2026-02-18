@@ -12,7 +12,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer
 } from "recharts";
 
@@ -69,7 +68,6 @@ const Dashboard = () => {
   const COLORS = ["#0088FE", "#FF69B4", "#00C49F", "#FFBB28"];
 
   return (
-    /* 🔒 Prevent global horizontal scroll */
     <div className="w-full max-w-full overflow-x-hidden p-3 md:p-6 space-y-6">
 
       {/* ================= TOP CARDS ================= */}
@@ -146,23 +144,26 @@ const Dashboard = () => {
       {/* ================= RECENT APPOINTMENTS ================= */}
       <div className="bg-white p-3 rounded-xl shadow">
         <p className="text-sm font-semibold mb-2">Recent Appointments</p>
-
-        {/* 👇 Horizontal scroll ONLY inside table */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-xs sm:text-sm border-collapse">
+          <table className="w-full min-w-[900px] text-xs sm:text-sm border-collapse">
             <thead>
               <tr>
                 <th className="border p-2">Patient</th>
                 <th className="border p-2">Doctor</th>
+                <th className="border p-2">Services</th>
                 <th className="border p-2">Date</th>
+                <th className="border p-2">Time</th>
                 <th className="border p-2">Status</th>
-                <th className="border p-2">Payment</th>
+                <th className="border p-2">Total Price</th>
+                <th className="border p-2">Payment Status</th>
+                <th className="border p-2">Created By</th>
+                <th className="border p-2">Created At</th>
               </tr>
             </thead>
             <tbody>
               {recentAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center p-3">
+                  <td colSpan="10" className="text-center p-3">
                     No recent appointments
                   </td>
                 </tr>
@@ -172,16 +173,20 @@ const Dashboard = () => {
                     <td className="border p-2">{a.user?.name || "N/A"}</td>
                     <td className="border p-2">{a.doctor?.name || "N/A"}</td>
                     <td className="border p-2">
-                      {a.date
-                        ? new Date(a.date).toLocaleDateString()
-                        : "Unknown"}
+                      {a.services?.length
+                        ? a.services.map((s) => s.name).join(", ")
+                        : "N/A"}
                     </td>
+                    <td className="border p-2">
+                      {a.date ? new Date(a.date).toLocaleDateString() : "N/A"}
+                    </td>
+                    <td className="border p-2">{a.time || "N/A"}</td>
                     <td className="border p-2">
                       <span
                         className={`px-2 py-1 rounded text-[10px] ${
-                          a.status === "completed"
+                          a.status?.toLowerCase() === "completed"
                             ? "bg-green-100 text-green-800"
-                            : a.status === "cancelled"
+                            : a.status?.toLowerCase() === "cancelled"
                             ? "bg-red-100 text-red-800"
                             : "bg-blue-100 text-blue-800"
                         }`}
@@ -190,7 +195,12 @@ const Dashboard = () => {
                       </span>
                     </td>
                     <td className="border p-2 font-semibold">
-                      ₱{a.finalPrice?.toLocaleString() || 0}
+                      ₱{((a.totalPrice || 0) + (a.additionalPayment || 0)).toLocaleString()}
+                    </td>
+                    <td className="border p-2">{a.paymentStatus || "N/A"}</td>
+                    <td className="border p-2">{a.createdBy?.name || "N/A"}</td>
+                    <td className="border p-2">
+                      {a.createdAt ? new Date(a.createdAt).toLocaleString() : "N/A"}
                     </td>
                   </tr>
                 ))

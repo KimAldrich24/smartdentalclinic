@@ -18,12 +18,11 @@ export const getDashboardStats = async (req, res) => {
       { $sort: { "_id": 1 } },
     ]);
 
-    // ✅ Calculate revenue from completed appointments using finalPrice
+    // Calculate revenue from completed appointments
     const completedAppointments = await Appointment.find({ status: "completed" });
     
     let revenue = 0;
     for (let appt of completedAppointments) {
-      // Use the finalPrice that was calculated when booking (includes discounts)
       revenue += appt.finalPrice || 0;
     }
 
@@ -48,11 +47,12 @@ export const getDashboardStats = async (req, res) => {
 export const getRecentAppointments = async (req, res) => {
   try {
     const recent = await Appointment.find()
+      .sort({ date: -1 })
+      .limit(5)
       .populate("user", "name email")
       .populate("doctor", "name specialization")
-      .populate("service", "name price")
-      .sort({ date: -1 })
-      .limit(5);
+      .populate("services", "name price")       // ✅ note plural 'services'
+      .populate("createdBy", "name email");     // ✅ populate creator info
 
     res.json(recent);
   } catch (err) {
