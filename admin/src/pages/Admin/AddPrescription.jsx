@@ -47,15 +47,14 @@ const AddPrescription = ({ patientId, doctorId }) => {
 
     try {
       const res = await axios.post(
-        `${backendUrl}/api/prescriptions/add/${patientId}`,
+        `${backendUrl}/api/prescriptions/add/${patientId}/${selectedAppointment}`,
         {
-          appointment: selectedAppointment,
-          doctor: doctorId,
           medicines,
           notes,
         },
         { headers: { Authorization: `Bearer ${aToken}` } }
       );
+
 
       console.log("Prescription added:", res.data.prescription);
       alert("Prescription added successfully!");
