@@ -1,4 +1,6 @@
 import express from "express";
+import Appointment from "../models/appointmentModel.js";
+
 import {
   bookAppointment,
   getMyAppointments,
@@ -22,40 +24,58 @@ import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 const router = express.Router();
 
 /* ================= PATIENT ================= */
+// Book appointment
 router.post("/book", protect(), bookAppointment);
+// Get my appointments
 router.get("/my", protect(), getMyAppointments);
+// Cancel appointment
 router.put("/:id/cancel", protect(), cancelAppointment);
 
 /* ================= ADMIN ================= */
+// Get all appointments
 router.get("/", adminAuthMiddleware, getAllAppointments);
-router.get("/patient/:id", adminAuthMiddleware, async (req, res) => {
+
+// Get appointments for a specific patient
+router.get("/patient/:userId", adminAuthMiddleware, async (req, res) => {
   try {
-    const appointments = await Appointment.find({ user: req.params.id })
+    const appointments = await Appointment.find({ user: req.params.userId })
       .populate("user", "name email")
       .populate("doctor", "name email speciality")
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
+
     res.json({ success: true, appointments });
   } catch (err) {
     res.status(500).json({ success: false, message: "Failed to fetch appointments" });
   }
 });
+
+// Approve appointment
 router.put("/:id/approve", adminAuthMiddleware, approveAppointment);
+
+// Admin marks appointment complete
 router.put("/:id/admin-complete", adminAuthMiddleware, adminCompleteAppointment);
+
+// Delete appointment
 router.delete("/:id", adminAuthMiddleware, deleteAppointment);
 
-// Completed appointments
+// Completed appointments for a patient
 router.get("/admin/completed/:userId", adminAuthMiddleware, getPatientCompletedAppointments);
 
 // Add prescription
 router.post("/add/:patientId/:appointmentId", adminAuthMiddleware, addPrescription);
 
-// Paginated prescriptions
+// Get prescriptions (paginated / filtered)
 router.get("/prescriptions", adminAuthMiddleware, getPrescriptions);
 
 /* ================= DOCTOR ================= */
+// Get my appointments
 router.get("/doctor/my-appointments", doctorAuthMiddleware, getDoctorAppointments);
+
+// Assign services to appointment
 router.put("/doctor/:id/assign-services", doctorAuthMiddleware, doctorAssignServices);
+
+// Complete appointment
 router.put("/doctor/:id/complete", doctorAuthMiddleware, completeAppointment);
 
 export default router;

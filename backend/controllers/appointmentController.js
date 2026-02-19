@@ -279,3 +279,25 @@ export const addPrescription = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+/* =====================================================
+   ADMIN / PATIENT: GET PRESCRIPTIONS
+===================================================== */
+export const getPrescriptions = async (req, res) => {
+  try {
+    const { patientId, appointmentId } = req.query; // optional filters
+
+    const filter = {};
+    if (patientId) filter.user = patientId;
+    if (appointmentId) filter.appointment = appointmentId;
+
+    const prescriptions = await PatientRecord.find(filter)
+      .populate("doctor", "name email speciality")
+      .populate("user", "name email")
+      .populate("services.service", "name price");
+
+    res.json({ success: true, prescriptions });
+  } catch (err) {
+    console.error("Error fetching prescriptions:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
