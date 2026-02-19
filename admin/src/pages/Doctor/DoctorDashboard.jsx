@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DoctorContext } from "../../context/DoctorContext";
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
-import { Calendar, LogOut } from 'lucide-react';
+import { Calendar, LogOut, Plus, Clock } from 'lucide-react';
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
@@ -12,8 +12,12 @@ const DoctorDashboard = () => {
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [schedule, setSchedule] = useState([]);
   const [services, setServices] = useState([]);
+
+  // Schedule push state
+  const [selectedDate, setSelectedDate] = useState('');
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [newSlot, setNewSlot] = useState('');
 
   // Logout
   const handleLogout = () => {
@@ -22,7 +26,7 @@ const DoctorDashboard = () => {
     navigate('/login');
   };
 
-  // Fetch appointments for doctor
+  // Fetch appointments
   const fetchAppointments = async () => {
     if (!dToken) return;
     try {
@@ -31,11 +35,8 @@ const DoctorDashboard = () => {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       const data = await res.json();
-      if (data.success) {
-        setAppointments(data.appointments);
-      } else {
-        toast.error(data.message || 'Failed to fetch appointments');
-      }
+      if (data.success) setAppointments(data.appointments);
+      else toast.error(data.message || 'Failed to fetch appointments');
     } catch (err) {
       console.error(err);
       toast.error('Failed to load appointments');
@@ -44,52 +45,13 @@ const DoctorDashboard = () => {
     }
   };
 
-  // Fetch doctor's schedule
-  const fetchSchedule = async () => {
-    if (!dToken) return;
-    try {
-      const res = await fetch(`${backendUrl}/api/doctors/my-data`, {
-        headers: { Authorization: `Bearer ${dToken}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        let scheduleArray = [];
-        if (Array.isArray(data.schedule)) {
-          scheduleArray = data.schedule.map(s => ({
-            _id: s._id,
-            date: s.date,
-            slots: Array.isArray(s.slots) ? s.slots : [],
-          }));
-        } else if (typeof data.schedule === 'object' && data.schedule !== null) {
-          scheduleArray = Object.entries(data.schedule).map(([date, slots]) => ({
-            date,
-            slots: Array.isArray(slots) ? slots : [],
-          }));
-        }
-        setSchedule(scheduleArray);
-      } else {
-        toast.error(data.message || 'Failed to fetch schedule');
-        setSchedule([]);
-      }
-    } catch (err) {
-      console.error('Error fetching schedule:', err);
-      toast.error('Error fetching schedule');
-      setSchedule([]);
-    }
-  };
-
-  // Fetch available services
+  // Fetch services
   const fetchServices = async () => {
     try {
-      const res = await fetch(`${backendUrl}/api/services`, {
-        headers: { Authorization: `Bearer ${dToken}` },
-      });
+      const res = await fetch(`${backendUrl}/api/services`, { headers: { Authorization: `Bearer ${dToken}` } });
       const data = await res.json();
-      if (data.success) {
-        setServices(data.services);
-      } else {
-        toast.error(data.message || 'Failed to fetch services');
-      }
+      if (data.success) setServices(data.services);
+      else toast.error(data.message || 'Failed to fetch services');
     } catch (err) {
       console.error(err);
       toast.error('Error fetching services');
@@ -99,12 +61,11 @@ const DoctorDashboard = () => {
   useEffect(() => {
     if (dToken) {
       fetchAppointments();
-      fetchSchedule();
       fetchServices();
     }
   }, [dToken]);
 
-  // Update appointment with selected services and final price
+  // Appointment update
   const handleUpdateAppointment = async (apptId, selectedServiceIds, finalPrice) => {
     try {
       const servicesPayload = selectedServiceIds.map(id => {
@@ -114,10 +75,7 @@ const DoctorDashboard = () => {
 
       const res = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${dToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${dToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ services: servicesPayload }),
       });
 
@@ -125,12 +83,42 @@ const DoctorDashboard = () => {
       if (data.success) {
         toast.success('Appointment updated successfully');
         fetchAppointments();
-      } else {
-        toast.error(data.message || 'Failed to update appointment');
-      }
+      } else toast.error(data.message || 'Failed to update appointment');
     } catch (err) {
       console.error(err);
       toast.error('Error updating appointment');
+    }
+  };
+
+  // --- Schedule Push Functions ---
+  const handleAddSlot = () => {
+    if (!newSlot) return toast.error("Select a time first");
+    if (timeSlots.includes(newSlot)) return toast.error("Time slot already added");
+    setTimeSlots([...timeSlots, newSlot]);
+    setNewSlot('');
+  };
+
+  const handleRemoveSlot = (slot) => {
+    setTimeSlots(timeSlots.filter(s => s !== slot));
+  };
+
+  const handlePushSchedule = async () => {
+    if (!selectedDate || timeSlots.length === 0) return toast.error("Select date and slots");
+    try {
+      const res = await fetch(`${backendUrl}/api/schedule-requests/request`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${dToken}` },
+        body: JSON.stringify({ date: selectedDate, slots: timeSlots }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Schedule pushed to admin!");
+        setSelectedDate('');
+        setTimeSlots([]);
+      } else toast.error(data.message || "Failed to push schedule");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error pushing schedule");
     }
   };
 
@@ -141,16 +129,10 @@ const DoctorDashboard = () => {
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
           <h1 className="text-2xl md:text-3xl font-bold">👨‍⚕️ Doctor Dashboard</h1>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <button
-              onClick={() => navigate("/doctor-change-password")}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md w-full md:w-auto"
-            >
+            <button onClick={() => navigate("/doctor-change-password")} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md w-full md:w-auto">
               🔒 Change Password
             </button>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md flex items-center justify-center gap-2 w-full md:w-auto"
-            >
+            <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md flex items-center justify-center gap-2 w-full md:w-auto">
               <LogOut size={18} /> Logout
             </button>
           </div>
@@ -160,15 +142,9 @@ const DoctorDashboard = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
           <div className="flex items-center gap-4">
             {doctor?.image ? (
-              <img
-                src={`${backendUrl}/uploads/doctors/${doctor.image}`}
-                alt={doctor.name}
-                className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-4 border-white"
-              />
+              <img src={`${backendUrl}/uploads/doctors/${doctor.image}`} alt={doctor.name} className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-4 border-white" />
             ) : (
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center text-3xl">
-                👨‍⚕️
-              </div>
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center text-3xl">👨‍⚕️</div>
             )}
             <div>
               <h2 className="text-xl md:text-2xl font-semibold">{doctor?.name || 'Doctor'}</h2>
@@ -177,11 +153,7 @@ const DoctorDashboard = () => {
               <p className="text-sm text-green-100 mt-1">📧 {doctor?.email}</p>
             </div>
           </div>
-
-          <button
-            onClick={() => navigate('/doctor-schedule')}
-            className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 font-semibold shadow-md flex items-center justify-center gap-2 w-full md:w-auto"
-          >
+          <button onClick={() => navigate('/doctor-schedule')} className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 font-semibold shadow-md flex items-center justify-center gap-2 w-full md:w-auto">
             <Calendar size={20} /> Manage Schedule & Services
           </button>
         </div>
@@ -190,41 +162,61 @@ const DoctorDashboard = () => {
       {/* APPOINTMENTS */}
       <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mb-8">
         <h2 className="text-xl md:text-2xl font-bold mb-5 border-b pb-2">📅 My Appointments</h2>
+        {loading ? <p className="text-center text-gray-500 py-10">Loading appointments...</p> :
+          appointments.length === 0 ? <p className="text-center text-gray-500 py-10">No appointments yet.</p> :
+            appointments.map(appt => (
+              <AppointmentCard key={appt._id} appointment={appt} services={services} onUpdate={handleUpdateAppointment} />
+            ))
+        }
+      </div>
 
-        {loading ? (
-          <p className="text-center text-gray-500 py-10">Loading appointments...</p>
-        ) : appointments.length === 0 ? (
-          <p className="text-center text-gray-500 py-10">No appointments yet.</p>
-        ) : (
-          appointments.map(appt => (
-            <AppointmentCard
-              key={appt._id}
-              appointment={appt}
-              services={services}
-              onUpdate={handleUpdateAppointment}
-            />
-          ))
+      {/* PUSH SCHEDULE TO ADMIN */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mb-8">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-2">
+          <Calendar size={20} /> Push Schedule to Admin
+        </h2>
+
+        <div className="mb-3">
+          <label className="block mb-1">Select Date</label>
+          <input type="date" value={selectedDate} min={new Date().toISOString().split('T')[0]} onChange={e => setSelectedDate(e.target.value)} className="border px-3 py-2 rounded w-full" />
+        </div>
+
+        <div className="mb-3">
+          <label className="block mb-1">Add Time Slots</label>
+          <div className="flex gap-2">
+            <input type="time" value={newSlot} onChange={e => setNewSlot(e.target.value)} className="border px-3 py-2 rounded flex-1" />
+            <button onClick={handleAddSlot} className="bg-green-500 text-white px-4 py-2 rounded flex items-center gap-1">
+              <Plus size={16} /> Add
+            </button>
+          </div>
+        </div>
+
+        {timeSlots.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {timeSlots.map((t, i) => (
+              <span key={i} className="bg-blue-100 px-3 py-1 rounded flex items-center gap-1">
+                <Clock size={12} /> {t}
+                <button onClick={() => handleRemoveSlot(t)} className="text-red-500 font-bold">×</button>
+              </span>
+            ))}
+          </div>
         )}
+
+        <button onClick={handlePushSchedule} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+          Push to Admin
+        </button>
       </div>
     </div>
   );
 };
 
-// ================= Appointment Card Component =================
+// Appointment Card
 const AppointmentCard = ({ appointment, services, onUpdate }) => {
-  const [selectedServices, setSelectedServices] = useState(
-    appointment.services?.map(s => s.service?._id) || []
-  );
-  const [finalPrice, setFinalPrice] = useState(
-    appointment.services?.reduce((acc, s) => acc + (s.price ?? 0), 0) || 0
-  );
+  const [selectedServices, setSelectedServices] = useState(appointment.services?.map(s => s.service?._id) || []);
+  const [finalPrice, setFinalPrice] = useState(appointment.services?.reduce((acc, s) => acc + (s.price ?? 0), 0) || 0);
 
   const toggleService = (serviceId) => {
-    setSelectedServices(prev =>
-      prev.includes(serviceId)
-        ? prev.filter(id => id !== serviceId)
-        : [...prev, serviceId]
-    );
+    setSelectedServices(prev => prev.includes(serviceId) ? prev.filter(id => id !== serviceId) : [...prev, serviceId]);
   };
 
   const handleSave = () => {
@@ -238,19 +230,13 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="font-semibold text-gray-800">{appointment.user?.name}</span>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                appointment.status === 'COMPLETED'
-                  ? 'bg-green-100 text-green-700'
-                  : appointment.status === 'CANCELLED'
-                  ? 'bg-red-100 text-red-700'
-                  : 'bg-blue-100 text-blue-700'
-              }`}
-            >
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              appointment.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+              appointment.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+              'bg-blue-100 text-blue-700'}`}>
               {appointment.status}
             </span>
           </div>
-
           <div className="text-sm text-gray-600 space-y-1">
             <p>📧 {appointment.user?.email}</p>
             <p>📞 {appointment.user?.phone || 'No phone'}</p>
@@ -258,40 +244,20 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
             <p>🕐 {appointment.time}</p>
           </div>
 
-          {/* Services selection */}
           {(appointment.status === 'APPROVED_ADMIN' || appointment.status === 'IN_PROGRESS') && (
             <div className="mt-3">
               <p className="font-semibold">Select Services:</p>
               <div className="flex flex-wrap gap-2 mt-1">
                 {services.map(svc => (
-                  <button
-                    key={svc._id}
-                    onClick={() => toggleService(svc._id)}
-                    className={`px-3 py-1 border rounded-full text-sm ${
-                      selectedServices.includes(svc._id)
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
+                  <button key={svc._id} onClick={() => toggleService(svc._id)} className={`px-3 py-1 border rounded-full text-sm ${selectedServices.includes(svc._id) ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800'}`}>
                     {svc.name} ₱{svc.price}
                   </button>
                 ))}
               </div>
-
               <div className="mt-2 flex items-center gap-2">
                 <label className="font-semibold">Final Price:</label>
-                <input
-                  type="number"
-                  className="border px-2 py-1 rounded w-32"
-                  value={finalPrice}
-                  onChange={e => setFinalPrice(Number(e.target.value))}
-                />
-                <button
-                  className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
-                  onClick={handleSave}
-                >
-                  Save
-                </button>
+                <input type="number" className="border px-2 py-1 rounded w-32" value={finalPrice} onChange={e => setFinalPrice(Number(e.target.value))} />
+                <button className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600" onClick={handleSave}>Save</button>
               </div>
             </div>
           )}

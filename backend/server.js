@@ -29,6 +29,7 @@ import staffRoutes from "./routes/staffRoutes.js"
 import adminStaffRoutes from "./routes/adminStaffRoutes.js"
 import paymentProofRoutes from './routes/paymentProofRoutes.js'
 import { startScheduleCleanup } from './utils/scheduleCleanup.js'
+import doctorScheduleRequestRoutes from "./routes/doctorScheduleRequestRoutes.js";
 
 // SMS
 import fetch from 'node-fetch'
@@ -99,6 +100,8 @@ safeUse('/api/staff', staffRoutes, 'staffRoutes')
 safeUse('/api/admin/staff', adminStaffRoutes, 'adminStaffRoutes')
 safeUse('/api/payment-proofs', paymentProofRoutes, 'paymentProofRoutes')
 safeUse('/api/admin/schedule', doctorScheduleRoutes, 'doctorScheduleRoutes')
+safeUse("/api/schedule-requests", doctorScheduleRequestRoutes);
+
 
 // Static uploads only
 app.use('/uploads', express.static('uploads'))

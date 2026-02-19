@@ -117,7 +117,7 @@ const AddDoctor = () => {
       className="max-w-3xl mx-auto bg-white shadow-lg rounded-2xl p-6 space-y-6"
     >
       <h2 className="text-2xl font-semibold text-gray-700 border-b pb-2">
-        Add Doctor
+        Add Dentist
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -271,7 +271,7 @@ const AddDoctor = () => {
             : 'bg-blue-500 text-white hover:bg-blue-600'
         }`}
       >
-        Add Doctor
+        Add Dentist
       </button>
     </form>
   );
