@@ -16,6 +16,11 @@ const MyProfile = () => {
   const [prescriptionsError, setPrescriptionsError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // ✅ Credit state
+  const [credit, setCredit] = useState({ amount: 0, history: [] });
+  const [creditLoading, setCreditLoading] = useState(true);
+  const [creditError, setCreditError] = useState("");
+
   // ✅ Load user data
   useEffect(() => {
     const fetchProfile = async () => {
@@ -26,15 +31,11 @@ const MyProfile = () => {
       }
 
       try {
-        console.log("🔄 Fetching user profile...");
         const { data } = await axios.get(`${backendUrl}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log("📥 User data from backend:", data);
-
         if (data.success) {
-          // Format the user data properly
           const formattedUser = {
             id: data.user.id,
             name: data.user.name,
@@ -48,8 +49,6 @@ const MyProfile = () => {
               ? new Date(data.user.dob).toISOString().split("T")[0] 
               : "",
           };
-          
-          console.log("✅ Formatted user data:", formattedUser);
           setUserData(formattedUser);
           setError("");
         } else {
@@ -66,29 +65,25 @@ const MyProfile = () => {
     fetchProfile();
   }, [token, backendUrl]);
 
+  // ✅ Fetch completed appointments
   useEffect(() => {
     if (!token) return;
-  
+
     const fetchAppointments = async () => {
       try {
-        console.log("📞 Fetching appointments...");
-        
         const { data } = await axios.get(`${backendUrl}/api/appointments/my`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-  
-        console.log("📦 Appointments response:", data);
-  
+
         if (data.success) {
           const completed = data.appointments.filter((a) => a.status === "COMPLETED");
-          console.log("✔️ Completed appointments:", completed.length);
           setRecords(completed);
         }
       } catch (err) {
         console.error("❌ Error fetching appointments:", err.response?.data || err.message);
       }
     };
-  
+
     fetchAppointments();
   }, [token, backendUrl]);
 
@@ -101,8 +96,7 @@ const MyProfile = () => {
       setPrescriptionsError("");
 
       try {
-        const url = `${backendUrl}/api/prescriptions/my`;
-        const { data } = await axios.get(url, {
+        const { data } = await axios.get(`${backendUrl}/api/prescriptions/my`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -123,13 +117,40 @@ const MyProfile = () => {
     fetchPrescriptions();
   }, [token, backendUrl]);
 
+  // ✅ Fetch credit
+  useEffect(() => {
+    if (!token || !userData?.id) return;
+
+    const fetchCredit = async () => {
+      setCreditLoading(true);
+      setCreditError("");
+
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/credits/${userData.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setCredit({
+          amount: data.amount || 0,
+          history: data.history || [],
+        });
+      } catch (err) {
+        console.error("❌ Error fetching credit:", err.response?.data || err.message);
+        setCreditError("Failed to load credit information");
+      } finally {
+        setCreditLoading(false);
+      }
+    };
+
+    fetchCredit();
+  }, [token, backendUrl, userData?.id]);
+
   const saveProfile = async () => {
     if (!token) return alert("No auth token found");
   
     setSaving(true);
   
     try {
-      // Prepare payload with correct field name
       const payload = {
         name: userData.name,
         phone: userData.phone,
@@ -137,18 +158,12 @@ const MyProfile = () => {
         dob: userData.dob || undefined,
         image: userData.image,
       };
-  
-      console.log("📤 Sending payload:", payload);
-  
-      // Send update to backend
+
       const { data } = await axios.put(`${backendUrl}/api/users/me`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
-      console.log("📥 Response from server:", data);
-  
+
       if (data.success) {
-        // Build the updated state from backend response
         const updated = {
           ...userData,
           name: data.user.name,
@@ -159,10 +174,8 @@ const MyProfile = () => {
             ? new Date(data.user.dob).toISOString().split("T")[0]
             : "",
         };
-  
-        // Update React state
+
         setUserData(updated);
-  
         setIsEdit(false);
         alert("Profile updated successfully!");
       } else {
@@ -176,37 +189,14 @@ const MyProfile = () => {
     }
   };
 
-  // 🕒 Loading states
-  if (loading) {
-    return (
-      <div className="text-center mt-10">
-        <p className="text-gray-500">Loading profile...</p>
-        <p className="text-sm text-gray-400 mt-2">If this takes too long, check your internet connection</p>
-      </div>
-    );
-  }
+  // 🕒 Loading/Error states
+  if (loading) return <p className="text-center mt-10 text-gray-500">Loading profile...</p>;
+  if (error) return <p className="text-center mt-10 text-red-500">{error}</p>;
+  if (!userData) return <p className="text-center mt-10 text-red-500">No user profile found.</p>;
 
-  if (error) {
-    return (
-      <div className="text-center mt-10">
-        <p className="text-red-500">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (!userData) {
-    return <p className="text-center text-red-500 mt-10">No user profile found.</p>;
-  }
-
-  // ✅ Render UI
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-lg space-y-8">
+
       {/* Profile Header */}
       <div className="flex items-center gap-6">
         <img
@@ -219,9 +209,7 @@ const MyProfile = () => {
             <input
               type="text"
               value={userData.name || ""}
-              onChange={(e) =>
-                setUserData((prev) => ({ ...prev, name: e.target.value }))
-              }
+              onChange={(e) => setUserData(prev => ({ ...prev, name: e.target.value }))}
               className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
             />
           ) : (
@@ -234,42 +222,31 @@ const MyProfile = () => {
 
       {/* Contact Info */}
       <div>
-        <p className="text-lg font-semibold text-gray-700 mb-3">
-          PERSONAL INFORMATION
-        </p>
+        <p className="text-lg font-semibold text-gray-700 mb-3">PERSONAL INFORMATION</p>
         <div className="space-y-4">
-          {/* Email */}
           <div>
             <p className="font-medium text-gray-600">Email:</p>
             <p className="text-gray-500">{userData.email}</p>
           </div>
-
-          {/* Phone */}
           <div>
             <p className="font-medium text-gray-600">Phone:</p>
             {isEdit ? (
               <input
                 type="text"
                 value={userData.phone || ""}
-                onChange={(e) =>
-                  setUserData((prev) => ({ ...prev, phone: e.target.value }))
-                }
+                onChange={(e) => setUserData(prev => ({ ...prev, phone: e.target.value }))}
                 className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
               />
             ) : (
               <p className="text-gray-500">{userData.phone || "Not set"}</p>
             )}
           </div>
-
-          {/* Gender */}
           <div>
             <p className="font-medium text-gray-600">Gender:</p>
             {isEdit ? (
               <select
                 value={userData.gender || "Not Selected"}
-                onChange={(e) =>
-                  setUserData((prev) => ({ ...prev, gender: e.target.value }))
-                }
+                onChange={(e) => setUserData(prev => ({ ...prev, gender: e.target.value }))}
                 className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
               >
                 <option value="Not Selected">Not Selected</option>
@@ -280,31 +257,63 @@ const MyProfile = () => {
               <p className="text-gray-500">{userData.gender || "Not set"}</p>
             )}
           </div>
-
-          {/* Date of Birth */}
           <div>
             <p className="font-medium text-gray-600">Date of Birth:</p>
             {isEdit ? (
               <input
                 type="date"
                 value={userData.dob || ""}
-                onChange={(e) =>
-                  setUserData((prev) => ({ ...prev, dob: e.target.value }))
-                }
+                onChange={(e) => setUserData(prev => ({ ...prev, dob: e.target.value }))}
                 className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
               />
             ) : (
               <p className="text-gray-500">
-                {userData.dob
-                  ? new Date(userData.dob).toLocaleDateString()
-                  : "Not set"}
+                {userData.dob ? new Date(userData.dob).toLocaleDateString() : "Not set"}
               </p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Tooth History */}
+      {/* CREDIT BALANCE */}
+      <div>
+        <p className="text-lg font-semibold text-gray-700 mb-3">CREDIT BALANCE</p>
+        {creditLoading ? (
+          <p className="text-gray-500">Loading credit...</p>
+        ) : creditError ? (
+          <p className="text-red-500">{creditError}</p>
+        ) : (
+          <div className="border p-4 rounded-lg bg-yellow-50 shadow-sm space-y-4">
+            <p className="text-2xl font-bold text-gray-800">
+              ₱ {credit.amount.toLocaleString()}
+            </p>
+            {credit.history.length === 0 ? (
+              <p className="text-gray-500">No credit history yet.</p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {credit.history
+                  .slice()
+                  .reverse()
+                  .map((h, i) => (
+                    <div key={i} className="border-b pb-1 last:border-b-0">
+                      <p className="text-sm text-gray-700">
+                        {h.note} — {h.change > 0 ? "+" : "-"}₱ {h.change.toLocaleString()}
+                      </p>
+                      {h.appointment && (
+                        <p className="text-xs text-gray-400">
+                          Appointment: {records.find(r => r._id === h.appointment)?.date || "N/A"} — Services:{" "}
+                          {records.find(r => r._id === h.appointment)?.services.map(s => s.service?.name || s.price).join(", ")}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* TOOTH HISTORY */}
       <div>
         <p className="text-lg font-semibold text-gray-700 mb-3">TOOTH HISTORY</p>
         {records.length === 0 ? (
@@ -314,14 +323,10 @@ const MyProfile = () => {
             {records.map((rec) => (
               <div key={rec._id} className="border p-4 rounded-lg bg-gray-50 shadow-sm">
                 <p className="font-medium text-gray-800">
-                  {rec.service?.name || "Unknown Service"}
+                  {rec.services.map(s => s.service?.name || "Unknown Service").join(", ")}
                 </p>
-                <p className="text-sm text-gray-600">
-                  {rec.date} at {rec.time}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Dentist: {rec.doctor?.name || "N/A"}
-                </p>
+                <p className="text-sm text-gray-600">{rec.date} at {rec.time}</p>
+                <p className="text-sm text-gray-500">Dentist: {rec.doctor?.name || "N/A"}</p>
                 <p className="text-sm italic text-gray-400">Status: {rec.status}</p>
               </div>
             ))}
@@ -329,7 +334,7 @@ const MyProfile = () => {
         )}
       </div>
 
-      {/* Prescriptions */}
+      {/* PRESCRIPTIONS */}
       <div>
         <p className="text-lg font-semibold text-gray-700 mb-3">PRESCRIPTIONS</p>
         {prescriptionsLoading && <p>Loading prescriptions...</p>}
@@ -340,36 +345,28 @@ const MyProfile = () => {
           <div className="space-y-4">
             {prescriptions.map((p) => (
               <div key={p._id} className="border p-4 rounded-lg bg-gray-50 shadow-sm">
-                <p className="font-medium text-gray-800">
-                  Prescribed by: {p.doctor?.name || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Date: {new Date(p.dateIssued).toLocaleDateString()}
-                </p>
+                <p className="font-medium text-gray-800">Prescribed by: {p.doctor?.name || "N/A"}</p>
+                <p className="text-sm text-gray-600">Date: {new Date(p.dateIssued).toLocaleDateString()}</p>
                 <ul className="list-disc pl-5">
                   {p.medicines.map((med, i) => (
-                    <li key={i}>
-                      <b>{med.name}</b> — {med.dosage} ({med.instructions})
-                    </li>
+                    <li key={i}><b>{med.name}</b> — {med.dosage} ({med.instructions})</li>
                   ))}
                 </ul>
-                {p.notes && (
-                  <p className="text-sm italic text-gray-500">Notes: {p.notes}</p>
-                )}
+                {p.notes && <p className="text-sm italic text-gray-500">Notes: {p.notes}</p>}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Save/Edit Button */}
+      {/* Save/Edit Buttons */}
       <div className="flex justify-end gap-3">
         {isEdit ? (
           <>
             <button
               onClick={() => {
                 setIsEdit(false);
-                window.location.reload(); // Reset to original data
+                window.location.reload();
               }}
               className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg shadow-md"
             >
@@ -392,6 +389,7 @@ const MyProfile = () => {
           </button>
         )}
       </div>
+
     </div>
   );
 };

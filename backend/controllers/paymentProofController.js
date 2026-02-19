@@ -1,61 +1,29 @@
 import PaymentProof from '../models/paymentProofModel.js';
 import Appointment from '../models/appointmentModel.js';
 
-// Submit payment proof (Patient)
+// Submit payment proof
 export const submitPaymentProof = async (req, res) => {
   try {
-    const { appointmentId, referenceNumber, amount, patientName, patientId } = req.body;
+    const { appointmentId, referenceNumber, amount } = req.body;
 
-    // Validate required fields
-    if (!patientId || !patientName || !appointmentId || !referenceNumber || !amount) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    if (!appointmentId || !referenceNumber || !amount || !req.file) {
+      return res.status(400).json({ success: false, message: 'All fields required' });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Screenshot is required' });
-    }
-
-    // Check if appointment exists
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) {
-      return res.status(404).json({ success: false, message: 'Appointment not found' });
-    }
-
-    // Check if a proof is already submitted
-    const existingProof = await PaymentProof.findOne({
+    const proof = await PaymentProof.create({
       appointmentId,
-      status: { $in: ['pending', 'approved'] }
-    });
-
-    if (existingProof) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment proof already submitted for this appointment'
-      });
-    }
-
-    // Create payment proof
-    const paymentProof = await PaymentProof.create({
-      appointmentId,
-      patientId,
-      patientName,
       referenceNumber,
       amount,
-      screenshot: req.file.filename
+      screenshot: req.file.filename,
+      status: 'pending', // default so admin can pick it up
     });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Payment proof submitted successfully. Awaiting admin approval.',
-      paymentProof
-    });
-
+    return res.status(201).json({ success: true, message: 'Created successfully', proof });
   } catch (err) {
-    console.error('❌ Error submitting payment proof:', err);
-    return res.status(500).json({ success: false, message: err.message });
+    console.error('❌ Payment proof error:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
-
 // Get all payment proofs (Admin)
 export const getAllPaymentProofs = async (req, res) => {
   try {

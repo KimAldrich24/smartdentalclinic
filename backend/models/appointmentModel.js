@@ -93,6 +93,13 @@ const appointmentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+
+    creditAdded: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Credit",
+  default: null,
+},
+
   },
   {
     timestamps: true,
@@ -111,5 +118,7 @@ appointmentSchema.pre("save", function (next) {
   this.totalPrice = servicesTotal + (this.additionalPayment || 0);
   next();
 });
+
+
 
 export default mongoose.model("Appointment", appointmentSchema);
