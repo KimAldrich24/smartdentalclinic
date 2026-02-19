@@ -4,7 +4,6 @@ import Doctor from "../models/doctorModel.js";
 import Service from "../models/serviceModel.js";
 import PatientRecord from "../models/patientRecordModel.js";
 import { sendSMS } from "../utils/smsHelper.js";
-import { addCreditFromAppointment } from "./creditController.js";
 import Credit from "../models/creditModel.js"; // make sure you have this model
 
 /* =====================================================
