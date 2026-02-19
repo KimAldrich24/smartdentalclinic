@@ -23,42 +23,49 @@ const DoctorSchedule = () => {
     return date < today;
   };
 
-  // Fetch doctor's schedule
+  // ---------------- Fetch doctor's schedule ----------------
   const fetchSchedule = async () => {
     if (!dToken) return;
-  
+
     try {
       const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
-  
-      const data = await res.json();
-      console.log("Fetched schedule:", data);
-  
+
+      // Check content type before parsing
+      const contentType = res.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('Unexpected response:', text);
+        toast.error('Invalid response from server');
+        return;
+      }
+
       if (data.success) {
         const normalizedSchedule = (data.schedule || []).map((s) => ({
           date: s.date,
           slots: s.slots.map(slot =>
-            typeof slot === "string" ? { time: slot, status: "available" } : slot
+            typeof slot === 'string' ? { time: slot, status: 'available' } : slot
           ),
         }));
         setSchedule(normalizedSchedule);
       } else {
-        toast.error(data.message || "Failed to fetch schedule");
+        toast.error(data.message || 'Failed to fetch schedule');
       }
     } catch (err) {
-      console.error("Error fetching schedule:", err);
-      toast.error("Failed to load schedule");
+      console.error('Error fetching schedule:', err);
+      toast.error('Failed to load schedule');
     }
   };
-  
-  
 
   useEffect(() => {
     fetchSchedule();
   }, [dToken]);
 
-  // --- Time Slots Handlers ---
+  // ---------------- Time Slots Handlers ----------------
   const handleAddSlot = () => {
     if (!newSlot) return toast.error('Select a time first');
     if (timeSlots.includes(newSlot)) return toast.error('Time slot already added');
@@ -81,19 +88,27 @@ const DoctorSchedule = () => {
     }
 
     try {
-      // ✅ Send strings only to backend
-      const slotsPayload = timeSlots; // ["09:00", "10:00"]
-
       const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${dToken}`,
         },
-        body: JSON.stringify({ date: selectedDate, slots: slotsPayload }),
+        body: JSON.stringify({ date: selectedDate, slots: timeSlots }),
       });
 
-      const data = await res.json();
+      // Safe JSON parsing
+      const contentType = res.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('Unexpected response:', text);
+        toast.error('Invalid response from server');
+        return;
+      }
+
       if (data.success) {
         toast.success('Schedule saved!');
         setSelectedDate('');
@@ -101,7 +116,7 @@ const DoctorSchedule = () => {
         setIsEditing(false);
         fetchSchedule();
       } else {
-        toast.error(data.message);
+        toast.error(data.message || 'Failed to save schedule');
       }
     } catch (err) {
       console.error('Error saving schedule:', err);
@@ -114,7 +129,6 @@ const DoctorSchedule = () => {
     if (!sch) return;
     if (isPastDate(sch.date)) return toast.error('Cannot edit past schedule');
     setSelectedDate(sch.date);
-    // Convert slot objects to strings for editing
     setTimeSlots(sch.slots.map((s) => s.time));
     setIsEditing(true);
   };
@@ -126,10 +140,24 @@ const DoctorSchedule = () => {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${dToken}` },
       });
-      const data = await res.json();
+
+      // Safe JSON parse
+      const contentType = res.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('Unexpected response:', text);
+        toast.error('Invalid response from server');
+        return;
+      }
+
       if (data.success) {
         toast.success('Schedule deleted!');
         setSchedule((prev) => prev.filter((s) => s.date !== date));
+      } else {
+        toast.error(data.message || 'Failed to delete schedule');
       }
     } catch (err) {
       console.error('Error deleting schedule:', err);
@@ -139,7 +167,9 @@ const DoctorSchedule = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><Calendar size={24} /> My Schedule</h2>
+      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+        <Calendar size={24} /> My Schedule
+      </h2>
 
       {/* Add/Edit Schedule */}
       <div className="space-y-4 mb-6">
