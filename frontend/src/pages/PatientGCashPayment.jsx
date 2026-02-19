@@ -39,11 +39,14 @@ const PatientGCashPayment = () => {
 
     try {
       const formData = new FormData();
-      formData.append('appointmentId', appointmentId);
-      formData.append('referenceNumber', referenceNumber);
-      formData.append('amount', amount);
-      formData.append('screenshot', screenshot);
-      formData.append('patientName', localStorage.getItem('patientName') || 'Patient');
+formData.append('appointmentId', appointmentId);
+formData.append('referenceNumber', referenceNumber);
+formData.append('amount', amount);
+formData.append('screenshot', screenshot);
+formData.append('patientName', localStorage.getItem('patientName') || 'Patient');
+
+// ✅ Add patientId from localStorage
+formData.append('patientId', localStorage.getItem('patientId'));
 
       const res = await fetch(`${backendUrl}/api/payment-proofs/submit`, {
         method: 'POST',

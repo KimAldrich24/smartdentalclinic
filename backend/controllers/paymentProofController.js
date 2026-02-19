@@ -4,10 +4,12 @@ import Appointment from '../models/appointmentModel.js';
 // Submit payment proof (Patient)
 export const submitPaymentProof = async (req, res) => {
   try {
-    const { appointmentId, referenceNumber, amount, patientName } = req.body;
-    const patientId = req.user.id; // Assuming you have auth middleware
+    const { appointmentId, referenceNumber, amount, patientName, patientId } = req.body;
 
-    console.log('📸 Payment proof submission:', { appointmentId, referenceNumber, amount });
+    // Use patientId from body instead of req.user
+    if (!patientId) {
+      return res.status(400).json({ success: false, message: 'Patient ID is required' });
+    }
 
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'Screenshot is required' });
@@ -19,12 +21,11 @@ export const submitPaymentProof = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }
 
-    // Check if proof already submitted for this appointment
+    // Check if proof already submitted
     const existingProof = await PaymentProof.findOne({ 
       appointmentId, 
       status: { $in: ['pending', 'approved'] } 
     });
-    
     if (existingProof) {
       return res.status(400).json({ 
         success: false, 
@@ -41,17 +42,17 @@ export const submitPaymentProof = async (req, res) => {
       screenshot: req.file.filename
     });
 
-    console.log('✅ Payment proof submitted successfully');
     res.status(201).json({ 
       success: true, 
       message: 'Payment proof submitted successfully. Awaiting admin approval.',
       paymentProof 
     });
   } catch (err) {
-    console.error('❌ Error submitting payment proof:', err);
+    console.error('Error submitting payment proof:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // Get all payment proofs (Admin)
 export const getAllPaymentProofs = async (req, res) => {
