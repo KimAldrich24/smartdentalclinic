@@ -5,7 +5,7 @@ import Service from "../models/serviceModel.js";
 import PatientRecord from "../models/patientRecordModel.js";
 import { sendSMS } from "../utils/smsHelper.js";
 import { addCreditFromAppointment } from "./creditController.js";
-
+import Credit from "../models/creditModel.js"; // make sure you have this model
 
 /* =====================================================
    PATIENT: BOOK APPOINTMENT
@@ -312,3 +312,33 @@ export const getPrescriptions = async (req, res) => {
 };
 
 
+// Add or update patient credit when appointment is completed
+const addCreditFromAppointment = async (appointment) => {
+  if (!appointment.user) return;
+
+  const creditAmount = appointment.totalPrice || 0; // or some calculation
+  let credit = await Credit.findOne({ user: appointment.user });
+
+  if (credit) {
+    credit.amount += creditAmount;
+    credit.history.push({
+      appointment: appointment._id,
+      amount: creditAmount,
+      date: new Date(),
+    });
+  } else {
+    credit = new Credit({
+      user: appointment.user,
+      amount: creditAmount,
+      history: [
+        {
+          appointment: appointment._id,
+          amount: creditAmount,
+          date: new Date(),
+        },
+      ],
+    });
+  }
+
+  await credit.save();
+};
