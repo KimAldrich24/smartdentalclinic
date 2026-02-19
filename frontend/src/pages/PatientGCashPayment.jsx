@@ -33,8 +33,14 @@ const PatientGCashPayment = () => {
     }
 
     // Use localStorage for patient info, fallback to defaults
-    const patientId = localStorage.getItem('patientId') || 'unknown';
-    const patientName = localStorage.getItem('patientName') || 'Patient';
+    const patientId = localStorage.getItem('patientId');
+    const patientName = localStorage.getItem('patientName') || '';
+
+    if (!patientId) {
+  toast.error('Patient ID missing. Please log in again.');
+  return;
+}
+
 
     setLoading(true);
 
