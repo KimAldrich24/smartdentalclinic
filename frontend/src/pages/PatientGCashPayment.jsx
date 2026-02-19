@@ -1,23 +1,30 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Upload, CreditCard } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext'; // Changed from AdminContext
 
 const PatientGCashPayment = () => {
   const { appointmentId } = useParams();
   const navigate = useNavigate();
-  const { token } = useContext(AuthContext); // Get token from AuthContext
-  const backendUrl = import.meta.env.VITE_BACKEND_URL; // Get backendUrl from env
-  
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
   const [referenceNumber, setReferenceNumber] = useState('');
   const [amount, setAmount] = useState('');
   const [screenshot, setScreenshot] = useState(null);
   const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Your GCash QR Code image URL (put your QR code image in public folder)
-  const gcashQRCode = '/gcashqr.jpg';// Update this path
+  const gcashQRCode = '/gcashqr.jpg';
+
+  // Ensure patient info exists
+  useEffect(() => {
+    const id = localStorage.getItem('patientId');
+    const name = localStorage.getItem('patientName');
+    if (!id || !name) {
+      toast.error('Patient info missing. Please log in again.');
+      navigate('/login');
+    }
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -28,61 +35,59 @@ const PatientGCashPayment = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!screenshot || !referenceNumber || !amount) {
-    toast.error('Please fill all fields and upload screenshot');
-    return;
-  }
-
-  const patientId = localStorage.getItem('patientId');
-  const patientName = localStorage.getItem('patientName') || 'Patient';
-
-  if (!patientId) {
-    toast.error('Patient ID not found. Please log in again.');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const formData = new FormData();
-    formData.append('appointmentId', appointmentId);
-    formData.append('referenceNumber', referenceNumber);
-    formData.append('amount', amount);
-    formData.append('screenshot', screenshot);
-    formData.append('patientName', patientName);
-    formData.append('patientId', patientId);
-
-    const res = await fetch(`${backendUrl}/api/payment-proofs/submit`, {
-      method: 'POST',
-      body: formData // ✅ No JSON header for multipart/form-data
-    });
-
-    let data;
-    try {
-      data = await res.json(); // parse JSON safely
-    } catch (err) {
-      console.error('Error parsing JSON:', err);
-      toast.error('Server response not valid JSON');
+    if (!screenshot || !referenceNumber || !amount) {
+      toast.error('Please fill all fields and upload screenshot');
       return;
     }
 
-    if (data.success) {
-      toast.success(data.message);
-      setTimeout(() => navigate('/my-appointments'), 2000);
-    } else {
-      toast.error(data.message);
+    const patientId = localStorage.getItem('patientId');
+    const patientName = localStorage.getItem('patientName') || 'Patient';
+
+    if (!patientId) {
+      toast.error('Patient ID not found. Please log in again.');
+      return;
     }
 
-  } catch (error) {
-    console.error('Error submitting payment:', error);
-    toast.error('Failed to submit payment proof');
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
 
+    try {
+      const formData = new FormData();
+      formData.append('appointmentId', appointmentId);
+      formData.append('referenceNumber', referenceNumber);
+      formData.append('amount', amount);
+      formData.append('screenshot', screenshot);
+      formData.append('patientName', patientName);
+      formData.append('patientId', patientId);
+
+      const res = await fetch(`${backendUrl}/api/payment-proofs/submit`, {
+        method: 'POST',
+        body: formData // multipart/form-data
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        console.error('Error parsing JSON:', err);
+        toast.error('Server response is not valid JSON');
+        return;
+      }
+
+      if (data.success) {
+        toast.success(data.message);
+        setTimeout(() => navigate('/my-appointments'), 2000);
+      } else {
+        toast.error(data.message || 'Failed to submit payment proof');
+      }
+    } catch (error) {
+      console.error('Error submitting payment:', error);
+      toast.error('Failed to submit payment proof');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -92,22 +97,14 @@ const PatientGCashPayment = () => {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* GCash QR Code Section */}
+        {/* QR Code Section */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Step 1: Scan QR Code
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Step 1: Scan QR Code</h2>
           <div className="bg-gray-100 p-4 rounded-lg">
-            <img
-              src={gcashQRCode}
-              alt="GCash QR Code"
-              className="w-full max-w-sm mx-auto"
-            />
+            <img src={gcashQRCode} alt="GCash QR Code" className="w-full max-w-sm mx-auto" />
           </div>
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-gray-700">
-              <strong>Instructions:</strong>
-            </p>
+            <p className="text-sm text-gray-700"><strong>Instructions:</strong></p>
             <ol className="list-decimal list-inside text-sm text-gray-600 mt-2 space-y-1">
               <li>Open your GCash app</li>
               <li>Scan the QR code above</li>
@@ -120,15 +117,10 @@ const PatientGCashPayment = () => {
 
         {/* Payment Proof Form */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Step 2: Submit Payment Proof
-          </h2>
-
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Step 2: Submit Payment Proof</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reference Number
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reference Number</label>
               <input
                 type="text"
                 value={referenceNumber}
@@ -140,9 +132,7 @@ const PatientGCashPayment = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Amount Paid (₱)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Amount Paid (₱)</label>
               <input
                 type="number"
                 value={amount}
@@ -154,9 +144,7 @@ const PatientGCashPayment = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Screenshot
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Screenshot</label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                 {preview ? (
                   <div className="space-y-2">

@@ -6,23 +6,22 @@ export const submitPaymentProof = async (req, res) => {
   try {
     const { appointmentId, referenceNumber, amount, patientName, patientId } = req.body;
 
-    // Validate patientId
-    if (!patientId) {
-      return res.status(400).json({ success: false, message: 'Patient ID is required' });
+    // Validate required fields
+    if (!patientId || !patientName || !appointmentId || !referenceNumber || !amount) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Validate file
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'Screenshot is required' });
     }
 
-    // Check appointment
+    // Check if appointment exists
     const appointment = await Appointment.findById(appointmentId);
     if (!appointment) {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }
 
-    // Check existing proof
+    // Check if a proof is already submitted
     const existingProof = await PaymentProof.findOne({
       appointmentId,
       status: { $in: ['pending', 'approved'] }
@@ -57,14 +56,12 @@ export const submitPaymentProof = async (req, res) => {
   }
 };
 
-
 // Get all payment proofs (Admin)
 export const getAllPaymentProofs = async (req, res) => {
   try {
-    const { status } = req.query; // Filter by status: pending, approved, rejected
-
+    const { status } = req.query;
     const filter = status ? { status } : {};
-    
+
     const proofs = await PaymentProof.find(filter)
       .populate('appointmentId')
       .populate('patientId', 'name email phone')
@@ -77,7 +74,7 @@ export const getAllPaymentProofs = async (req, res) => {
   }
 };
 
-// Get payment proof by appointment ID (Patient)
+// Get payment proof by appointment
 export const getPaymentProofByAppointment = async (req, res) => {
   try {
     const { appointmentId } = req.params;
@@ -90,6 +87,7 @@ export const getPaymentProofByAppointment = async (req, res) => {
 
     res.json({ success: true, proof });
   } catch (err) {
+    console.error('❌ Error fetching payment proof:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -98,26 +96,22 @@ export const getPaymentProofByAppointment = async (req, res) => {
 export const approvePaymentProof = async (req, res) => {
   try {
     const { proofId } = req.params;
-    const adminId = req.admin.id; // Assuming admin auth middleware
+    const adminId = req.admin?.id || null;
 
     const proof = await PaymentProof.findById(proofId);
-    if (!proof) {
-      return res.status(404).json({ success: false, message: 'Payment proof not found' });
-    }
+    if (!proof) return res.status(404).json({ success: false, message: 'Payment proof not found' });
 
-    // Update proof status
     proof.status = 'approved';
     proof.reviewedAt = new Date();
     proof.reviewedBy = adminId;
     await proof.save();
 
-    // Update appointment payment status
+    // Update appointment
     await Appointment.findByIdAndUpdate(proof.appointmentId, {
       paymentStatus: 'paid_online',
       paymentProofId: proof._id
     });
 
-    console.log('✅ Payment proof approved');
     res.json({ success: true, message: 'Payment approved successfully', proof });
   } catch (err) {
     console.error('❌ Error approving payment:', err);
@@ -130,12 +124,10 @@ export const rejectPaymentProof = async (req, res) => {
   try {
     const { proofId } = req.params;
     const { reason } = req.body;
-    const adminId = req.admin.id;
+    const adminId = req.admin?.id || null;
 
     const proof = await PaymentProof.findById(proofId);
-    if (!proof) {
-      return res.status(404).json({ success: false, message: 'Payment proof not found' });
-    }
+    if (!proof) return res.status(404).json({ success: false, message: 'Payment proof not found' });
 
     proof.status = 'rejected';
     proof.reviewedAt = new Date();
@@ -143,7 +135,6 @@ export const rejectPaymentProof = async (req, res) => {
     proof.rejectionReason = reason || 'Invalid payment proof';
     await proof.save();
 
-    console.log('❌ Payment proof rejected');
     res.json({ success: true, message: 'Payment proof rejected', proof });
   } catch (err) {
     console.error('❌ Error rejecting payment:', err);
