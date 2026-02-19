@@ -18,7 +18,8 @@ const DoctorDashboard = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [timeSlots, setTimeSlots] = useState([]);
   const [newSlot, setNewSlot] = useState('');
-  const [pushedSchedules, setPushedSchedules] = useState([]); // <-- store pushed schedules
+  const [mySchedules, setMySchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
 
   // Logout
   const handleLogout = () => {
@@ -59,19 +60,23 @@ const DoctorDashboard = () => {
     }
   };
 
-  // Fetch pushed schedules
-  const fetchPushedSchedules = async () => {
+  // Fetch my pushed schedules
+  const fetchMySchedules = async () => {
     if (!dToken) return;
     try {
+      setLoadingSchedules(true);
       const res = await fetch(`${backendUrl}/api/schedule-requests/doctor`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
+      if (!res.ok) throw new Error('Failed to fetch schedules');
       const data = await res.json();
-      if (data.success) setPushedSchedules(data.schedules || []);
+      if (data.success) setMySchedules(data.requests);
       else toast.error(data.message || 'Failed to fetch schedules');
     } catch (err) {
       console.error(err);
       toast.error('Error fetching schedules');
+    } finally {
+      setLoadingSchedules(false);
     }
   };
 
@@ -79,7 +84,7 @@ const DoctorDashboard = () => {
     if (dToken) {
       fetchAppointments();
       fetchServices();
-      fetchPushedSchedules();
+      fetchMySchedules();
     }
   }, [dToken]);
 
@@ -123,7 +128,7 @@ const DoctorDashboard = () => {
   const handlePushSchedule = async () => {
     if (!selectedDate || timeSlots.length === 0) return toast.error("Select date and slots");
     try {
-      const res = await fetch(`${backendUrl}/api/schedule-requests`, {
+      const res = await fetch(`${backendUrl}/api/doctor/schedule-request`, {
         method: 'POST',
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${dToken}` },
         body: JSON.stringify({ date: selectedDate, slots: timeSlots }),
@@ -134,7 +139,7 @@ const DoctorDashboard = () => {
         toast.success("Schedule pushed to admin!");
         setSelectedDate('');
         setTimeSlots([]);
-        fetchPushedSchedules(); // refresh the list
+        fetchMySchedules();
       } else toast.error(data.message || "Failed to push schedule");
     } catch (err) {
       console.error(err);
@@ -152,7 +157,7 @@ const DoctorDashboard = () => {
             <button onClick={() => navigate("/doctor-change-password")} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md w-full md:w-auto">
               🔒 Change Password
             </button>
-            <button onClick={() => { handleLogout(); }} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md flex items-center justify-center gap-2 w-full md:w-auto">
+            <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md flex items-center justify-center gap-2 w-full md:w-auto">
               <LogOut size={18} /> Logout
             </button>
           </div>
@@ -196,20 +201,6 @@ const DoctorDashboard = () => {
           <Calendar size={20} /> Push Schedule to Admin
         </h2>
 
-        {/* Already pushed schedules */}
-        {pushedSchedules.length > 0 && (
-          <div className="mb-4">
-            <h3 className="font-semibold mb-2">📌 Already Pushed Schedules:</h3>
-            <ul className="border rounded p-3 max-h-52 overflow-y-auto space-y-2">
-              {pushedSchedules.map((sch, idx) => (
-                <li key={idx} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded">
-                  <span>{sch.date} — {sch.slots.join(', ')}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         <div className="mb-3">
           <label className="block mb-1">Select Date</label>
           <input type="date" value={selectedDate} min={new Date().toISOString().split('T')[0]} onChange={e => setSelectedDate(e.target.value)} className="border px-3 py-2 rounded w-full" />
@@ -239,6 +230,32 @@ const DoctorDashboard = () => {
         <button onClick={handlePushSchedule} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
           Push to Admin
         </button>
+      </div>
+
+      {/* MY PUSHED SCHEDULES */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mb-8">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-2">
+          <Calendar size={20} /> My Pushed Schedules
+        </h2>
+
+        {loadingSchedules ? <p className="text-center text-gray-500 py-10">Loading schedules...</p> :
+          mySchedules.length === 0 ? <p className="text-center text-gray-500 py-10">No schedules yet.</p> :
+            <div className="space-y-3">
+              {mySchedules.map(schedule => (
+                <div key={schedule._id} className="border rounded-xl p-3 flex flex-col md:flex-row md:justify-between gap-2">
+                  <div>
+                    <p className="font-semibold">📅 Date: {schedule.date}</p>
+                    <p className="flex flex-wrap gap-2 items-center">🕐 Slots: {schedule.slots.map((slot, i) => (
+                      <span key={i} className="bg-gray-100 px-2 py-1 rounded">{slot}</span>
+                    ))}</p>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    <p>Requested at: {new Date(schedule.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+        }
       </div>
     </div>
   );
