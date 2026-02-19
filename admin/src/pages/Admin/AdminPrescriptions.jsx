@@ -1,204 +1,202 @@
-import React, { useEffect, useState, useContext, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 
 const AdminPrescriptions = () => {
   const { aToken, backendUrl } = useContext(AdminContext);
 
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [appointments, setAppointments] = useState([]);
+  // State
   const [patientsList, setPatientsList] = useState([]);
-
-  const [loadingPrescriptions, setLoadingPrescriptions] = useState(true);
-  const [loadingAppointments, setLoadingAppointments] = useState(false);
-  const [loadingPatients, setLoadingPatients] = useState(true);
-  const [errorPrescriptions, setErrorPrescriptions] = useState("");
-  const [errorAppointments, setErrorAppointments] = useState("");
+  const [appointments, setAppointments] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
 
   const [patientId, setPatientId] = useState("");
   const [appointmentId, setAppointmentId] = useState("");
   const [medicines, setMedicines] = useState([{ name: "", dosage: "", instructions: "" }]);
   const [notes, setNotes] = useState("");
 
+  const [loadingPatients, setLoadingPatients] = useState(true);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState(true);
+
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Filters / search
   const [searchTerm, setSearchTerm] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  // Helpers
-  const getApptUser = (appt) => appt.user || appt.patient || appt.userId || null;
-  const getApptUserId = (appt) => {
-    const u = getApptUser(appt);
-    if (!u) return null;
-    return typeof u === "string" ? u : String(u._id ?? u.id ?? "");
-  };
-
-  // Fetch paginated prescriptions
-  const fetchPrescriptions = useCallback(async (pageNumber = 1) => {
-    setLoadingPrescriptions(true);
-    setErrorPrescriptions("");
-    try {
-      const params = { page: pageNumber, limit: 20 };
-      if (fromDate) params.fromDate = fromDate;
-      if (toDate) params.toDate = toDate;
-
-      const { data } = await axios.get(`${backendUrl}/api/prescriptions`, {
-        params,
-        headers: { Authorization: `Bearer ${aToken}` },
-        timeout: 30000,
-      });
-
-      setPrescriptions(data.prescriptions || []);
-      setPage(data.page || 1);
-      setTotalPages(data.totalPages || 1);
-    } catch (err) {
-      console.error("Error fetching prescriptions:", err);
-      setErrorPrescriptions(err.response?.data?.message || err.message || "Failed to fetch prescriptions");
-    } finally {
-      setLoadingPrescriptions(false);
-    }
-  }, [aToken, backendUrl, fromDate, toDate]);
-
-  // Fetch ALL patients who have completed appointments
+  // ===========================================
+  // Fetch Patients with Completed Appointments
+  // ===========================================
   const fetchPatientsWithCompletedAppointments = useCallback(async () => {
     setLoadingPatients(true);
     try {
       const res = await axios.get(`${backendUrl}/api/appointments`, {
         headers: { Authorization: `Bearer ${aToken}` },
-        params: { status: 'completed' },
-        timeout: 30000,
+        params: { status: "COMPLETED" },
       });
 
       const appts = res.data.appointments || [];
       const uniquePatients = [];
-      const seenIds = new Set();
+      const seen = new Set();
 
-      appts.forEach(appt => {
-        const user = getApptUser(appt);
-        const userId = getApptUserId(appt);
-
-        if (userId && !seenIds.has(userId)) {
-          seenIds.add(userId);
+      appts.forEach((appt) => {
+        const user = appt.user;
+        if (user && !seen.has(user._id)) {
+          seen.add(user._id);
           uniquePatients.push({
-            id: userId,
-            name: user?.name || user?.fullName || "Unknown",
-            email: user?.email || ""
+            id: user._id,
+            name: user.name,
+            email: user.email,
           });
         }
       });
 
       setPatientsList(uniquePatients);
     } catch (err) {
-      console.error("Error fetching patients:", err);
+      console.error("Error fetching patients:", err.response?.data || err.message);
       setPatientsList([]);
     } finally {
       setLoadingPatients(false);
     }
   }, [aToken, backendUrl]);
 
-  // Fetch appointments only for selected patient
+  // ===========================================
+  // Fetch Completed Appointments for Patient
+  // ===========================================
   const fetchAppointmentsForPatient = useCallback(async (pid) => {
     if (!pid) return;
     setLoadingAppointments(true);
-    setErrorAppointments("");
     try {
       const res = await axios.get(`${backendUrl}/api/appointments/patient/${pid}`, {
         headers: { Authorization: `Bearer ${aToken}` },
-        timeout: 30000,
       });
+
       const appts = res.data.appointments || [];
-      setAppointments(appts.filter(a => a.status === 'completed'));
+      const completed = appts.filter((a) => a.status === "COMPLETED");
+      setAppointments(completed);
     } catch (err) {
       console.error("Error fetching appointments:", err.response?.data || err.message);
-      setErrorAppointments(err.response?.data?.message || err.message || "Failed to load appointments");
       setAppointments([]);
     } finally {
       setLoadingAppointments(false);
     }
   }, [aToken, backendUrl]);
 
-  // Initial fetch
-  useEffect(() => {
-    fetchPrescriptions(page);
-  }, [fetchPrescriptions, page]);
-
-  useEffect(() => {
-    fetchPatientsWithCompletedAppointments();
-  }, [fetchPatientsWithCompletedAppointments]);
-
-  // Handle medicine inputs
-  const handleMedicineChange = (index, field, value) => {
-    const newMedicines = [...medicines];
-    newMedicines[index][field] = value;
-    setMedicines(newMedicines);
-  };
-  const addMedicine = () => setMedicines([...medicines, { name: "", dosage: "", instructions: "" }]);
-
-  // Handle add prescription
-  const handleAddPrescription = async (e) => {
-    e.preventDefault();
-    if (!patientId || !appointmentId) {
-      alert("Please select a patient and appointment");
-      return;
-    }
+  // ===========================================
+  // Fetch Prescriptions
+  // ===========================================
+  const fetchPrescriptions = useCallback(async (pageNumber = 1) => {
+    setLoadingPrescriptions(true);
     try {
-      const res = await axios.post(
-        `${backendUrl}/api/prescriptions/add/${patientId}/${appointmentId}`,
-        { medicines, notes },
-        { headers: { Authorization: `Bearer ${aToken}` }, timeout: 30000 }
-      );
+      const params = { page: pageNumber, limit: 20 };
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
 
-      if (res.data?.success) {
-        setMedicines([{ name: "", dosage: "", instructions: "" }]);
-        setNotes("");
-        setAppointmentId("");
-        setPatientId("");
-        alert("Prescription saved.");
-        fetchPrescriptions(page);
-      } else {
-        alert(res.data?.message || "Failed to add prescription");
-      }
+      const res = await axios.get(`${backendUrl}/api/prescriptions`, {
+        headers: { Authorization: `Bearer ${aToken}` },
+        params,
+      });
+
+      setPrescriptions(res.data.prescriptions || []);
+      setPage(res.data.page || 1);
+      setTotalPages(res.data.totalPages || 1);
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      alert(err.response?.data?.message || err.message || "Failed to add prescription");
+      console.error("Error fetching prescriptions:", err.response?.data || err.message);
+      setPrescriptions([]);
+    } finally {
+      setLoadingPrescriptions(false);
     }
-  };
+  }, [aToken, backendUrl, fromDate, toDate]);
 
-  // Update appointments when patient changes
+  // ===========================================
+  // Handle patient change
+  // ===========================================
   useEffect(() => {
     setAppointmentId("");
     if (patientId) fetchAppointmentsForPatient(patientId);
     else setAppointments([]);
   }, [patientId, fetchAppointmentsForPatient]);
 
-  // Print handler
-  const handlePrint = () => window.print();
+  // ===========================================
+  // Initial load
+  // ===========================================
+  useEffect(() => {
+    fetchPatientsWithCompletedAppointments();
+    fetchPrescriptions(page);
+  }, [fetchPatientsWithCompletedAppointments, fetchPrescriptions, page]);
 
-  // FRONTEND FILTERING by search term
+  // ===========================================
+  // Medicines handlers
+  // ===========================================
+  const handleMedicineChange = (index, field, value) => {
+    const newMeds = [...medicines];
+    newMeds[index][field] = value;
+    setMedicines(newMeds);
+  };
+  const addMedicine = () => setMedicines([...medicines, { name: "", dosage: "", instructions: "" }]);
+
+  // ===========================================
+  // Submit prescription
+  // ===========================================
+  const handleAddPrescription = async (e) => {
+    e.preventDefault();
+    if (!patientId || !appointmentId) {
+      alert("Select patient and appointment first");
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        `${backendUrl}/api/prescriptions/add/${patientId}/${appointmentId}`,
+        { medicines, notes },
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+
+      if (res.data?.success || res.data?.prescription) {
+        alert("Prescription saved!");
+        setMedicines([{ name: "", dosage: "", instructions: "" }]);
+        setNotes("");
+        setPatientId("");
+        setAppointmentId("");
+        setAppointments([]);
+        fetchPrescriptions(page);
+      } else {
+        alert(res.data?.message || "Failed to save prescription");
+      }
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      alert(err.response?.data?.message || err.message || "Failed to save prescription");
+    }
+  };
+
+  // ===========================================
+  // Filter prescriptions frontend
+  // ===========================================
   const filteredPrescriptions = useMemo(() => {
     if (!searchTerm) return prescriptions;
     const term = searchTerm.toLowerCase();
-
-    return prescriptions.filter(pres => {
-      const patientName = pres.patient?.name?.toLowerCase() || pres.user?.name?.toLowerCase() || "";
-      const patientEmail = pres.patient?.email?.toLowerCase() || pres.user?.email?.toLowerCase() || "";
-      const doctorName = pres.doctor?.name?.toLowerCase() || "";
+    return prescriptions.filter((p) => {
+      const patientName = p.patient?.name?.toLowerCase() || p.user?.name?.toLowerCase() || "";
+      const patientEmail = p.patient?.email?.toLowerCase() || p.user?.email?.toLowerCase() || "";
+      const doctorName = p.doctor?.name?.toLowerCase() || "";
       return patientName.includes(term) || patientEmail.includes(term) || doctorName.includes(term);
     });
   }, [searchTerm, prescriptions]);
 
+  // ===========================================
+  // Render
+  // ===========================================
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Prescription Maintenance</h1>
 
-      {/* Search & Filters */}
-      <div className="mb-4 flex flex-col md:flex-row gap-2 print:hidden">
+      {/* Filters */}
+      <div className="mb-4 flex flex-col md:flex-row gap-2">
         <input
           type="text"
-          placeholder="Search patient name, email or doctor..."
+          placeholder="Search patient/doctor/email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border p-2 rounded w-full md:w-1/3"
@@ -223,23 +221,10 @@ const AdminPrescriptions = () => {
         </button>
       </div>
 
-      {/* Print Button */}
-      <div className="mb-4 print:hidden">
-        <button
-          onClick={handlePrint}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Print / Export
-        </button>
-      </div>
-
-      {/* Errors */}
-      {errorPrescriptions && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{errorPrescriptions}</div>}
-      {errorAppointments && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{errorAppointments}</div>}
-
       {/* Add Prescription Form */}
-      <div className="mb-6 p-4 border rounded shadow print:hidden">
+      <div className="mb-6 p-4 border rounded shadow">
         <h2 className="text-xl mb-2">Add Prescription</h2>
+
         {loadingPatients ? (
           <p>Loading patients...</p>
         ) : (
@@ -249,9 +234,11 @@ const AdminPrescriptions = () => {
               onChange={(e) => setPatientId(e.target.value)}
               className="border p-2 rounded w-full"
             >
-              <option value="">Select Patient (with completed appointments)</option>
+              <option value="">Select Patient</option>
               {patientsList.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} {p.email ? `(${p.email})` : ""}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name} {p.email ? `(${p.email})` : ""}
+                </option>
               ))}
             </select>
 
@@ -268,12 +255,12 @@ const AdminPrescriptions = () => {
                   {!patientId
                     ? "Select patient first"
                     : appointments.length === 0
-                    ? "No completed appointments for this patient"
+                    ? "No completed appointments"
                     : "Select Appointment"}
                 </option>
                 {appointments.map((appt) => (
                   <option key={appt._id} value={appt._id}>
-                    {appt.date ? new Date(appt.date).toLocaleDateString() : "No date"} @ {appt.time ?? "No time"} — {appt.status ?? "unknown"}
+                    {new Date(appt.date).toLocaleDateString()} @ {appt.time} — {appt.status}
                   </option>
                 ))}
               </select>
@@ -336,16 +323,20 @@ const AdminPrescriptions = () => {
         ) : (
           <div className="space-y-4">
             {filteredPrescriptions.map((pres, idx) => (
-              <div key={idx} className="border p-4 rounded-lg shadow-sm bg-white">
-                <p><strong>Patient:</strong> {pres.patient?.name || pres.user?.name || "N/A"} {pres.patient?.email || pres.user?.email ? `(${pres.patient?.email || pres.user?.email})` : ""}</p>
-                <p><strong>Doctor:</strong> {pres.doctor?.name || "N/A"} {pres.doctor?.email ? `(${pres.doctor?.email})` : ""}</p>
-                <p><strong>Date Issued:</strong> {pres.dateIssued ? new Date(pres.dateIssued).toLocaleDateString() : "N/A"}</p>
+              <div key={idx} className="border p-4 rounded shadow-sm bg-white">
+                <p>
+                  <strong>Patient:</strong> {pres.patient?.name || pres.user?.name}{" "}
+                  {pres.patient?.email ? `(${pres.patient.email})` : ""}
+                </p>
+                <p>
+                  <strong>Doctor:</strong> {pres.doctor?.name} {pres.doctor?.email ? `(${pres.doctor.email})` : ""}
+                </p>
                 <p><strong>Notes:</strong> {pres.notes}</p>
                 <div>
                   <strong>Medicines:</strong>
                   <ul className="list-disc pl-6">
-                    {pres.medicines?.map((med, idx2) => (
-                      <li key={idx2}>{med.name} — {med.dosage} — {med.instructions}</li>
+                    {pres.medicines?.map((med, i2) => (
+                      <li key={i2}>{med.name} — {med.dosage} — {med.instructions}</li>
                     ))}
                   </ul>
                 </div>
@@ -353,34 +344,7 @@ const AdminPrescriptions = () => {
             ))}
           </div>
         )}
-
-        {/* Pagination */}
-        <div className="mt-4 flex justify-between print:hidden">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(p - 1, 1))}
-            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span>Page {page} of {totalPages}</span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
       </div>
-
-      {/* Print-specific styles */}
-      <style>
-        {`@media print {
-          button, form, select, textarea { display: none !important; }
-          body { -webkit-print-color-adjust: exact; }
-        }`}
-      </style>
     </div>
   );
 };

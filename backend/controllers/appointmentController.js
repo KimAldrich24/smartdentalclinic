@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Appointment from "../models/appointmentModel.js";
 import Doctor from "../models/doctorModel.js";
 import Service from "../models/serviceModel.js";
@@ -5,7 +6,7 @@ import PatientRecord from "../models/patientRecordModel.js";
 import { sendSMS } from "../utils/smsHelper.js";
 
 /* =====================================================
-   PATIENT: BOOK APPOINTMENT (DATE & TIME ONLY)
+   PATIENT: BOOK APPOINTMENT
 ===================================================== */
 export const bookAppointment = async (req, res) => {
   try {
@@ -13,19 +14,11 @@ export const bookAppointment = async (req, res) => {
     const userId = req.user._id;
 
     if (!doctorId || !date || !time) {
-      return res.status(400).json({
-        success: false,
-        message: "Doctor, date, and time are required",
-      });
+      return res.status(400).json({ success: false, message: "Doctor, date, and time are required" });
     }
 
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) {
-      return res.status(404).json({
-        success: false,
-        message: "Doctor not found",
-      });
-    }
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
 
     const appointment = await Appointment.create({
       user: userId,
@@ -39,17 +32,10 @@ export const bookAppointment = async (req, res) => {
       createdBy: userId,
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Appointment submitted for admin approval",
-      appointment,
-    });
+    res.status(201).json({ success: true, message: "Appointment submitted for admin approval", appointment });
   } catch (err) {
     console.error("BOOK APPOINTMENT ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to book appointment",
-    });
+    res.status(500).json({ success: false, message: "Failed to book appointment" });
   }
 };
 
@@ -58,7 +44,7 @@ export const bookAppointment = async (req, res) => {
 ===================================================== */
 export const getMyAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find({ user: req.user.id })
+    const appointments = await Appointment.find({ user: req.user._id })
       .populate("doctor", "name speciality image")
       .populate("services.service", "name price duration")
       .sort({ date: 1, time: 1 });
@@ -87,7 +73,7 @@ export const getAllAppointments = async (req, res) => {
 };
 
 /* =====================================================
-   ADMIN: APPROVE APPOINTMENT (UNLOCKS DOCTOR)
+   ADMIN: APPROVE APPOINTMENT
 ===================================================== */
 export const approveAppointment = async (req, res) => {
   try {
@@ -95,31 +81,20 @@ export const approveAppointment = async (req, res) => {
       .populate("user", "name phone")
       .populate("doctor", "name");
 
-    if (!appointment) {
-      return res.status(404).json({ success: false, message: "Appointment not found" });
-    }
-
-    if (appointment.status !== "PENDING_ADMIN") {
-      return res.status(400).json({ success: false, message: "Invalid appointment status" });
-    }
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+    if (appointment.status !== "PENDING_ADMIN") return res.status(400).json({ success: false, message: "Invalid appointment status" });
 
     appointment.status = "APPROVED_ADMIN";
     await appointment.save();
 
-    // block time slot
+    // Block doctor slot
     const doctor = await Doctor.findById(appointment.doctor._id);
-    doctor.slots_book[appointment.date] = [
-      ...(doctor.slots_book[appointment.date] || []),
-      appointment.time,
-    ];
+    doctor.slots_book[appointment.date] = [...(doctor.slots_book[appointment.date] || []), appointment.time];
     await doctor.save();
 
-    // SMS
+    // Send SMS
     if (appointment.user.phone) {
-      await sendSMS(
-        appointment.user.phone,
-        `Hi ${appointment.user.name}, your appointment with Dr. ${doctor.name} has been approved.`
-      );
+      await sendSMS(appointment.user.phone, `Hi ${appointment.user.name}, your appointment with Dr. ${doctor.name} has been approved.`);
     }
 
     res.json({ success: true, message: "Appointment approved" });
@@ -134,7 +109,7 @@ export const approveAppointment = async (req, res) => {
 export const getDoctorAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find({
-      doctor: req.doctor.id,
+      doctor: req.doctor._id,
       status: { $in: ["PENDING_ADMIN", "APPROVED_ADMIN", "IN_PROGRESS"] },
     })
       .populate("user", "name email phone")
@@ -148,46 +123,27 @@ export const getDoctorAppointments = async (req, res) => {
 };
 
 /* =====================================================
-   DOCTOR: ASSIGN MULTIPLE SERVICES
+   DOCTOR: ASSIGN SERVICES
 ===================================================== */
 export const doctorAssignServices = async (req, res) => {
   try {
-    const { services } = req.body; 
-    // services = [{ serviceId, price }]
-
+    const { services } = req.body; // [{ serviceId, price }]
     const appointment = await Appointment.findById(req.params.id);
-    if (!appointment) {
-      return res.status(404).json({ success: false, message: "Appointment not found" });
-    }
-
-    if (appointment.status !== "APPROVED_ADMIN") {
-      return res.status(400).json({
-        success: false,
-        message: "Services can only be assigned after admin approval",
-      });
-    }
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+    if (appointment.status !== "APPROVED_ADMIN") return res.status(400).json({ success: false, message: "Can only assign services after admin approval" });
 
     const formattedServices = [];
-
     for (const s of services) {
       const service = await Service.findById(s.serviceId);
       if (!service) continue;
-
-      formattedServices.push({
-        service: service._id,
-        price: s.price ?? service.price,
-      });
+      formattedServices.push({ service: service._id, price: s.price ?? service.price });
     }
 
     appointment.services = formattedServices;
     appointment.status = "IN_PROGRESS";
     await appointment.save();
 
-    res.json({
-      success: true,
-      message: "Services assigned successfully",
-      appointment,
-    });
+    res.json({ success: true, message: "Services assigned", appointment });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -198,20 +154,15 @@ export const doctorAssignServices = async (req, res) => {
 ===================================================== */
 export const completeAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id)
-      .populate("user", "_id")
-      .populate("doctor", "_id");
-
-    if (!appointment) {
-      return res.status(404).json({ success: false, message: "Appointment not found" });
-    }
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
 
     appointment.status = "COMPLETED";
     await appointment.save();
 
     await PatientRecord.create({
-      user: appointment.user._id,
-      doctor: appointment.doctor._id,
+      user: appointment.user,
+      doctor: appointment.doctor,
       services: appointment.services,
       date: appointment.date,
       notes: "Treatment completed",
@@ -227,92 +178,76 @@ export const completeAppointment = async (req, res) => {
    CANCEL / DELETE
 ===================================================== */
 export const cancelAppointment = async (req, res) => {
-  const appointment = await Appointment.findById(req.params.id);
-  if (!appointment || appointment.status !== "PENDING_ADMIN") {
-    return res.status(400).json({ success: false, message: "Cannot cancel appointment" });
-  }
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment || appointment.status !== "PENDING_ADMIN") return res.status(400).json({ success: false, message: "Cannot cancel appointment" });
 
-  appointment.status = "CANCELLED";
-  await appointment.save();
-  res.json({ success: true, message: "Appointment cancelled" });
+    appointment.status = "CANCELLED";
+    await appointment.save();
+    res.json({ success: true, message: "Appointment cancelled" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 export const deleteAppointment = async (req, res) => {
-  await Appointment.findByIdAndDelete(req.params.id);
-  res.json({ success: true, message: "Appointment deleted" });
+  try {
+    await Appointment.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Appointment deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
-// =================== ADMIN COMPLETE APPOINTMENT ===================
+
+/* =====================================================
+   ADMIN COMPLETE APPOINTMENT
+===================================================== */
 export const adminCompleteAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id)
-      .populate("user", "_id name phone email")
-      .populate("doctor", "_id name");
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+    if (appointment.status !== "IN_PROGRESS") return res.status(400).json({ success: false, message: "Appointment not in progress" });
 
-    if (!appointment) {
-      return res.status(404).json({ success: false, message: "Appointment not found" });
-    }
-
-    if (appointment.status !== "IN_PROGRESS") {
-      return res.status(400).json({ success: false, message: "Appointment is not in progress" });
-    }
-
-    // Mark as COMPLETED for admin
     appointment.status = "COMPLETED";
-    appointment.paymentStatus = "pending"; // patient needs to pay
+    appointment.paymentStatus = "pending";
     await appointment.save();
 
-    // Create patient history
     await PatientRecord.create({
       user: appointment.user,
       doctor: appointment.doctor,
       appointment: appointment._id,
-      services: appointment.services.map(s => ({
-        service: s.service,
-        price: s.price,
-      })),
+      services: appointment.services,
+      date: appointment.date,
+      notes: "Treatment completed",
     });
-    
 
-    res.json({ success: true, message: "Appointment marked as completed", appointment });
+    res.json({ success: true, message: "Appointment marked completed", appointment });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// controllers/appointmentController.js
-
 /* =====================================================
-   ADMIN: FETCH COMPLETED APPOINTMENTS FOR A PATIENT
+   ADMIN: GET COMPLETED APPOINTMENTS FOR PATIENT
 ===================================================== */
-// Fetch completed appointments for a patient (admin view)
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { userId } = req.params;
+    if (!userId) return res.status(400).json({ success: false, message: "User ID is required" });
 
-    if (!userId) {
-      return res.status(400).json({ success: false, message: "User ID is required" });
-    }
-
-    // Ensure the userId is an ObjectId
     const objectUserId = mongoose.Types.ObjectId(userId);
 
-    const appointments = await Appointment.find({
-      user: objectUserId,
-      status: "COMPLETED",
-    })
+    const appointments = await Appointment.find({ user: objectUserId, status: "COMPLETED" })
       .populate("doctor", "name email speciality")
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
 
-    console.log("Found completed appointments:", appointments);
-
     res.json({ success: true, records: appointments });
   } catch (err) {
-    console.error("Error fetching patient completed appointments:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 /* =====================================================
    ADMIN: ADD PRESCRIPTION
 ===================================================== */
@@ -321,9 +256,7 @@ export const addPrescription = async (req, res) => {
     const { patientId, appointmentId } = req.params;
     const { medicines, notes } = req.body;
 
-    if (!patientId || !appointmentId || !medicines?.length) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
-    }
+    if (!patientId || !appointmentId || !medicines?.length) return res.status(400).json({ success: false, message: "Missing required fields" });
 
     const appointment = await Appointment.findById(appointmentId);
     if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
@@ -343,7 +276,6 @@ export const addPrescription = async (req, res) => {
 
     res.json({ success: true, prescription });
   } catch (err) {
-    console.error("Error adding prescription:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
