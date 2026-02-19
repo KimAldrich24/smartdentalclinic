@@ -288,10 +288,12 @@ export const getPatientCompletedAppointments = async (req, res) => {
     const { userId } = req.params;
 
     if (!userId) {
-      return res.status(400).json({ success: false, message: "User ID is required" });
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
     }
 
-    // Only fetch COMPLETED appointments
     const appointments = await Appointment.find({
       user: userId,
       status: "COMPLETED",
@@ -300,10 +302,17 @@ export const getPatientCompletedAppointments = async (req, res) => {
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
 
-    res.json({ success: true, records: appointments });
+    res.json({
+      success: true,
+      appointments, // 🔥 CONSISTENT KEY
+    });
   } catch (err) {
     console.error("Error fetching patient completed appointments:", err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
+
 
