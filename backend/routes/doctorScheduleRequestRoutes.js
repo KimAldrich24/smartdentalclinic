@@ -4,6 +4,7 @@ import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import {
   pushScheduleRequest,
   getAllScheduleRequests,
+  getDoctorSchedules,
 } from "../controllers/doctorScheduleRequestController.js";
 
 const router = express.Router();

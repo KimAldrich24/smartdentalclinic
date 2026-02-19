@@ -34,4 +34,18 @@ export const getAllScheduleRequests = async (req, res) => {
   }
 };
 
+// Get schedules for logged-in doctor
+export const getDoctorSchedules = async (req, res) => {
+  try {
+    const doctorId = req.doctor._id;
+    const requests = await DoctorScheduleRequest.find({ doctor: doctorId })
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, requests });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to fetch schedules" });
+  }
+};
+
 
