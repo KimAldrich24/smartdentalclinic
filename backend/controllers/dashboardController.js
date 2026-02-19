@@ -1,6 +1,7 @@
 import Appointment from "../models/appointmentModel.js";
 import User from "../models/User.js";
 import Service from "../models/serviceModel.js";
+import Credit from "../models/creditModel.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
@@ -58,5 +59,17 @@ export const getRecentAppointments = async (req, res) => {
   } catch (err) {
     console.error("Recent appointments error:", err);
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const getCredits = async (req, res) => {
+  try {
+    const credits = await Credit.find()
+      .populate("user", "name email"); // <--- populate user
+
+    res.json(credits);
+  } catch (err) {
+    console.error("Error fetching credits:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
