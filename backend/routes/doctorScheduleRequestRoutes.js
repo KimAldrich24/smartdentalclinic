@@ -1,17 +1,31 @@
 import express from "express";
-import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
+import doctorAuthMiddleware from "../middlewares/doctorauthmiddleware.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import {
-  requestSchedule,
-  getScheduleRequests,
+  pushScheduleRequest,
+  getAllScheduleRequests,
 } from "../controllers/doctorScheduleRequestController.js";
 
 const router = express.Router();
 
-// Doctor pushes schedule
-router.post("/request", doctorAuthMiddleware, requestSchedule);
+/**
+ * Doctor pushes schedule request
+ * POST /api/doctor/schedule-request
+ */
+router.post(
+  "/",
+  doctorAuthMiddleware,
+  pushScheduleRequest
+);
 
-// Admin views pushed schedules
-router.get("/", adminAuthMiddleware, getScheduleRequests);
+/**
+ * Admin fetches all doctor schedule requests
+ * GET /api/admin/schedule-requests
+ */
+router.get(
+  "/",
+  adminAuthMiddleware,
+  getAllScheduleRequests
+);
 
 export default router;
