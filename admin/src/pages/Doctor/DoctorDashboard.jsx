@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DoctorContext } from "../../context/DoctorContext";
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
-import { Calendar, LogOut, Plus, Clock, Trash2 } from 'lucide-react';
+import { Calendar, LogOut, Plus, Clock } from 'lucide-react';
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ const DoctorDashboard = () => {
   const { backendUrl } = useContext(AdminContext);
 
   const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
   const [services, setServices] = useState([]);
 
   // Schedule push state
@@ -32,7 +32,7 @@ const DoctorDashboard = () => {
   const fetchAppointments = async () => {
     if (!dToken) return;
     try {
-      setLoading(true);
+      setLoadingAppointments(true);
       const res = await fetch(`${backendUrl}/api/appointments/doctor/my-appointments`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
@@ -43,12 +43,13 @@ const DoctorDashboard = () => {
       console.error(err);
       toast.error('Failed to load appointments');
     } finally {
-      setLoading(false);
+      setLoadingAppointments(false);
     }
   };
 
   // Fetch services
   const fetchServices = async () => {
+    if (!dToken) return;
     try {
       const res = await fetch(`${backendUrl}/api/services`, { headers: { Authorization: `Bearer ${dToken}` } });
       const data = await res.json();
@@ -139,7 +140,7 @@ const DoctorDashboard = () => {
         toast.success("Schedule pushed to admin!");
         setSelectedDate('');
         setTimeSlots([]);
-        fetchMySchedules();
+        fetchMySchedules(); // refresh the list
       } else toast.error(data.message || "Failed to push schedule");
     } catch (err) {
       console.error(err);
@@ -187,7 +188,7 @@ const DoctorDashboard = () => {
       {/* APPOINTMENTS */}
       <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mb-8">
         <h2 className="text-xl md:text-2xl font-bold mb-5 border-b pb-2">📅 My Appointments</h2>
-        {loading ? <p className="text-center text-gray-500 py-10">Loading appointments...</p> :
+        {loadingAppointments ? <p className="text-center text-gray-500 py-10">Loading appointments...</p> :
           appointments.length === 0 ? <p className="text-center text-gray-500 py-10">No appointments yet.</p> :
             appointments.map(appt => (
               <AppointmentCard key={appt._id} appointment={appt} services={services} onUpdate={handleUpdateAppointment} />
