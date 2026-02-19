@@ -61,17 +61,16 @@ const DoctorDashboard = () => {
     }
   };
 
-  // Fetch my pushed schedules (✅ FIX: match backend response)
+  // Fetch my pushed schedules (fixed route and property)
   const fetchMySchedules = async () => {
-    if (!dToken) return;
     try {
       setLoadingSchedules(true);
-      const res = await fetch(`${backendUrl}/api/doctor/schedule-request`, {
+      const res = await fetch(`${backendUrl}/api/doctor/schedule-request/doctor`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       if (!res.ok) throw new Error('Failed to fetch schedules');
       const data = await res.json();
-      if (data.success) setMySchedules(data.schedules); // <- backend returns schedules
+      if (data.success) setMySchedules(data.requests); // backend returns `requests`
       else toast.error(data.message || 'Failed to fetch schedules');
     } catch (err) {
       console.error(err);
