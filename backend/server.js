@@ -100,7 +100,7 @@ safeUse('/api/staff', staffRoutes, 'staffRoutes')
 safeUse('/api/admin/staff', adminStaffRoutes, 'adminStaffRoutes')
 safeUse('/api/payment-proofs', paymentProofRoutes, 'paymentProofRoutes')
 safeUse('/api/admin/schedule', doctorScheduleRoutes, 'doctorScheduleRoutes')
-safeUse("/api/schedule-requests", doctorScheduleRequestRoutes);
+safeUse("/api/doctor/schedule-request", doctorScheduleRequestRoutes);
 
 
 // Static uploads only
