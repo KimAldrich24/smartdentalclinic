@@ -105,11 +105,12 @@ const DoctorDashboard = () => {
   const handlePushSchedule = async () => {
     if (!selectedDate || timeSlots.length === 0) return toast.error("Select date and slots");
     try {
-      const res = await fetch(`${backendUrl}/api/schedule-requests/request`, {
+      const res = await fetch(`${backendUrl}/api/doctor/schedule-request`, {
         method: 'POST',
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${dToken}` },
         body: JSON.stringify({ date: selectedDate, slots: timeSlots }),
       });
+
       const data = await res.json();
       if (data.success) {
         toast.success("Schedule pushed to admin!");
@@ -230,10 +231,9 @@ const AppointmentCard = ({ appointment, services, onUpdate }) => {
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="font-semibold text-gray-800">{appointment.user?.name}</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-              appointment.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-              appointment.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-              'bg-blue-100 text-blue-700'}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${appointment.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                appointment.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                  'bg-blue-100 text-blue-700'}`}>
               {appointment.status}
             </span>
           </div>
