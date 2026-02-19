@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DoctorContext } from "../../context/DoctorContext";
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
-import { Calendar, LogOut, Plus, Clock } from 'lucide-react';
+import { Calendar, LogOut, Plus, Clock, Trash2 } from 'lucide-react';
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ const DoctorDashboard = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [timeSlots, setTimeSlots] = useState([]);
   const [newSlot, setNewSlot] = useState('');
+  const [pushedSchedules, setPushedSchedules] = useState([]); // <-- store pushed schedules
 
   // Logout
   const handleLogout = () => {
@@ -58,10 +59,27 @@ const DoctorDashboard = () => {
     }
   };
 
+  // Fetch pushed schedules
+  const fetchPushedSchedules = async () => {
+    if (!dToken) return;
+    try {
+      const res = await fetch(`${backendUrl}/api/schedule-requests/doctor`, {
+        headers: { Authorization: `Bearer ${dToken}` },
+      });
+      const data = await res.json();
+      if (data.success) setPushedSchedules(data.schedules || []);
+      else toast.error(data.message || 'Failed to fetch schedules');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error fetching schedules');
+    }
+  };
+
   useEffect(() => {
     if (dToken) {
       fetchAppointments();
       fetchServices();
+      fetchPushedSchedules();
     }
   }, [dToken]);
 
@@ -105,7 +123,7 @@ const DoctorDashboard = () => {
   const handlePushSchedule = async () => {
     if (!selectedDate || timeSlots.length === 0) return toast.error("Select date and slots");
     try {
-      const res = await fetch(`${backendUrl}/api/doctor/schedule-request`, {
+      const res = await fetch(`${backendUrl}/api/schedule-requests`, {
         method: 'POST',
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${dToken}` },
         body: JSON.stringify({ date: selectedDate, slots: timeSlots }),
@@ -116,6 +134,7 @@ const DoctorDashboard = () => {
         toast.success("Schedule pushed to admin!");
         setSelectedDate('');
         setTimeSlots([]);
+        fetchPushedSchedules(); // refresh the list
       } else toast.error(data.message || "Failed to push schedule");
     } catch (err) {
       console.error(err);
@@ -133,7 +152,7 @@ const DoctorDashboard = () => {
             <button onClick={() => navigate("/doctor-change-password")} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md w-full md:w-auto">
               🔒 Change Password
             </button>
-            <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md flex items-center justify-center gap-2 w-full md:w-auto">
+            <button onClick={() => { handleLogout(); }} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md flex items-center justify-center gap-2 w-full md:w-auto">
               <LogOut size={18} /> Logout
             </button>
           </div>
@@ -176,6 +195,20 @@ const DoctorDashboard = () => {
         <h2 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-2">
           <Calendar size={20} /> Push Schedule to Admin
         </h2>
+
+        {/* Already pushed schedules */}
+        {pushedSchedules.length > 0 && (
+          <div className="mb-4">
+            <h3 className="font-semibold mb-2">📌 Already Pushed Schedules:</h3>
+            <ul className="border rounded p-3 max-h-52 overflow-y-auto space-y-2">
+              {pushedSchedules.map((sch, idx) => (
+                <li key={idx} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded">
+                  <span>{sch.date} — {sch.slots.join(', ')}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="mb-3">
           <label className="block mb-1">Select Date</label>
