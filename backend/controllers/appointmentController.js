@@ -288,30 +288,25 @@ export const getPatientCompletedAppointments = async (req, res) => {
     const { userId } = req.params;
 
     if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required",
-      });
+      return res.status(400).json({ success: false, message: "User ID is required" });
     }
 
+    const objectUserId = mongoose.Types.ObjectId(userId);
+
     const appointments = await Appointment.find({
-      user: userId,
+      user: objectUserId,
       status: "COMPLETED",
     })
       .populate("doctor", "name email speciality")
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
 
-    res.json({
-      success: true,
-      appointments, // 🔥 CONSISTENT KEY
-    });
+    console.log("Found appointments:", appointments);
+
+    res.json({ success: true, records: appointments });
   } catch (err) {
     console.error("Error fetching patient completed appointments:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 

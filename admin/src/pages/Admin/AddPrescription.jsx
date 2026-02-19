@@ -9,8 +9,9 @@ const AddPrescription = ({ patientId, doctorId }) => {
   const [selectedAppointment, setSelectedAppointment] = useState("");
   const [medicines, setMedicines] = useState([{ name: "", dosage: "", instructions: "" }]);
   const [notes, setNotes] = useState("");
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
 
-  // Fetch completed appointments for this patient (admin can view)
+  // Fetch completed appointments for this patient (admin view)
   useEffect(() => {
     const fetchAppointments = async () => {
       if (!patientId) {
@@ -20,6 +21,7 @@ const AddPrescription = ({ patientId, doctorId }) => {
       }
 
       console.log("Fetching completed appointments for patient:", patientId);
+      setLoadingAppointments(true);
 
       try {
         const res = await axios.get(
@@ -39,6 +41,8 @@ const AddPrescription = ({ patientId, doctorId }) => {
           err.response?.data || err.message
         );
         setAppointments([]);
+      } finally {
+        setLoadingAppointments(false);
       }
     };
 
@@ -66,10 +70,7 @@ const AddPrescription = ({ patientId, doctorId }) => {
     try {
       const res = await axios.post(
         `${backendUrl}/api/prescriptions/add/${patientId}/${selectedAppointment}`,
-        {
-          medicines,
-          notes,
-        },
+        { medicines, notes },
         { headers: { Authorization: `Bearer ${aToken}` } }
       );
 
@@ -89,37 +90,48 @@ const AddPrescription = ({ patientId, doctorId }) => {
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: "600px", margin: "auto" }}>
       {/* Appointment select */}
-      <div>
+      <div style={{ marginBottom: "15px" }}>
         <label>Select Completed Appointment:</label>
         <select
           value={selectedAppointment}
           onChange={(e) => setSelectedAppointment(e.target.value)}
           required
+          style={{ width: "100%", padding: "8px", marginTop: "5px" }}
         >
           <option value="">-- Select Appointment --</option>
-          {appointments.length === 0 && (
+
+          {loadingAppointments && (
+            <option value="" disabled>
+              Loading appointments...
+            </option>
+          )}
+
+          {!loadingAppointments && appointments.length === 0 && (
             <option value="" disabled>
               No completed appointments available
             </option>
           )}
-          {appointments.map((appt) => (
-            <option key={appt._id} value={appt._id}>
-              {new Date(appt.date).toLocaleDateString()} at {appt.time} with{" "}
-              {appt.doctor?.name || "N/A"}
-            </option>
-          ))}
+
+          {!loadingAppointments &&
+            appointments.map((appt) => (
+              <option key={appt._id} value={appt._id}>
+                {new Date(appt.date).toLocaleDateString()} at {appt.time} with{" "}
+                {appt.doctor?.name || "N/A"}
+              </option>
+            ))}
         </select>
       </div>
 
       {/* Medicines */}
       {medicines.map((med, i) => (
-        <div key={i} style={{ marginTop: "10px" }}>
+        <div key={i} style={{ marginBottom: "10px" }}>
           <input
             type="text"
             placeholder="Medicine Name"
             value={med.name}
             onChange={(e) => handleMedicineChange(i, "name", e.target.value)}
             required
+            style={{ width: "32%", marginRight: "2%", padding: "6px" }}
           />
           <input
             type="text"
@@ -127,6 +139,7 @@ const AddPrescription = ({ patientId, doctorId }) => {
             value={med.dosage}
             onChange={(e) => handleMedicineChange(i, "dosage", e.target.value)}
             required
+            style={{ width: "32%", marginRight: "2%", padding: "6px" }}
           />
           <input
             type="text"
@@ -134,24 +147,26 @@ const AddPrescription = ({ patientId, doctorId }) => {
             value={med.instructions}
             onChange={(e) => handleMedicineChange(i, "instructions", e.target.value)}
             required
+            style={{ width: "32%", padding: "6px" }}
           />
         </div>
       ))}
 
-      <button type="button" onClick={addMedicine} style={{ marginTop: "10px" }}>
+      <button type="button" onClick={addMedicine} style={{ marginBottom: "15px" }}>
         Add Another Medicine
       </button>
 
       {/* Notes */}
-      <div style={{ marginTop: "10px" }}>
+      <div style={{ marginBottom: "15px" }}>
         <textarea
           placeholder="Notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          style={{ width: "100%", padding: "8px", minHeight: "80px" }}
         />
       </div>
 
-      <button type="submit" style={{ marginTop: "10px" }}>
+      <button type="submit" style={{ padding: "10px 20px" }}>
         Save Prescription
       </button>
     </form>
