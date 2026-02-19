@@ -285,6 +285,7 @@ export const adminCompleteAppointment = async (req, res) => {
 /* =====================================================
    ADMIN: FETCH COMPLETED APPOINTMENTS FOR A PATIENT
 ===================================================== */
+// Fetch completed appointments for a patient (admin view)
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -293,9 +294,9 @@ export const getPatientCompletedAppointments = async (req, res) => {
       return res.status(400).json({ success: false, message: "User ID is required" });
     }
 
+    // Ensure the userId is an ObjectId
     const objectUserId = mongoose.Types.ObjectId(userId);
 
-    // Only fetch COMPLETED appointments
     const appointments = await Appointment.find({
       user: objectUserId,
       status: "COMPLETED",
@@ -304,15 +305,14 @@ export const getPatientCompletedAppointments = async (req, res) => {
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
 
-    console.log("Completed appointments found:", appointments.map(a => ({ id: a._id, status: a.status })));
+    console.log("Found completed appointments:", appointments);
 
     res.json({ success: true, records: appointments });
   } catch (err) {
-    console.error("Error fetching completed appointments:", err);
+    console.error("Error fetching patient completed appointments:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 /* =====================================================
    ADMIN: ADD PRESCRIPTION
 ===================================================== */
