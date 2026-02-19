@@ -11,21 +11,34 @@ const AddPrescription = ({ patientId, doctorId }) => {
   const [notes, setNotes] = useState("");
 
   // Fetch completed appointments for this patient (admin can view)
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!patientId) return;
-      try {
-        const res = await axios.get(
-          `${backendUrl}/api/appointments/completed/${patientId}`,
-          { headers: { Authorization: `Bearer ${aToken}` } }
-        );
-        setAppointments(res.data.records || []); // `records` key from backend
-      } catch (err) {
-        console.error("Error fetching completed appointments:", err.response?.data || err.message);
-      }
-    };
-    fetchAppointments();
-  }, [patientId, aToken, backendUrl]);
+ useEffect(() => {
+  const fetchAppointments = async () => {
+    if (!patientId) return;
+
+    try {
+      const res = await axios.get(
+        `${backendUrl}/api/appointments/admin/completed/${patientId}`,
+        {
+          headers: { Authorization: `Bearer ${aToken}` },
+        }
+      );
+
+      console.log("Admin completed appointments:", res.data);
+
+      // Controller likely returns appointments directly or inside a key
+      setAppointments(res.data.appointments || res.data.records || []);
+    } catch (err) {
+      console.error(
+        "Error fetching completed appointments:",
+        err.response?.data || err.message
+      );
+      setAppointments([]);
+    }
+  };
+
+  fetchAppointments();
+}, [patientId, aToken, backendUrl]);
+
 
   const handleMedicineChange = (index, field, value) => {
     const newMedicines = [...medicines];
