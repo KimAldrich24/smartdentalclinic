@@ -35,59 +35,49 @@ const PatientGCashPayment = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!screenshot || !referenceNumber || !amount) {
-      toast.error('Please fill all fields and upload screenshot');
-      return;
+  if (!screenshot || !referenceNumber || !amount) {
+    toast.error('Please fill all fields and upload screenshot');
+    return;
+  }
+
+  // Just grab patient info from localStorage, no checks
+  const patientId = localStorage.getItem('patientId') || 'unknown';
+  const patientName = localStorage.getItem('patientName') || 'Patient';
+
+  setLoading(true);
+
+  try {
+    const formData = new FormData();
+    formData.append('appointmentId', appointmentId);
+    formData.append('referenceNumber', referenceNumber);
+    formData.append('amount', amount);
+    formData.append('screenshot', screenshot);
+    formData.append('patientName', patientName);
+    formData.append('patientId', patientId);
+
+    const res = await fetch(`${backendUrl}/api/payment-proofs/submit`, {
+      method: 'POST',
+      body: formData // multipart/form-data
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      toast.success(data.message);
+      setTimeout(() => navigate('/my-appointments'), 2000);
+    } else {
+      toast.error(data.message);
     }
+  } catch (error) {
+    console.error('Error submitting payment:', error);
+    toast.error('Failed to submit payment proof');
+  } finally {
+    setLoading(false);
+  }
+};
 
-    const patientId = localStorage.getItem('patientId');
-    const patientName = localStorage.getItem('patientName') || 'Patient';
-
-    if (!patientId) {
-      toast.error('Patient ID not found. Please log in again.');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('appointmentId', appointmentId);
-      formData.append('referenceNumber', referenceNumber);
-      formData.append('amount', amount);
-      formData.append('screenshot', screenshot);
-      formData.append('patientName', patientName);
-      formData.append('patientId', patientId);
-
-      const res = await fetch(`${backendUrl}/api/payment-proofs/submit`, {
-        method: 'POST',
-        body: formData // multipart/form-data
-      });
-
-      let data;
-      try {
-        data = await res.json();
-      } catch (err) {
-        console.error('Error parsing JSON:', err);
-        toast.error('Server response is not valid JSON');
-        return;
-      }
-
-      if (data.success) {
-        toast.success(data.message);
-        setTimeout(() => navigate('/my-appointments'), 2000);
-      } else {
-        toast.error(data.message || 'Failed to submit payment proof');
-      }
-    } catch (error) {
-      console.error('Error submitting payment:', error);
-      toast.error('Failed to submit payment proof');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
