@@ -6,33 +6,36 @@ export const submitPaymentProof = async (req, res) => {
   try {
     const { appointmentId, referenceNumber, amount, patientName, patientId } = req.body;
 
-    // Use patientId from body instead of req.user
+    // Validate patientId
     if (!patientId) {
       return res.status(400).json({ success: false, message: 'Patient ID is required' });
     }
 
+    // Validate file
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'Screenshot is required' });
     }
 
-    // Check if appointment exists
+    // Check appointment
     const appointment = await Appointment.findById(appointmentId);
     if (!appointment) {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }
 
-    // Check if proof already submitted
-    const existingProof = await PaymentProof.findOne({ 
-      appointmentId, 
-      status: { $in: ['pending', 'approved'] } 
+    // Check existing proof
+    const existingProof = await PaymentProof.findOne({
+      appointmentId,
+      status: { $in: ['pending', 'approved'] }
     });
+
     if (existingProof) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Payment proof already submitted for this appointment' 
+      return res.status(400).json({
+        success: false,
+        message: 'Payment proof already submitted for this appointment'
       });
     }
 
+    // Create payment proof
     const paymentProof = await PaymentProof.create({
       appointmentId,
       patientId,
@@ -42,14 +45,15 @@ export const submitPaymentProof = async (req, res) => {
       screenshot: req.file.filename
     });
 
-    res.status(201).json({ 
-      success: true, 
+    return res.status(201).json({
+      success: true,
       message: 'Payment proof submitted successfully. Awaiting admin approval.',
-      paymentProof 
+      paymentProof
     });
+
   } catch (err) {
-    console.error('Error submitting payment proof:', err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ Error submitting payment proof:', err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 

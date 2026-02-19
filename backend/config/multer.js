@@ -2,25 +2,25 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// Ensure the folder exists
+// Ensure upload folder exists
 const uploadDir = 'uploads/payment-proofs';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Storage configuration for payment screenshots
+// Storage config
 const paymentStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/payment-proofs/'); // Make sure this folder exists
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, 'payment-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
+// File filter
 const fileFilter = (req, file, cb) => {
-  // Accept images only
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
@@ -30,6 +30,6 @@ const fileFilter = (req, file, cb) => {
 
 export const uploadPaymentProof = multer({
   storage: paymentStorage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
