@@ -282,10 +282,9 @@ export const adminCompleteAppointment = async (req, res) => {
 
 // controllers/appointmentController.js
 
-/**
- * Fetch appointments for a patient that are eligible for prescriptions
- * Only COMPLETED appointments
- */
+/* =====================================================
+   ADMIN: FETCH COMPLETED APPOINTMENTS FOR A PATIENT
+===================================================== */
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -296,9 +295,10 @@ export const getPatientCompletedAppointments = async (req, res) => {
 
     const objectUserId = mongoose.Types.ObjectId(userId);
 
+    // Only fetch COMPLETED appointments
     const appointments = await Appointment.find({
       user: objectUserId,
-      status: "COMPLETED", // only completed appointments
+      status: "COMPLETED",
     })
       .populate("doctor", "name email speciality")
       .populate("services.service", "name price duration")
@@ -308,7 +308,42 @@ export const getPatientCompletedAppointments = async (req, res) => {
 
     res.json({ success: true, records: appointments });
   } catch (err) {
-    console.error("Error fetching patient completed appointments:", err);
+    console.error("Error fetching completed appointments:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/* =====================================================
+   ADMIN: ADD PRESCRIPTION
+===================================================== */
+export const addPrescription = async (req, res) => {
+  try {
+    const { patientId, appointmentId } = req.params;
+    const { medicines, notes } = req.body;
+
+    if (!patientId || !appointmentId || !medicines?.length) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+
+    const prescription = await PatientRecord.create({
+      user: patientId,
+      doctor: appointment.doctor,
+      appointment: appointmentId,
+      services: medicines.map(m => ({
+        service: m.name,
+        dosage: m.dosage,
+        instructions: m.instructions,
+      })),
+      notes,
+      date: new Date(),
+    });
+
+    res.json({ success: true, prescription });
+  } catch (err) {
+    console.error("Error adding prescription:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

@@ -11,6 +11,7 @@ const AddPrescription = ({ patientId }) => {
   const [notes, setNotes] = useState("");
   const [loadingAppointments, setLoadingAppointments] = useState(false);
 
+  // Fetch completed appointments
   useEffect(() => {
     const fetchAppointments = async () => {
       if (!patientId) return;
@@ -41,9 +42,7 @@ const AddPrescription = ({ patientId }) => {
     setMedicines(newMedicines);
   };
 
-  const addMedicine = () => {
-    setMedicines([...medicines, { name: "", dosage: "", instructions: "" }]);
-  };
+  const addMedicine = () => setMedicines([...medicines, { name: "", dosage: "", instructions: "" }]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,7 +71,6 @@ const AddPrescription = ({ patientId }) => {
 
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: "600px", margin: "auto" }}>
-      {/* Appointment select */}
       <div style={{ marginBottom: "15px" }}>
         <label>Select Completed Appointment:</label>
         <select
@@ -83,9 +81,7 @@ const AddPrescription = ({ patientId }) => {
         >
           <option value="">-- Select Appointment --</option>
           {loadingAppointments && <option disabled>Loading...</option>}
-          {!loadingAppointments && appointments.length === 0 && (
-            <option disabled>No completed appointments available</option>
-          )}
+          {!loadingAppointments && appointments.length === 0 && <option disabled>No completed appointments available</option>}
           {!loadingAppointments &&
             appointments.map((appt) => (
               <option key={appt._id} value={appt._id}>
@@ -95,53 +91,21 @@ const AddPrescription = ({ patientId }) => {
         </select>
       </div>
 
-      {/* Medicines */}
       {medicines.map((med, i) => (
         <div key={i} style={{ marginBottom: "10px" }}>
-          <input
-            type="text"
-            placeholder="Medicine Name"
-            value={med.name}
-            onChange={(e) => handleMedicineChange(i, "name", e.target.value)}
-            required
-            style={{ width: "32%", marginRight: "2%", padding: "6px" }}
-          />
-          <input
-            type="text"
-            placeholder="Dosage"
-            value={med.dosage}
-            onChange={(e) => handleMedicineChange(i, "dosage", e.target.value)}
-            required
-            style={{ width: "32%", marginRight: "2%", padding: "6px" }}
-          />
-          <input
-            type="text"
-            placeholder="Instructions"
-            value={med.instructions}
-            onChange={(e) => handleMedicineChange(i, "instructions", e.target.value)}
-            required
-            style={{ width: "32%", padding: "6px" }}
-          />
+          <input type="text" placeholder="Medicine Name" value={med.name} onChange={(e) => handleMedicineChange(i, "name", e.target.value)} required style={{ width: "32%", marginRight: "2%", padding: "6px" }} />
+          <input type="text" placeholder="Dosage" value={med.dosage} onChange={(e) => handleMedicineChange(i, "dosage", e.target.value)} required style={{ width: "32%", marginRight: "2%", padding: "6px" }} />
+          <input type="text" placeholder="Instructions" value={med.instructions} onChange={(e) => handleMedicineChange(i, "instructions", e.target.value)} required style={{ width: "32%", padding: "6px" }} />
         </div>
       ))}
 
-      <button type="button" onClick={addMedicine} style={{ marginBottom: "15px" }}>
-        Add Another Medicine
-      </button>
+      <button type="button" onClick={addMedicine} style={{ marginBottom: "15px" }}>Add Another Medicine</button>
 
-      {/* Notes */}
       <div style={{ marginBottom: "15px" }}>
-        <textarea
-          placeholder="Notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          style={{ width: "100%", padding: "8px", minHeight: "80px" }}
-        />
+        <textarea placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} style={{ width: "100%", padding: "8px", minHeight: "80px" }} />
       </div>
 
-      <button type="submit" style={{ padding: "10px 20px" }}>
-        Save Prescription
-      </button>
+      <button type="submit" style={{ padding: "10px 20px" }}>Save Prescription</button>
     </form>
   );
 };
