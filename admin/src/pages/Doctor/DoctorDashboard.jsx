@@ -66,7 +66,7 @@ const DoctorDashboard = () => {
     if (!dToken) return;
     try {
       setLoadingSchedules(true);
-      const res = await fetch(`${backendUrl}/api/schedule-requests/doctor`, {
+      const res = await fetch(`${backendUrl}/api/doctor/schedule-request`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
       if (!res.ok) throw new Error('Failed to fetch schedules');
