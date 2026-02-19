@@ -1,15 +1,17 @@
-// routes/doctorScheduleRequestRoutes.js
 import express from "express";
-import { pushScheduleRequest, getAllScheduleRequests } from "../controllers/doctorScheduleRequestController.js";
-import { verifyDoctor } from "../middlewares/doctorAuthMiddleware.js";
-import { verifyAdmin } from "../middlewares/adminAuthMiddleware.js";
+import doctorAuthMiddleware from "../middlewares/doctorauthmiddleware.js";
+import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
+import {
+  requestSchedule,
+  getScheduleRequests,
+} from "../controllers/doctorScheduleRequestController.js";
 
 const router = express.Router();
 
 // Doctor pushes schedule
-router.post("/request", verifyDoctor, pushScheduleRequest);
+router.post("/request", doctorAuthMiddleware, requestSchedule);
 
-// Admin fetches all requests
-router.get("/", verifyAdmin, getAllScheduleRequests);
+// Admin views pushed schedules
+router.get("/", adminAuthMiddleware, getScheduleRequests);
 
 export default router;
