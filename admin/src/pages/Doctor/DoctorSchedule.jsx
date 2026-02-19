@@ -28,7 +28,7 @@ const DoctorSchedule = () => {
     if (!dToken) return;
 
     try {
-      const res = await fetch(`${backendUrl}/api/schedule-requests/`, {
+      const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
         headers: { Authorization: `Bearer ${dToken}` },
       });
 
@@ -44,7 +44,7 @@ const DoctorSchedule = () => {
       }
 
       if (data.success) {
-        const normalizedSchedule = (data.requests || []).map((s) => ({
+        const normalizedSchedule = (data.schedule || []).map((s) => ({
           date: s.date,
           slots: s.slots.map((slot) =>
             typeof slot === 'string' ? { time: slot, status: 'available' } : slot
@@ -87,7 +87,7 @@ const DoctorSchedule = () => {
     }
 
     try {
-      const res = await fetch(`${backendUrl}/api/schedule-requests/`, {
+      const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ const DoctorSchedule = () => {
   const handleDeleteSchedule = async (date) => {
     if (!window.confirm('Are you sure you want to delete this schedule?')) return;
     try {
-      const res = await fetch(`${backendUrl}/api/schedule-requests/${date}`, {
+      const res = await fetch(`${backendUrl}/api/doctors/schedule/${date}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${dToken}` },
       });
