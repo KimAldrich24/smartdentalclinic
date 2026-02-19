@@ -52,25 +52,33 @@ const AdminSchedule = () => {
 
   // ================= Fetch doctor schedule requests =================
   const fetchScheduleRequests = async () => {
-    try {
-      setLoadingRequests(true);
-      const res = await fetch(
-        `${backendUrl}/api/schedule-requests`,
-        {
-          headers: { Authorization: `Bearer ${aToken}` },
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        setScheduleRequests(data.requests);
+  try {
+    setLoadingRequests(true);
+
+    const res = await fetch(
+      `${backendUrl}/api/doctor/schedule-request`,
+      {
+        headers: { Authorization: `Bearer ${aToken}` },
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to fetch schedule requests");
-    } finally {
-      setLoadingRequests(false);
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Server error:", text);
+      throw new Error("Request failed");
     }
-  };
+
+    const data = await res.json();
+    if (data.success) {
+      setScheduleRequests(data.requests);
+    }
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to fetch schedule requests");
+  } finally {
+    setLoadingRequests(false);
+  }
+};
 
   useEffect(() => {
     fetchScheduleRequests();
