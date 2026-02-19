@@ -1,5 +1,12 @@
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+
+// Ensure the folder exists
+const uploadDir = 'uploads/payment-proofs';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Storage configuration for payment screenshots
 const paymentStorage = multer.diskStorage({
