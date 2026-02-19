@@ -61,7 +61,7 @@ const DoctorDashboard = () => {
     }
   };
 
-  // Fetch my pushed schedules
+  // Fetch my pushed schedules (✅ FIX: match backend response)
   const fetchMySchedules = async () => {
     if (!dToken) return;
     try {
@@ -71,7 +71,7 @@ const DoctorDashboard = () => {
       });
       if (!res.ok) throw new Error('Failed to fetch schedules');
       const data = await res.json();
-      if (data.success) setMySchedules(data.requests);
+      if (data.success) setMySchedules(data.schedules); // <- backend returns schedules
       else toast.error(data.message || 'Failed to fetch schedules');
     } catch (err) {
       console.error(err);

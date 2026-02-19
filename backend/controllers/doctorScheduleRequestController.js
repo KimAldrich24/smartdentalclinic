@@ -1,4 +1,3 @@
-// controllers/doctorScheduleRequestController.js
 import DoctorScheduleRequest from "../models/DoctorScheduleRequest.js";
 
 // Doctor pushes schedule
@@ -34,18 +33,13 @@ export const getAllScheduleRequests = async (req, res) => {
   }
 };
 
-// Get schedules for logged-in doctor
-export const getDoctorSchedules = async (req, res) => {
+// Doctor fetches their own schedules
+export const getDoctorSchedules = async (doctorId) => {
   try {
-    const doctorId = req.doctor._id;
-    const requests = await DoctorScheduleRequest.find({ doctor: doctorId })
-      .sort({ createdAt: -1 });
-
-    res.json({ success: true, requests });
+    const schedules = await DoctorScheduleRequest.find({ doctor: doctorId }).sort({ createdAt: -1 });
+    return schedules;
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: "Failed to fetch schedules" });
+    throw new Error("Failed to fetch doctor schedules");
   }
 };
-
-
