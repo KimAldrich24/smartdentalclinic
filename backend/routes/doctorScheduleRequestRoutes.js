@@ -1,5 +1,5 @@
 import express from "express";
-import doctorAuthMiddleware from "../middlewares/doctorauthmiddleware.js";
+import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import {
   requestSchedule,
