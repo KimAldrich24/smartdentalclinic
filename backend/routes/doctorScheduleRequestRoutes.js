@@ -16,7 +16,7 @@ router.post("/", doctorAuthMiddleware, pushScheduleRequest);
 router.get("/", adminAuthMiddleware, getAllScheduleRequests);
 
 // Doctor fetches their own schedule requests
-router.get("/doctor", async (req, res) => {
+router.get("/doctor",doctorAuthMiddleware, async (req, res) => {
   try {
     const doctorId = req.doctor._id;
     const schedules = await getDoctorSchedules(doctorId);
