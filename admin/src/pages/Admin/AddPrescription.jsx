@@ -11,34 +11,39 @@ const AddPrescription = ({ patientId, doctorId }) => {
   const [notes, setNotes] = useState("");
 
   // Fetch completed appointments for this patient (admin can view)
- useEffect(() => {
-  const fetchAppointments = async () => {
-    if (!patientId) return;
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!patientId) {
+        console.warn("No patientId provided!");
+        setAppointments([]);
+        return;
+      }
 
-    try {
-      const res = await axios.get(
-        `${backendUrl}/api/appointments/admin/completed/${patientId}`,
-        {
-          headers: { Authorization: `Bearer ${aToken}` },
-        }
-      );
+      console.log("Fetching completed appointments for patient:", patientId);
 
-      console.log("Admin completed appointments:", res.data);
+      try {
+        const res = await axios.get(
+          `${backendUrl}/api/appointments/admin/completed/${patientId}`,
+          {
+            headers: { Authorization: `Bearer ${aToken}` },
+          }
+        );
 
-      // Controller likely returns appointments directly or inside a key
-      setAppointments(res.data.appointments || res.data.records || []);
-    } catch (err) {
-      console.error(
-        "Error fetching completed appointments:",
-        err.response?.data || err.message
-      );
-      setAppointments([]);
-    }
-  };
+        console.log("Admin completed appointments response:", res.data);
 
-  fetchAppointments();
-}, [patientId, aToken, backendUrl]);
+        // Backend returns completed appointments inside `records`
+        setAppointments(res.data.records || []);
+      } catch (err) {
+        console.error(
+          "Error fetching completed appointments:",
+          err.response?.data || err.message
+        );
+        setAppointments([]);
+      }
+    };
 
+    fetchAppointments();
+  }, [patientId, aToken, backendUrl]);
 
   const handleMedicineChange = (index, field, value) => {
     const newMedicines = [...medicines];
@@ -68,7 +73,6 @@ const AddPrescription = ({ patientId, doctorId }) => {
         { headers: { Authorization: `Bearer ${aToken}` } }
       );
 
-
       console.log("Prescription added:", res.data.prescription);
       alert("Prescription added successfully!");
 
@@ -77,7 +81,7 @@ const AddPrescription = ({ patientId, doctorId }) => {
       setNotes("");
       setSelectedAppointment("");
     } catch (err) {
-      console.error(err.response?.data || err.message);
+      console.error("Failed to add prescription:", err.response?.data || err.message);
       alert("Failed to add prescription");
     }
   };
@@ -93,6 +97,11 @@ const AddPrescription = ({ patientId, doctorId }) => {
           required
         >
           <option value="">-- Select Appointment --</option>
+          {appointments.length === 0 && (
+            <option value="" disabled>
+              No completed appointments available
+            </option>
+          )}
           {appointments.map((appt) => (
             <option key={appt._id} value={appt._id}>
               {new Date(appt.date).toLocaleDateString()} at {appt.time} with{" "}
