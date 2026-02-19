@@ -18,8 +18,10 @@ import {
 const Dashboard = () => {
   const { aToken, setAToken, backendUrl } = useContext(AdminContext);
   const navigate = useNavigate();
+
   const [stats, setStats] = useState(null);
   const [recentAppointments, setRecentAppointments] = useState([]);
+  const [credits, setCredits] = useState([]);
 
   useEffect(() => {
     if (!aToken) {
@@ -27,12 +29,12 @@ const Dashboard = () => {
       return;
     }
 
+    // Fetch dashboard stats
     const fetchStats = async () => {
       try {
-        const res = await axios.get(
-          `${backendUrl}/dashboard/stats`,
-          { headers: { Authorization: `Bearer ${aToken}` } }
-        );
+        const res = await axios.get(`${backendUrl}/dashboard/stats`, {
+          headers: { Authorization: `Bearer ${aToken}` }
+        });
         setStats(res.data);
       } catch (err) {
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -43,12 +45,12 @@ const Dashboard = () => {
       }
     };
 
+    // Fetch recent appointments
     const fetchRecent = async () => {
       try {
-        const res = await axios.get(
-          `${backendUrl}/dashboard/recent-appointments`,
-          { headers: { Authorization: `Bearer ${aToken}` } }
-        );
+        const res = await axios.get(`${backendUrl}/dashboard/recent-appointments`, {
+          headers: { Authorization: `Bearer ${aToken}` }
+        });
         setRecentAppointments(res.data);
       } catch (err) {
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -59,8 +61,21 @@ const Dashboard = () => {
       }
     };
 
+    // Fetch patient credits
+    const fetchCredits = async () => {
+      try {
+        const res = await axios.get(`${backendUrl}/dashboard/credits`, {
+          headers: { Authorization: `Bearer ${aToken}` }
+        });
+        setCredits(res.data); // expected: [{ user: {name, id}, amount, history }]
+      } catch (err) {
+        console.error("❌ Error fetching credits:", err.response?.data || err.message);
+      }
+    };
+
     fetchStats();
     fetchRecent();
+    fetchCredits();
   }, [aToken, backendUrl, navigate, setAToken]);
 
   if (!stats) return <p className="p-4">Loading dashboard...</p>;
@@ -209,6 +224,38 @@ const Dashboard = () => {
           </table>
         </div>
       </div>
+
+      {/* ================= PATIENT CREDITS ================= */}
+      <div className="bg-white p-3 rounded-xl shadow">
+        <p className="text-sm font-semibold mb-2">Patient Credits</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs sm:text-sm border-collapse">
+            <thead>
+              <tr>
+                <th className="border p-2">Patient</th>
+                <th className="border p-2">Credit Balance</th>
+                <th className="border p-2">History Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              {credits.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="text-center p-3">No credit records</td>
+                </tr>
+              ) : (
+                credits.map((c) => (
+                  <tr key={c.user.id}>
+                    <td className="border p-2">{c.user.name}</td>
+                    <td className="border p-2 font-semibold">₱{c.amount.toLocaleString()}</td>
+                    <td className="border p-2">{c.history?.length || 0}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 };
