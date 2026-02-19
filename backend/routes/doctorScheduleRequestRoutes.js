@@ -1,8 +1,8 @@
 // routes/doctorScheduleRequestRoutes.js
 import express from "express";
 import { pushScheduleRequest, getAllScheduleRequests } from "../controllers/doctorScheduleRequestController.js";
-import { verifyDoctor } from "../middleware/doctorAuth.js";
-import { verifyAdmin } from "../middleware/adminAuth.js";
+import { verifyDoctor } from "../middlewares/doctorAuthMiddleware.js";
+import { verifyAdmin } from "../middlewares/adminAuthMiddleware.js";
 
 const router = express.Router();
 
