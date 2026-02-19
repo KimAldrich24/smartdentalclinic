@@ -4,6 +4,8 @@ import Doctor from "../models/doctorModel.js";
 import Service from "../models/serviceModel.js";
 import PatientRecord from "../models/patientRecordModel.js";
 import { sendSMS } from "../utils/smsHelper.js";
+import { addCreditFromAppointment } from "./creditController.js";
+
 
 /* =====================================================
    PATIENT: BOOK APPOINTMENT
@@ -168,6 +170,9 @@ export const completeAppointment = async (req, res) => {
       notes: "Treatment completed",
     });
 
+    // ✅ Add credits automatically
+    await addCreditFromAppointment(appointment._id);
+
     res.json({ success: true, message: "Appointment completed" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -221,11 +226,15 @@ export const adminCompleteAppointment = async (req, res) => {
       notes: "Treatment completed",
     });
 
+    // ✅ Add credits automatically
+    await addCreditFromAppointment(appointment._id);
+
     res.json({ success: true, message: "Appointment marked completed", appointment });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 /* =====================================================
    ADMIN: GET COMPLETED APPOINTMENTS FOR PATIENT
@@ -301,3 +310,5 @@ export const getPrescriptions = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
