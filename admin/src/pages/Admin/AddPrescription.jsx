@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 
-const AddPrescription = ({ patientId, doctorId }) => {
+const AddPrescription = ({ patientId }) => {
   const { aToken, backendUrl } = useContext(AdminContext);
 
   const [appointments, setAppointments] = useState([]);
@@ -11,35 +11,21 @@ const AddPrescription = ({ patientId, doctorId }) => {
   const [notes, setNotes] = useState("");
   const [loadingAppointments, setLoadingAppointments] = useState(false);
 
-  // Fetch completed appointments for this patient (admin view)
   useEffect(() => {
     const fetchAppointments = async () => {
-      if (!patientId) {
-        console.warn("No patientId provided!");
-        setAppointments([]);
-        return;
-      }
+      if (!patientId) return;
 
-      console.log("Fetching completed appointments for patient:", patientId);
       setLoadingAppointments(true);
-
       try {
         const res = await axios.get(
           `${backendUrl}/api/appointments/admin/completed/${patientId}`,
-          {
-            headers: { Authorization: `Bearer ${aToken}` },
-          }
+          { headers: { Authorization: `Bearer ${aToken}` } }
         );
 
-        console.log("Admin completed appointments response:", res.data);
-
-        // Backend returns completed appointments inside `records`
+        console.log("Completed appointments response:", res.data);
         setAppointments(res.data.records || []);
       } catch (err) {
-        console.error(
-          "Error fetching completed appointments:",
-          err.response?.data || err.message
-        );
+        console.error("Error fetching completed appointments:", err.response?.data || err.message);
         setAppointments([]);
       } finally {
         setLoadingAppointments(false);
@@ -61,9 +47,8 @@ const AddPrescription = ({ patientId, doctorId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!selectedAppointment) {
-      alert("Please select an appointment to attach the prescription to.");
+      alert("Select an appointment first");
       return;
     }
 
@@ -76,8 +61,6 @@ const AddPrescription = ({ patientId, doctorId }) => {
 
       console.log("Prescription added:", res.data.prescription);
       alert("Prescription added successfully!");
-
-      // Reset form
       setMedicines([{ name: "", dosage: "", instructions: "" }]);
       setNotes("");
       setSelectedAppointment("");
@@ -99,24 +82,14 @@ const AddPrescription = ({ patientId, doctorId }) => {
           style={{ width: "100%", padding: "8px", marginTop: "5px" }}
         >
           <option value="">-- Select Appointment --</option>
-
-          {loadingAppointments && (
-            <option value="" disabled>
-              Loading appointments...
-            </option>
-          )}
-
+          {loadingAppointments && <option disabled>Loading...</option>}
           {!loadingAppointments && appointments.length === 0 && (
-            <option value="" disabled>
-              No completed appointments available
-            </option>
+            <option disabled>No completed appointments available</option>
           )}
-
           {!loadingAppointments &&
             appointments.map((appt) => (
               <option key={appt._id} value={appt._id}>
-                {new Date(appt.date).toLocaleDateString()} at {appt.time} with{" "}
-                {appt.doctor?.name || "N/A"}
+                {new Date(appt.date).toLocaleDateString()} at {appt.time} with {appt.doctor?.name || "N/A"}
               </option>
             ))}
         </select>

@@ -282,7 +282,10 @@ export const adminCompleteAppointment = async (req, res) => {
 
 // controllers/appointmentController.js
 
-// Fetch completed appointments for a patient
+/**
+ * Fetch appointments for a patient that are eligible for prescriptions
+ * Only COMPLETED appointments
+ */
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -295,13 +298,13 @@ export const getPatientCompletedAppointments = async (req, res) => {
 
     const appointments = await Appointment.find({
       user: objectUserId,
-      status: "COMPLETED",
+      status: "COMPLETED", // only completed appointments
     })
       .populate("doctor", "name email speciality")
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
 
-    console.log("Found appointments:", appointments);
+    console.log("Completed appointments found:", appointments.map(a => ({ id: a._id, status: a.status })));
 
     res.json({ success: true, records: appointments });
   } catch (err) {
@@ -309,5 +312,3 @@ export const getPatientCompletedAppointments = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-
