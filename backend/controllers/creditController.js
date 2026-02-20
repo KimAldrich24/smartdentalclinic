@@ -69,3 +69,24 @@ export const updateCredit = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// controllers/creditController.js
+export const getMyCredit = async (req, res) => {
+  try {
+    const userId = req.user.id; // or req.user._id
+
+    const credit = await Credit.findOne({ user: userId });
+
+    if (!credit) {
+      return res.json({ amount: 0, history: [] });
+    }
+
+    res.json({
+      amount: credit.amount,
+      history: credit.history,
+    });
+  } catch (err) {
+    console.error("Get my credit error:", err);
+    res.status(500).json({ message: "Failed to fetch credit" });
+  }
+};
