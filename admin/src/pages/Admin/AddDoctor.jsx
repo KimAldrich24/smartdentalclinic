@@ -249,7 +249,7 @@ const AddDoctor = () => {
 
       <textarea
         rows={5}
-        placeholder="About Doctor"
+        placeholder="About Dentist"
         required
         value={about}
         onChange={(e) => setAbout(e.target.value)}
