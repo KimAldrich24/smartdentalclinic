@@ -154,7 +154,7 @@ const Sidebar = () => {
               src={assets.appointment_icon}
               alt="Doctor Schedule"
             />
-            <p className="text-sm md:text-base">Doctor Schedule</p>
+            <p className="text-sm md:text-base">Dentist Schedule</p>
           </NavLink>
 
 
@@ -235,7 +235,7 @@ const Sidebar = () => {
         to="/staff-management"
       >
         <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.pending_icon || assets.add_icon} alt="Staff Management" />
-        <p className="text-sm md:text-base">👥 Staff Management</p>
+        <p className="text-sm md:text-base">👥 Receptionist</p>
       </NavLink>
 
       <NavLink
