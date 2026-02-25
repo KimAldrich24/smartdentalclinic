@@ -103,29 +103,31 @@ const ServicesMaintenance = () => {
         className="mb-6 space-y-4 bg-white p-4 shadow rounded-lg"
       >
         <input
-          type="text"
-          placeholder="Service Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-          required
-        />
+  type="text"
+  placeholder="Service Name"
+  value={name}
+  onChange={(e) => setName(e.target.value)}
+  className="w-full border px-3 py-2 rounded"
+  required
+/>
 
-        <input
-          type="text"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-        />
+<input
+  type="text"
+  placeholder="Description"
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+  className="w-full border px-3 py-2 rounded"
+  required
+/>
 
-        <input
-          type="text"
-          placeholder="Duration"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-        />
+<input
+  type="text"
+  placeholder="Duration"
+  value={duration}
+  onChange={(e) => setDuration(e.target.value)}
+  className="w-full border px-3 py-2 rounded"
+  required
+/>
 
         <button className="bg-blue-500 text-white px-4 py-2 rounded">
           {editingId ? "Update Service" : "Add Service"}
