@@ -1,10 +1,11 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { AdminContext } from "../../context/AdminContext.jsx";
 import { toast } from "react-toastify";
 
 const DoctorsList = () => {
-  const { doctors, getAllDoctors, removeDoctor } =
-    useContext(AdminContext);
+  const { doctors, getAllDoctors, removeDoctor } = useContext(AdminContext);
+
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     getAllDoctors();
@@ -25,11 +26,28 @@ const DoctorsList = () => {
     }
   };
 
+  // 🔎 FILTER DOCTORS
+  const filteredDoctors = doctors.filter((doc) =>
+    doc.name.toLowerCase().includes(search.toLowerCase()) ||
+    doc.email.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div className="p-4 max-w-6xl mx-auto">
       <h2 className="text-xl font-bold mb-4">Dentist List</h2>
 
-      {doctors.length === 0 ? (
+      {/* SEARCH BAR */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search doctor by name or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full md:w-80 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+
+      {filteredDoctors.length === 0 ? (
         <p>No doctors found.</p>
       ) : (
         <>
@@ -48,7 +66,7 @@ const DoctorsList = () => {
               </thead>
 
               <tbody>
-                {doctors.map((doc) => (
+                {filteredDoctors.map((doc) => (
                   <tr key={doc._id} className="hover:bg-gray-50">
                     <td className="border p-2">{doc.name}</td>
                     <td className="border p-2">{doc.email}</td>
@@ -83,9 +101,7 @@ const DoctorsList = () => {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-gray-400">
-                          No schedule
-                        </span>
+                        <span className="text-gray-400">No schedule</span>
                       )}
                     </td>
 
@@ -107,21 +123,17 @@ const DoctorsList = () => {
           {/* 📱 MOBILE CARD VIEW */}
           {/* ===================== */}
           <div className="md:hidden space-y-4">
-            {doctors.map((doc) => (
+            {filteredDoctors.map((doc) => (
               <div
                 key={doc._id}
                 className="bg-white border rounded-xl shadow-sm p-4"
               >
                 <p className="text-lg font-semibold">{doc.name}</p>
-                <p className="text-sm text-gray-600 break-all">
-                  {doc.email}
-                </p>
+                <p className="text-sm text-gray-600 break-all">{doc.email}</p>
 
                 {/* SCHEDULE */}
                 <div className="mt-3">
-                  <p className="text-sm font-semibold mb-1">
-                    Schedule
-                  </p>
+                  <p className="text-sm font-semibold mb-1">Schedule</p>
 
                   {doc.schedule && doc.schedule.length > 0 ? (
                     <div className="space-y-3">
