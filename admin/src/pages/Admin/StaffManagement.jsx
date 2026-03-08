@@ -209,11 +209,10 @@ const StaffManagement = () => {
                   <td className="p-4">{staff.phone}</td>
                   <td className="p-4">
                     <span
-                      className={`px-3 py-1 rounded-full text-sm ${
-                        staff.status === "active"
+                      className={`px-3 py-1 rounded-full text-sm ${staff.status === "active"
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"
-                      }`}
+                        }`}
                     >
                       {staff.status}
                     </span>
@@ -246,9 +245,22 @@ const StaffManagement = () => {
                 type="text"
                 placeholder="Name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => {
+                  const lettersOnly = e.target.value.replace(/[^a-zA-Z\s]/g, "");
+                  setFormData({ ...formData, name: lettersOnly });
+                }}
+                onKeyDown={(e) => {
+                  if (
+                    !/[a-zA-Z\s]/.test(e.key) &&
+                    e.key !== "Backspace" &&
+                    e.key !== "Delete" &&
+                    e.key !== "ArrowLeft" &&
+                    e.key !== "ArrowRight" &&
+                    e.key !== "Tab"
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
                 required
                 className="w-full border px-3 py-2 rounded"
               />
