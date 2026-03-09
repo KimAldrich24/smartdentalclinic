@@ -118,6 +118,7 @@ if (aToken && userRole === "admin") {
               <Route path="/sales-report" element={<AdminSalesReport />} />
               <Route path="/audit-trail" element={<AdminAuditTrail />} />
               <Route path="/equipment" element={<AdminEquipment />} />
+              <Route path="/suppliers" element={<AdminSuppliers />} />
               <Route path="/pending-users" element={<PendingUsers />} />
               <Route path="/user-maintenance" element={<UserMaintenance />} />
               <Route path="/job-applications" element={<AdminJobApplications />} />
