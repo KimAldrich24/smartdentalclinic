@@ -181,7 +181,7 @@ const Sidebar = () => {
             <img
               className="w-5 h-5 md:w-auto md:h-auto"
               src={assets.add_icon}
-              alt="Suppliers"
+              alt="suppliers"
             />
             <p className="text-sm md:text-base">Suppliers</p>
           </NavLink>

@@ -39,6 +39,7 @@ import StaffManagement from "./pages/Admin/StaffManagement";
 import AdminRegister from "./pages/Admin/AdminRegister";
 import AdminPaymentProofs from "./pages/Admin/AdminPaymentProofs";
 import AdminSchedule from "./pages/Admin/AdminSchedule";
+import AdminSuppliers from "./pages/Admin/AdminSuppliers";
 
 // Doctor Pages
 import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
