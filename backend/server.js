@@ -28,6 +28,7 @@ import equipmentRoutes from "./routes/equipmentRoutes.js"
 import staffRoutes from "./routes/staffRoutes.js"
 import adminStaffRoutes from "./routes/adminStaffRoutes.js"
 import paymentProofRoutes from './routes/paymentProofRoutes.js'
+import supplierRoutes from "./routes/supplierRoutes.js";
 import { startScheduleCleanup } from './utils/scheduleCleanup.js'
 import doctorScheduleRequestRoutes from "./routes/doctorScheduleRequestRoutes.js";
 // import creditRouter from "./routes/creditRoutes.js";
@@ -102,6 +103,7 @@ safeUse('/api/admin/staff', adminStaffRoutes, 'adminStaffRoutes')
 safeUse('/api/payment-proofs', paymentProofRoutes, 'paymentProofRoutes')
 safeUse('/api/admin/schedule', doctorScheduleRoutes, 'doctorScheduleRoutes')
 safeUse("/api/doctor/schedule-request", doctorScheduleRequestRoutes);
+safeUse("/api/suppliers", supplierRoutes);
 // safeUse("/api/credits", creditRouter);
 
 // Static uploads only

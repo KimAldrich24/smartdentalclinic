@@ -4,23 +4,33 @@ import { AdminContext } from "../../context/AdminContext";
 
 const AdminEquipment = () => {
   const { aToken, backendUrl } = useContext(AdminContext);
+
   const [equipment, setEquipment] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "",
     category: "",
     serialNumber: "",
+    supplier: "",
     location: "",
     status: "Available",
     lastMaintenance: "",
     nextMaintenance: "",
     notes: "",
   });
+
   const [editingId, setEditingId] = useState(null);
 
+  /* ================================
+     FETCH EQUIPMENT
+  ================================= */
   const fetchEquipment = async () => {
     if (!aToken) return;
+
     setLoading(true);
     setError(null);
 
@@ -29,32 +39,51 @@ const AdminEquipment = () => {
         headers: { Authorization: `Bearer ${aToken}` },
       });
 
-      // Support array or object with equipment array
       const data = Array.isArray(res.data) ? res.data : res.data.equipment || [];
       setEquipment(data);
     } catch (err) {
-      console.error("Error fetching equipment:", err.response || err.message);
-      setError("Failed to load equipment. Check console.");
+      console.error(err);
+      setError("Failed to load equipment.");
       setEquipment([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch whenever aToken is available
+  /* ================================
+     FETCH SUPPLIERS
+  ================================= */
+  const fetchSuppliers = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/suppliers`, {
+        headers: { Authorization: `Bearer ${aToken}` },
+      });
+
+      setSuppliers(res.data || []);
+    } catch (err) {
+      console.error("Failed to load suppliers", err);
+    }
+  };
+
   useEffect(() => {
-    if (aToken) fetchEquipment();
+    if (aToken) {
+      fetchEquipment();
+      fetchSuppliers();
+    }
   }, [aToken]);
 
-  // Handle form input
+  /* ================================
+     HANDLE FORM INPUT
+  ================================= */
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Add or Update equipment
+  /* ================================
+     ADD OR UPDATE EQUIPMENT
+  ================================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!aToken) return;
 
     try {
       if (editingId) {
@@ -71,26 +100,31 @@ const AdminEquipment = () => {
         name: "",
         category: "",
         serialNumber: "",
+        supplier: "",
         location: "",
         status: "Available",
         lastMaintenance: "",
         nextMaintenance: "",
         notes: "",
       });
+
       setEditingId(null);
       fetchEquipment();
     } catch (err) {
-      console.error(err.response || err.message);
+      console.error(err);
       setError("Failed to save equipment.");
     }
   };
 
-  // Edit equipment
+  /* ================================
+     EDIT EQUIPMENT
+  ================================= */
   const handleEdit = (item) => {
     setFormData({
       name: item.name,
       category: item.category || "",
       serialNumber: item.serialNumber || "",
+      supplier: item.supplier?._id || "",
       location: item.location || "",
       status: item.status || "Available",
       lastMaintenance: item.lastMaintenance
@@ -101,21 +135,24 @@ const AdminEquipment = () => {
         : "",
       notes: item.notes || "",
     });
+
     setEditingId(item._id);
   };
 
-  // Delete equipment
+  /* ================================
+     DELETE EQUIPMENT
+  ================================= */
   const handleDelete = async (id) => {
-    if (!aToken) return;
-    if (!window.confirm("Are you sure you want to delete this equipment?")) return;
+    if (!window.confirm("Delete this equipment?")) return;
 
     try {
       await axios.delete(`${backendUrl}/api/equipment/${id}`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
+
       fetchEquipment();
     } catch (err) {
-      console.error(err.response || err.message);
+      console.error(err);
       setError("Failed to delete equipment.");
     }
   };
@@ -124,13 +161,13 @@ const AdminEquipment = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Clinic Equipment Maintenance</h2>
 
-      {/* Loading & Error */}
       {loading && <p>Loading equipment...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* Add/Edit Form */}
+      {/* ================= FORM ================= */}
       <form onSubmit={handleSubmit} className="mb-6 space-y-2">
         <div className="flex gap-2 flex-wrap">
+
           <input
             name="name"
             placeholder="Equipment Name"
@@ -139,6 +176,7 @@ const AdminEquipment = () => {
             required
             className="border px-2 py-1"
           />
+
           <input
             name="category"
             placeholder="Category"
@@ -146,6 +184,7 @@ const AdminEquipment = () => {
             onChange={handleChange}
             className="border px-2 py-1"
           />
+
           <input
             name="serialNumber"
             placeholder="Serial Number"
@@ -153,6 +192,22 @@ const AdminEquipment = () => {
             onChange={handleChange}
             className="border px-2 py-1"
           />
+
+          {/* SUPPLIER DROPDOWN */}
+          <select
+            name="supplier"
+            value={formData.supplier}
+            onChange={handleChange}
+            className="border px-2 py-1"
+          >
+            <option value="">Select Supplier</option>
+            {suppliers.map((sup) => (
+              <option key={sup._id} value={sup._id}>
+                {sup.name}
+              </option>
+            ))}
+          </select>
+
           <input
             name="location"
             placeholder="Location"
@@ -160,6 +215,7 @@ const AdminEquipment = () => {
             onChange={handleChange}
             className="border px-2 py-1"
           />
+
           <select
             name="status"
             value={formData.status}
@@ -171,20 +227,23 @@ const AdminEquipment = () => {
             <option>Under Maintenance</option>
             <option>Broken</option>
           </select>
+
           <input
-            name="lastMaintenance"
             type="date"
+            name="lastMaintenance"
             value={formData.lastMaintenance}
             onChange={handleChange}
             className="border px-2 py-1"
           />
+
           <input
-            name="nextMaintenance"
             type="date"
+            name="nextMaintenance"
             value={formData.nextMaintenance}
             onChange={handleChange}
             className="border px-2 py-1"
           />
+
           <input
             name="notes"
             placeholder="Notes"
@@ -193,51 +252,65 @@ const AdminEquipment = () => {
             className="border px-2 py-1 flex-1"
           />
         </div>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-1 rounded">
+
+        <button className="bg-blue-500 text-white px-4 py-1 rounded">
           {editingId ? "Update Equipment" : "Add Equipment"}
         </button>
       </form>
 
-      {/* Equipment Table */}
+      {/* ================= TABLE ================= */}
       <div className="overflow-x-auto">
         {!loading && equipment.length === 0 && <p>No equipment added yet.</p>}
+
         {equipment.length > 0 && (
-          <table className="min-w-full border border-gray-200 text-sm text-gray-700">
+          <table className="min-w-full border text-sm">
             <thead className="bg-gray-100">
               <tr>
-                <th className="px-4 py-2 border">Name</th>
-                <th className="px-4 py-2 border">Category</th>
-                <th className="px-4 py-2 border">Serial Number</th>
-                <th className="px-4 py-2 border">Location</th>
-                <th className="px-4 py-2 border">Status</th>
-                <th className="px-4 py-2 border">Last Maintenance</th>
-                <th className="px-4 py-2 border">Next Maintenance</th>
-                <th className="px-4 py-2 border">Notes</th>
-                <th className="px-4 py-2 border">Actions</th>
+                <th className="border px-4 py-2">Name</th>
+                <th className="border px-4 py-2">Category</th>
+                <th className="border px-4 py-2">Serial</th>
+                <th className="border px-4 py-2">Supplier</th>
+                <th className="border px-4 py-2">Location</th>
+                <th className="border px-4 py-2">Status</th>
+                <th className="border px-4 py-2">Last Maintenance</th>
+                <th className="border px-4 py-2">Next Maintenance</th>
+                <th className="border px-4 py-2">Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {equipment.map((item) => (
                 <tr key={item._id} className="text-center">
-                  <td className="px-4 py-2 border">{item.name}</td>
-                  <td className="px-4 py-2 border">{item.category || "-"}</td>
-                  <td className="px-4 py-2 border">{item.serialNumber || "-"}</td>
-                  <td className="px-4 py-2 border">{item.location || "-"}</td>
-                  <td className="px-4 py-2 border">{item.status}</td>
-                  <td className="px-4 py-2 border">
-                    {item.lastMaintenance ? new Date(item.lastMaintenance).toLocaleDateString() : "-"}
+
+                  <td className="border px-4 py-2">{item.name}</td>
+                  <td className="border px-4 py-2">{item.category || "-"}</td>
+                  <td className="border px-4 py-2">{item.serialNumber || "-"}</td>
+                  <td className="border px-4 py-2">
+                    {item.supplier?.name || "-"}
                   </td>
-                  <td className="px-4 py-2 border">
-                    {item.nextMaintenance ? new Date(item.nextMaintenance).toLocaleDateString() : "-"}
+                  <td className="border px-4 py-2">{item.location || "-"}</td>
+                  <td className="border px-4 py-2">{item.status}</td>
+
+                  <td className="border px-4 py-2">
+                    {item.lastMaintenance
+                      ? new Date(item.lastMaintenance).toLocaleDateString()
+                      : "-"}
                   </td>
-                  <td className="px-4 py-2 border">{item.notes || "-"}</td>
-                  <td className="px-4 py-2 border flex gap-1 justify-center">
+
+                  <td className="border px-4 py-2">
+                    {item.nextMaintenance
+                      ? new Date(item.nextMaintenance).toLocaleDateString()
+                      : "-"}
+                  </td>
+
+                  <td className="border px-4 py-2 flex gap-2 justify-center">
                     <button
                       className="bg-yellow-400 px-2 py-1 rounded"
                       onClick={() => handleEdit(item)}
                     >
                       Edit
                     </button>
+
                     <button
                       className="bg-red-500 text-white px-2 py-1 rounded"
                       onClick={() => handleDelete(item._id)}
@@ -245,6 +318,7 @@ const AdminEquipment = () => {
                       Delete
                     </button>
                   </td>
+
                 </tr>
               ))}
             </tbody>
