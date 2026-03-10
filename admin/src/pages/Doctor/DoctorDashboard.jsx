@@ -42,7 +42,7 @@ try{
 
 setLoadingAppointments(true);
 
-const res = await fetch(`${backendUrl} /api/appointments/doctor/my-appointments`,{
+const res = await fetch(`${backendUrl}/api/appointments/doctor/my-appointments`,{
 headers:{Authorization:`Bearer ${ dToken } `}
 });
 
