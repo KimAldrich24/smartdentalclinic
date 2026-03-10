@@ -300,49 +300,38 @@ const MyProfile = () => {
           </ul>
         )}
         {isEdit && (
-          <div className="mt-4 space-y-2">
-            <input
-              type="text"
-              placeholder="Child's Name"
-              value={childForm.name}
-              onChange={(e) => setChildForm(prev => ({ ...prev, name: e.target.value }))}
-              className="border px-3 py-2 rounded-lg w-full"
-            />
-            <input
-              type="date"
-              value={childForm.dob}
-              onChange={(e) => setChildForm(prev => ({ ...prev, dob: e.target.value }))}
-              className="border px-3 py-2 rounded-lg w-full"
-            />
-            <button
-              onClick={async () => {
-                if (!childForm.name || !childForm.dob) return alert("Enter name and DOB");
-                setChildSaving(true);
-                try {
-                  const updatedChildren = [...children, childForm];
-                  const payload = { children: updatedChildren };
-                  const { data } = await axios.put(`${backendUrl}/api/users/me`, payload, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
-                  if (data.success) {
-                    setChildren(data.user.children || []);
-                    setChildForm({ name: "", dob: "" });
-                    alert("Child added successfully!");
-                  }
-                } catch (err) {
-                  console.error(err);
-                  alert("Failed to add child");
-                } finally {
-                  setChildSaving(false);
-                }
-              }}
-              disabled={childSaving}
-              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md"
-            >
-              {childSaving ? "Saving..." : "Add Child"}
-            </button>
-          </div>
-        )}
+  <div className="mt-4 space-y-2">
+    <input
+      type="text"
+      placeholder="Child's Name"
+      value={childForm.name}
+      onChange={(e) => setChildForm(prev => ({ ...prev, name: e.target.value }))}
+      className="border px-3 py-2 rounded-lg w-full"
+    />
+    <input
+      type="date"
+      value={childForm.dob}
+      onChange={(e) => setChildForm(prev => ({ ...prev, dob: e.target.value }))}
+      className="border px-3 py-2 rounded-lg w-full"
+    />
+    <button
+      onClick={() => {
+        if (!childForm.name || !childForm.dob) return alert("Enter name and DOB");
+
+        // ✅ Push child into userData.children
+        setUserData(prev => ({
+          ...prev,
+          children: [...(prev.children || []), childForm],
+        }));
+
+        setChildForm({ name: "", dob: "" });
+      }}
+      className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md"
+    >
+      Add Child
+    </button>
+  </div>
+)}
       </div>
 
       {/* CREDIT BALANCE */}
