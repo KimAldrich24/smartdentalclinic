@@ -359,6 +359,7 @@ export const getCurrentUser = async (req, res) => {
         address: req.user.address,
         role: req.user.role,
         status: req.user.status,
+         children: req.user.children || [], // ✅ include children here
       },
     });
   } catch (error) {
