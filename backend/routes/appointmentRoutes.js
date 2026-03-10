@@ -3,6 +3,7 @@ import Appointment from "../models/appointmentModel.js";
 
 import {
   bookAppointment,
+  bookChildAppointment, // ✅ NEW
   getMyAppointments,
   getAllAppointments,
   deleteAppointment,
@@ -26,6 +27,8 @@ const router = express.Router();
 /* ================= PATIENT ================= */
 // Book appointment
 router.post("/book", protect(), bookAppointment);
+// ✅ Book appointment for child (guardian)
+router.post("/book-child", protect(), bookChildAppointment);
 // Get my appointments
 router.get("/my", protect(), getMyAppointments);
 // Cancel appointment

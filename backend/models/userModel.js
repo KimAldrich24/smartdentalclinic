@@ -9,6 +9,16 @@ const addressSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Child sub-schema
+const childSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    dob: { type: Date, required: true },
+    // Optional: add notes, allergies, etc.
+  },
+  { _id: true }
+);
+
 // Main User schema
 const userSchema = new mongoose.Schema(
   {
@@ -21,10 +31,13 @@ const userSchema = new mongoose.Schema(
     },
     address: { type: addressSchema, default: () => ({}) },
     gender: { type: String, default: "Not Selected" },
-    dob: { type: Date, default: null }, // ✅ FIXED: Allow null for admins
+    dob: { type: Date, default: null }, // for adult users
     phone: { type: String, default: " " },
-    role: { type: String, enum: ["admin", "staff", "patient"], default: "patient" },
+    role: { type: String, enum: ["admin", "staff", "patient", "guardian"], default: "patient" },
     status: { type: String, enum: ["pending", "active", "rejected"], default: "active" },
+
+    // ✅ Guardian-specific field
+    children: { type: [childSchema], default: [] },
   },
   { timestamps: true }
 );

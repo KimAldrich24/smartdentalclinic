@@ -473,3 +473,41 @@ export const rejectUser = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// ✅ Add a child (guardian)
+export const addChild = async (req, res) => {
+  try {
+    const { name, dob } = req.body;
+    const guardianId = req.user._id;
+
+    const guardian = await User.findById(guardianId);
+    if (!guardian || guardian.role !== "guardian") {
+      return res.status(403).json({ success: false, message: "Unauthorized: Only guardians can add children." });
+    }
+
+    guardian.children.push({ name, dob });
+    await guardian.save();
+
+    res.status(201).json({ success: true, message: "Child added successfully", children: guardian.children });
+  } catch (err) {
+    console.error("[ERROR] addChild:", err.message);
+    res.status(500).json({ success: false, message: "Failed to add child", error: err.message });
+  }
+};
+
+// ✅ Get all children of a guardian
+export const getChildren = async (req, res) => {
+  try {
+    const guardianId = req.user._id;
+    const guardian = await User.findById(guardianId);
+
+    if (!guardian || guardian.role !== "guardian") {
+      return res.status(403).json({ success: false, message: "Unauthorized: Only guardians can fetch children." });
+    }
+
+    res.status(200).json({ success: true, children: guardian.children });
+  } catch (err) {
+    console.error("[ERROR] getChildren:", err.message);
+    res.status(500).json({ success: false, message: "Failed to fetch children", error: err.message });
+  }
+};

@@ -15,7 +15,9 @@ const Appointment = () => {
 
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [selectedChild, setSelectedChild] = useState("");
 
+  const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
 
@@ -23,8 +25,6 @@ const Appointment = () => {
   const fetchDoctor = async () => {
     try {
       const res = await axios.get(`${backendUrl}/api/doctors/${docId}`);
-      console.log("🧑 Doctor response:", res.data);
-
       if (!res.data?.success || !res.data.doctor) {
         toast.error("Doctor not found");
         return;
@@ -35,19 +35,34 @@ const Appointment = () => {
     } catch (err) {
       console.error("Doctor fetch error:", err);
       toast.error("Failed to load doctor");
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  // ================= FETCH CHILDREN =================
+  const fetchChildren = async () => {
+    if (!token) return;
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (data.success && Array.isArray(data.user.children)) {
+        setChildren(data.user.children);
+        if (data.user.children.length > 0) setSelectedChild(data.user.children[0]._id);
+      }
+    } catch (err) {
+      console.error("Error fetching children:", err);
     }
   };
 
   useEffect(() => {
     fetchDoctor();
+    fetchChildren();
+    setLoading(false);
   }, [docId]);
 
   // ================= AVAILABLE SLOTS =================
   const getAvailableSlots = () => {
     if (!selectedDate) return [];
-
     const day = doctorSchedule.find((d) => d.date === selectedDate);
     if (!day || !Array.isArray(day.slots)) return [];
 
@@ -64,47 +79,36 @@ const Appointment = () => {
 
   // ================= BOOK APPOINTMENT =================
   const handleBooking = async () => {
-    console.log("🚀 BOOKING CLICKED");
-    console.log("📦 Payload:", {
-      doctorId: docId,
-      date: selectedDate,
-      time: selectedTime,
-    });
-
     if (!token) {
       toast.error("Please login first");
       navigate("/login");
       return;
     }
 
-    if (!selectedDate) {
-      toast.error("Select a date");
+    if (!selectedDate || !selectedTime) {
+      toast.error("Please select date and time");
       return;
     }
 
-    if (!selectedTime) {
-      toast.error("Select a time");
+    if (!selectedChild) {
+      toast.error("Please select a child for this appointment");
       return;
     }
 
     try {
       setBooking(true);
-
       const res = await axios.post(
         `${backendUrl}/api/appointments/book`,
         {
           doctorId: docId,
           date: selectedDate,
           time: selectedTime,
+          childId: selectedChild, // <-- send childId to backend
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      console.log("✅ Booking response:", res.data);
 
       if (res.data.success) {
         toast.success("Appointment submitted for admin approval");
@@ -113,7 +117,7 @@ const Appointment = () => {
         toast.error(res.data.message || "Booking failed");
       }
     } catch (err) {
-      console.error("❌ Booking error:", err);
+      console.error("Booking error:", err);
       toast.error(err.response?.data?.message || "Booking failed");
     } finally {
       setBooking(false);
@@ -133,6 +137,24 @@ const Appointment = () => {
           <p className="text-gray-600">Dr. {docInfo.name}</p>
         </div>
 
+        {/* SELECT CHILD */}
+        {children.length > 0 && (
+          <div>
+            <h3 className="font-semibold mb-2">Select Child</h3>
+            <select
+              value={selectedChild}
+              onChange={(e) => setSelectedChild(e.target.value)}
+              className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
+            >
+              {children.map((child) => (
+                <option key={child._id} value={child._id}>
+                  {child.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* DATE */}
         <div>
           <h3 className="font-semibold mb-2">Select Date</h3>
@@ -145,9 +167,7 @@ const Appointment = () => {
                   setSelectedTime("");
                 }}
                 className={`px-4 py-2 rounded-lg border ${
-                  selectedDate === d.date
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100"
+                  selectedDate === d.date ? "bg-blue-600 text-white" : "bg-gray-100"
                 }`}
               >
                 {new Date(d.date).toLocaleDateString()}
@@ -171,9 +191,7 @@ const Appointment = () => {
                       key={i}
                       onClick={() => setSelectedTime(time)}
                       className={`p-2 rounded-lg border ${
-                        selectedTime === time
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100"
+                        selectedTime === time ? "bg-blue-600 text-white" : "bg-gray-100"
                       }`}
                     >
                       {time}

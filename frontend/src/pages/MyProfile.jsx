@@ -21,6 +21,11 @@ const MyProfile = () => {
   const [creditLoading, setCreditLoading] = useState(true);
   const [creditError, setCreditError] = useState("");
 
+  // ✅ Children state
+  const [children, setChildren] = useState([]);
+  const [childForm, setChildForm] = useState({ name: "", dob: "" });
+  const [childSaving, setChildSaving] = useState(false);
+
   // ✅ Load user data
   useEffect(() => {
     const fetchProfile = async () => {
@@ -48,8 +53,10 @@ const MyProfile = () => {
             dob: data.user.dob 
               ? new Date(data.user.dob).toISOString().split("T")[0] 
               : "",
+            children: data.user.children || [],
           };
           setUserData(formattedUser);
+          setChildren(formattedUser.children);
           setError("");
         } else {
           setError(data.message || "Failed to load profile");
@@ -157,6 +164,7 @@ const MyProfile = () => {
         gender: userData.gender || "Not Selected",
         dob: userData.dob || undefined,
         image: userData.image,
+        children, // include children when saving profile
       };
 
       const { data } = await axios.put(`${backendUrl}/api/users/me`, payload, {
@@ -173,9 +181,11 @@ const MyProfile = () => {
           dob: data.user.dob
             ? new Date(data.user.dob).toISOString().split("T")[0]
             : "",
+          children: data.user.children || [],
         };
 
         setUserData(updated);
+        setChildren(updated.children);
         setIsEdit(false);
         alert("Profile updated successfully!");
       } else {
@@ -273,6 +283,66 @@ const MyProfile = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* CHILDREN SECTION */}
+      <div>
+        <p className="text-lg font-semibold text-gray-700 mb-3">MY CHILDREN</p>
+        {children.length === 0 ? (
+          <p className="text-gray-500">No children added yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {children.map((c, i) => (
+              <li key={i} className="border p-3 rounded-lg bg-gray-50 shadow-sm">
+                {c.name} — {c.dob ? new Date(c.dob).toLocaleDateString() : "No DOB"}
+              </li>
+            ))}
+          </ul>
+        )}
+        {isEdit && (
+          <div className="mt-4 space-y-2">
+            <input
+              type="text"
+              placeholder="Child's Name"
+              value={childForm.name}
+              onChange={(e) => setChildForm(prev => ({ ...prev, name: e.target.value }))}
+              className="border px-3 py-2 rounded-lg w-full"
+            />
+            <input
+              type="date"
+              value={childForm.dob}
+              onChange={(e) => setChildForm(prev => ({ ...prev, dob: e.target.value }))}
+              className="border px-3 py-2 rounded-lg w-full"
+            />
+            <button
+              onClick={async () => {
+                if (!childForm.name || !childForm.dob) return alert("Enter name and DOB");
+                setChildSaving(true);
+                try {
+                  const updatedChildren = [...children, childForm];
+                  const payload = { children: updatedChildren };
+                  const { data } = await axios.put(`${backendUrl}/api/users/me`, payload, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (data.success) {
+                    setChildren(data.user.children || []);
+                    setChildForm({ name: "", dob: "" });
+                    alert("Child added successfully!");
+                  }
+                } catch (err) {
+                  console.error(err);
+                  alert("Failed to add child");
+                } finally {
+                  setChildSaving(false);
+                }
+              }}
+              disabled={childSaving}
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md"
+            >
+              {childSaving ? "Saving..." : "Add Child"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* CREDIT BALANCE */}

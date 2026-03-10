@@ -10,7 +10,10 @@ import {
   deleteUser,
   getPendingUsers,
   approveUser,
-  rejectUser
+  rejectUser,
+  // ✅ New child functions
+  addChild,
+  getChildren
 } from "../controllers/userController.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import protect from "../middlewares/authMiddleware.js";
@@ -18,25 +21,38 @@ import { getUserRecords } from "../controllers/patientRecordController.js";
 
 const router = express.Router();
 
+// =======================
 // Public routes
+// =======================
 router.post("/send-otp", sendOtp);
 router.post("/send-email-otp", sendEmailOtp);
 router.post("/verify-and-register", verifyAndRegister);
 router.post("/login", loginUser);
 
+// =======================
 // Authenticated routes (all users)
+// =======================
 router.get("/me", protect(), getCurrentUser);
 router.put("/me", protect(), updateUserProfile);
 
+// =======================
+// Guardian: Child management
+// =======================
+router.post("/children", protect(), addChild); // Add child
+router.get("/children", protect(), getChildren); // Get all children
+
+// =======================
 // Admin-only routes
+// =======================
 router.get("/", adminAuthMiddleware, getAllUsers);
 router.delete("/:id", adminAuthMiddleware, deleteUser);
 router.get("/pending", adminAuthMiddleware, getPendingUsers);
 router.put("/approve/:id", adminAuthMiddleware, approveUser);
 router.put("/reject/:id", adminAuthMiddleware, rejectUser);
 
-
-// Add this below your other routes (doesn't matter exact position, as long as it's before `export default router`)
+// =======================
+// User-specific routes
+// =======================
 router.get("/:id/patient-records", protect(), getUserRecords);
 
 export default router;

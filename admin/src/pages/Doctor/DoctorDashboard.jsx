@@ -394,7 +394,7 @@ return (
 
       <h2 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-2">
         <Calendar size={20} />
-        Push Schedule to Admin
+        Request Schedule to Admin
       </h2>
 
       <div className="mb-3">

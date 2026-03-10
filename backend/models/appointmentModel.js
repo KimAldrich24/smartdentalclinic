@@ -8,7 +8,15 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
     },
 
-    user: {
+    // The patient: can be a child (linked via guardian)
+    patient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // Who booked the appointment (could be guardian)
+    bookedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -95,11 +103,10 @@ const appointmentSchema = new mongoose.Schema(
     },
 
     creditAdded: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "Credit",
-  default: null,
-},
-
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Credit",
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -118,7 +125,5 @@ appointmentSchema.pre("save", function (next) {
   this.totalPrice = servicesTotal + (this.additionalPayment || 0);
   next();
 });
-
-
 
 export default mongoose.model("Appointment", appointmentSchema);

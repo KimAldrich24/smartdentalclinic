@@ -40,6 +40,49 @@ export const bookAppointment = async (req, res) => {
   }
 };
 
+// ✅ Book appointment for a child (by guardian)
+export const bookChildAppointment = async (req, res) => {
+  try {
+    const { childId, doctorId, date, time } = req.body;
+    const guardianId = req.user._id;
+
+    // Validate required fields
+    if (!childId || !doctorId || !date || !time) {
+      return res.status(400).json({ success: false, message: "Child, doctor, date, and time are required" });
+    }
+
+    // Find guardian
+    const guardian = await User.findById(guardianId);
+    if (!guardian || guardian.role !== "guardian") {
+      return res.status(403).json({ success: false, message: "Only guardians can book appointments for children" });
+    }
+
+    // Find the child inside guardian's children array
+    const child = guardian.children.id(childId);
+    if (!child) return res.status(404).json({ success: false, message: "Child not found" });
+
+    // Create appointment
+    const appointment = new Appointment({
+      user: childId,       // points to child
+      createdBy: guardianId, // who booked the appointment
+      doctor: doctorId,
+      date,
+      time,
+      status: "PENDING_ADMIN",
+      services: [],
+      totalPrice: 0,
+      paymentStatus: "pending",
+    });
+
+    await appointment.save();
+
+    res.status(201).json({ success: true, message: "Appointment booked for child", appointment });
+  } catch (err) {
+    console.error("[ERROR] bookChildAppointment:", err);
+    res.status(500).json({ success: false, message: "Failed to book appointment", error: err.message });
+  }
+};
+
 /* =====================================================
    PATIENT: GET MY APPOINTMENTS
 ===================================================== */
