@@ -286,17 +286,18 @@ const MyProfile = () => {
       {/* Children */}
       <div>
         <p className="text-lg font-semibold text-gray-700 mb-3">MY CHILDREN</p>
-        {children.length === 0 ? (
-          <p className="text-gray-500">No children added yet.</p>
-        ) : (
+        {Array.isArray(children) && children.length > 0 ? (
           <ul className="space-y-2">
             {children.map((c, i) => (
-              <li key={i} className="border p-3 rounded-lg bg-gray-50 shadow-sm">
+              <li key={c._id || i} className="border p-3 rounded-lg bg-gray-50 shadow-sm">
                 {c.name} — {c.dob ? new Date(c.dob).toLocaleDateString() : "No DOB"}
               </li>
             ))}
           </ul>
+        ) : (
+          <p className="text-gray-500">No children added yet.</p>
         )}
+
         {isEdit && (
           <div className="mt-4 space-y-2">
             <input type="text" placeholder="Child's Name" value={childForm.name} 
