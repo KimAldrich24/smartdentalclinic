@@ -12,7 +12,7 @@ import Credit from "../models/creditModel.js"; // make sure you have this model
 export const bookAppointment = async (req, res) => {
   try {
     const { doctorId, date, time } = req.body;
-    const userId = req.user._id;
+    const userId = req.user._id; // logged in user
 
     if (!doctorId || !date || !time) {
       return res.status(400).json({ success: false, message: "Doctor, date, and time are required" });
@@ -21,8 +21,10 @@ export const bookAppointment = async (req, res) => {
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
 
+    // ✅ Create appointment with patient + bookedBy
     const appointment = await Appointment.create({
-      user: userId,
+      patient: userId,       // patient is the user
+      bookedBy: userId,      // user booked it themselves
       doctor: doctorId,
       date,
       time,
@@ -30,41 +32,41 @@ export const bookAppointment = async (req, res) => {
       services: [],
       totalPrice: 0,
       paymentStatus: "pending",
-      createdBy: userId,
+      createdBy: userId,     // optional tracking
     });
 
     res.status(201).json({ success: true, message: "Appointment submitted for admin approval", appointment });
   } catch (err) {
     console.error("BOOK APPOINTMENT ERROR:", err);
-    res.status(500).json({ success: false, message: "Failed to book appointment" });
+    res.status(500).json({ success: false, message: "Failed to book appointment", error: err.message });
   }
 };
 
-// ✅ Book appointment for a child (by guardian)
+/* =====================================================
+   PATIENT: BOOK APPOINTMENT FOR CHILD
+===================================================== */
 export const bookChildAppointment = async (req, res) => {
   try {
     const { childId, doctorId, date, time } = req.body;
     const guardianId = req.user._id;
 
-    // Validate required fields
     if (!childId || !doctorId || !date || !time) {
       return res.status(400).json({ success: false, message: "Child, doctor, date, and time are required" });
     }
 
-    // Find guardian
     const guardian = await User.findById(guardianId);
     if (!guardian || guardian.role !== "guardian") {
       return res.status(403).json({ success: false, message: "Only guardians can book appointments for children" });
     }
 
-    // Find the child inside guardian's children array
+    // Make sure child exists in guardian's children array
     const child = guardian.children.id(childId);
     if (!child) return res.status(404).json({ success: false, message: "Child not found" });
 
-    // Create appointment
+    // ✅ Create appointment with patient + bookedBy
     const appointment = new Appointment({
-      user: childId,       // points to child
-      createdBy: guardianId, // who booked the appointment
+      patient: childId,      // patient is the child
+      bookedBy: guardianId,  // booked by guardian
       doctor: doctorId,
       date,
       time,
@@ -72,6 +74,7 @@ export const bookChildAppointment = async (req, res) => {
       services: [],
       totalPrice: 0,
       paymentStatus: "pending",
+      createdBy: guardianId, // optional tracking
     });
 
     await appointment.save();
