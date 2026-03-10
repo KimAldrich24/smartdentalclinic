@@ -8,7 +8,7 @@ const equipmentSchema = new mongoose.Schema(
     },
 
     category: {
-      type: String, // Dental, Sterilization, X-Ray, Surgical, etc.
+      type: String, // Dental, Sterilization, X-Ray, Surgical, Medications, Anesthetic, etc.
     },
 
     serialNumber: {
@@ -28,7 +28,7 @@ const equipmentSchema = new mongoose.Schema(
     },
 
     location: {
-      type: String, // Example: Room 1, Operating Room
+      type: String, // Example: Room 1, Operating Room, Storage
     },
 
     /* ===========================
@@ -38,6 +38,25 @@ const equipmentSchema = new mongoose.Schema(
       type: String,
       enum: ["Available", "In Use", "Under Maintenance", "Broken"],
       default: "Available",
+    },
+
+    /* ===========================
+       CONSUMABLE / QUANTITY TRACKING
+       For medications, anesthetics, or any consumables
+    ============================ */
+    capacity: {
+      type: Number, // Total volume or count
+      default: 0,
+    },
+
+    quantity: {
+      type: Number, // Remaining volume or count
+      default: 0,
+    },
+
+    unit: {
+      type: String, // Example: mL, pcs, bottles
+      default: "mL",
     },
 
     /* ===========================

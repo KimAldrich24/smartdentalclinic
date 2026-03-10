@@ -21,16 +21,18 @@ const AdminEquipment = () => {
     lastMaintenance: "",
     nextMaintenance: "",
     notes: "",
+    capacity: "",   // Total capacity for consumables
+    quantity: "",   // Remaining quantity
+    unit: "mL",    // Default unit
   });
 
   const [editingId, setEditingId] = useState(null);
 
-  /* ================================
+  /* ==============================
      FETCH EQUIPMENT
-  ================================= */
+  ============================== */
   const fetchEquipment = async () => {
     if (!aToken) return;
-
     setLoading(true);
     setError(null);
 
@@ -38,7 +40,6 @@ const AdminEquipment = () => {
       const res = await axios.get(`${backendUrl}/api/equipment`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
-
       const data = Array.isArray(res.data) ? res.data : res.data.equipment || [];
       setEquipment(data);
     } catch (err) {
@@ -50,15 +51,14 @@ const AdminEquipment = () => {
     }
   };
 
-  /* ================================
+  /* ==============================
      FETCH SUPPLIERS
-  ================================= */
+  ============================== */
   const fetchSuppliers = async () => {
     try {
       const res = await axios.get(`${backendUrl}/api/suppliers`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
-
       setSuppliers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Failed to load suppliers", err);
@@ -72,16 +72,16 @@ const AdminEquipment = () => {
     }
   }, [aToken]);
 
-  /* ================================
+  /* ==============================
      HANDLE INPUT
-  ================================= */
+  ============================== */
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  /* ================================
+  /* ==============================
      SUBMIT EQUIPMENT
-  ================================= */
+  ============================== */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -106,6 +106,9 @@ const AdminEquipment = () => {
         lastMaintenance: "",
         nextMaintenance: "",
         notes: "",
+        capacity: "",
+        quantity: "",
+        unit: "mL",
       });
 
       setEditingId(null);
@@ -116,9 +119,9 @@ const AdminEquipment = () => {
     }
   };
 
-  /* ================================
+  /* ==============================
      EDIT EQUIPMENT
-  ================================= */
+  ============================== */
   const handleEdit = (item) => {
     setFormData({
       name: item.name,
@@ -134,14 +137,17 @@ const AdminEquipment = () => {
         ? new Date(item.nextMaintenance).toISOString().split("T")[0]
         : "",
       notes: item.notes || "",
+      capacity: item.capacity || "",
+      quantity: item.quantity || "",
+      unit: item.unit || "mL",
     });
 
     setEditingId(item._id);
   };
 
-  /* ================================
+  /* ==============================
      DELETE EQUIPMENT
-  ================================= */
+  ============================== */
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this equipment?")) return;
 
@@ -149,7 +155,6 @@ const AdminEquipment = () => {
       await axios.delete(`${backendUrl}/api/equipment/${id}`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
-
       fetchEquipment();
     } catch (err) {
       console.error(err);
@@ -193,12 +198,12 @@ const AdminEquipment = () => {
             className="border px-2 py-1"
           />
 
-          {/* SUPPLIER DROPDOWN */}
+          {/* SUPPLIER */}
           <select
             name="supplier"
             value={formData.supplier}
             onChange={handleChange}
-            required // ✅ required so user must select
+            required
             className="border px-2 py-1"
           >
             <option value="" disabled>
@@ -230,6 +235,32 @@ const AdminEquipment = () => {
             <option>Under Maintenance</option>
             <option>Broken</option>
           </select>
+
+          <input
+            type="number"
+            name="capacity"
+            placeholder="Total Capacity"
+            value={formData.capacity}
+            onChange={handleChange}
+            className="border px-2 py-1 w-32"
+          />
+
+          <input
+            type="number"
+            name="quantity"
+            placeholder="Remaining Quantity"
+            value={formData.quantity}
+            onChange={handleChange}
+            className="border px-2 py-1 w-32"
+          />
+
+          <input
+            name="unit"
+            placeholder="Unit (mL, pcs)"
+            value={formData.unit}
+            onChange={handleChange}
+            className="border px-2 py-1 w-24"
+          />
 
           <input
             type="date"
@@ -276,6 +307,9 @@ const AdminEquipment = () => {
                 <th className="border px-4 py-2">Supplier</th>
                 <th className="border px-4 py-2">Location</th>
                 <th className="border px-4 py-2">Status</th>
+                <th className="border px-4 py-2">Capacity</th>
+                <th className="border px-4 py-2">Remaining</th>
+                <th className="border px-4 py-2">Unit</th>
                 <th className="border px-4 py-2">Last Maintenance</th>
                 <th className="border px-4 py-2">Next Maintenance</th>
                 <th className="border px-4 py-2">Actions</th>
@@ -288,11 +322,12 @@ const AdminEquipment = () => {
                   <td className="border px-4 py-2">{item.name}</td>
                   <td className="border px-4 py-2">{item.category || "-"}</td>
                   <td className="border px-4 py-2">{item.serialNumber || "-"}</td>
-                  <td className="border px-4 py-2">
-                    {item.supplier?.name || "-"}
-                  </td>
+                  <td className="border px-4 py-2">{item.supplier?.name || "-"}</td>
                   <td className="border px-4 py-2">{item.location || "-"}</td>
                   <td className="border px-4 py-2">{item.status}</td>
+                  <td className="border px-4 py-2">{item.capacity || "-"}</td>
+                  <td className="border px-4 py-2">{item.quantity || "-"}</td>
+                  <td className="border px-4 py-2">{item.unit || "-"}</td>
                   <td className="border px-4 py-2">
                     {item.lastMaintenance
                       ? new Date(item.lastMaintenance).toLocaleDateString()

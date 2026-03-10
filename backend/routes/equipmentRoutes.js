@@ -6,17 +6,18 @@ const router = express.Router();
 
 /* ===============================
    GET ALL EQUIPMENT
-   Now populates supplier info
+   Populates supplier info
 ================================ */
 router.get("/", adminAuthMiddleware, async (req, res) => {
   try {
     const equipment = await Equipment.find()
-      .populate("supplier", "name phone email") // show supplier info
+      .populate("supplier", "name phone email")
       .sort({ createdAt: -1 });
 
     res.json(equipment);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch equipment" });
   }
 });
 
@@ -35,7 +36,12 @@ router.post("/", adminAuthMiddleware, async (req, res) => {
       lastMaintenance,
       nextMaintenance,
       notes,
+      capacity = 0,
+      quantity = 0,
+      unit = "mL",
     } = req.body;
+
+    const safeQuantity = Math.min(quantity, capacity);
 
     const newEquip = new Equipment({
       name,
@@ -47,32 +53,45 @@ router.post("/", adminAuthMiddleware, async (req, res) => {
       lastMaintenance,
       nextMaintenance,
       notes,
+      capacity,
+      quantity: safeQuantity,
+      unit,
     });
 
     await newEquip.save();
-
     const populatedEquipment = await newEquip.populate("supplier", "name");
-
     res.json(populatedEquipment);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Failed to create equipment" });
   }
 });
 
 /* ===============================
-   UPDATE EQUIPMENT
+   UPDATE EXISTING EQUIPMENT
 ================================ */
 router.put("/:id", adminAuthMiddleware, async (req, res) => {
   try {
+    const updateData = { ...req.body };
+
+    // If capacity/quantity are updated, ensure quantity <= capacity
+    if (updateData.capacity !== undefined && updateData.quantity !== undefined) {
+      updateData.quantity = Math.min(updateData.quantity, updateData.capacity);
+    } else if (updateData.capacity !== undefined && updateData.quantity === undefined) {
+      const existing = await Equipment.findById(req.params.id);
+      if (existing) updateData.quantity = Math.min(existing.quantity, updateData.capacity);
+    }
+
     const updatedEquip = await Equipment.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true }
     ).populate("supplier", "name");
 
     res.json(updatedEquip);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Failed to update equipment" });
   }
 });
 
@@ -84,7 +103,31 @@ router.delete("/:id", adminAuthMiddleware, async (req, res) => {
     await Equipment.findByIdAndDelete(req.params.id);
     res.json({ message: "Equipment removed" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Failed to delete equipment" });
+  }
+});
+
+/* ===============================
+   UPDATE CONSUMABLE QUANTITY
+   Example: doctor used X mL
+================================ */
+router.put("/:id/quantity", adminAuthMiddleware, async (req, res) => {
+  try {
+    const { used } = req.body;
+    if (used === undefined) return res.status(400).json({ message: "Used quantity required" });
+
+    const equipment = await Equipment.findById(req.params.id);
+    if (!equipment) return res.status(404).json({ message: "Equipment not found" });
+
+    // Reduce quantity but never below 0
+    equipment.quantity = Math.max(equipment.quantity - used, 0);
+    await equipment.save();
+
+    res.json(equipment);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update quantity" });
   }
 });
 
