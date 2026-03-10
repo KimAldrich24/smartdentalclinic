@@ -150,61 +150,57 @@ const MyProfile = () => {
   // Save profile info (name, phone, gender, dob, image, children)
   // =====================
   const saveProfile = async () => {
-    if (!token) return alert("No auth token found");
-
+  try {
     setSaving(true);
-    try {
-      const payload = {
-        name: userData.name,
-        phone: userData.phone,
-        gender: userData.gender || "Not Selected",
-        dob: userData.dob || undefined,
-        image: userData.image,
-        children: userData.children || [],
-      };
-      const { data } = await axios.put(`${backendUrl}/api/users/me`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
 
-      if (data.success) {
-        const updated = {
-          ...userData,
-          name: data.user.name,
-          phone: data.user.phone,
-          gender: data.user.gender,
-          image: data.user.image,
-          dob: data.user.dob ? new Date(data.user.dob).toISOString().split("T")[0] : "",
-          children: data.user.children || [],
-        };
-        setUserData(updated);
-        setChildren(updated.children);
-        setIsEdit(false);
-        alert("Profile updated successfully!");
-      } else {
-        alert(data.message || "Failed to update profile.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || "Failed to save profile.");
-    } finally {
-      setSaving(false);
+    const payload = {
+      name: userData.name,
+      phone: userData.phone,
+      gender: userData.gender,
+      dob: userData.dob,
+      image: userData.image,
+
+      // ⭐ THIS IS THE IMPORTANT PART
+      children: children
+    };
+
+    const { data } = await axios.put(
+      `${backendUrl}/api/users/me`,
+      payload,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (data.success) {
+      setUserData(data.user);
+      setChildren(data.user.children || []);
+      setIsEdit(false);
+      alert("Profile saved!");
     }
-  };
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setSaving(false);
+  }
+};
 
   // =====================
   // Add child (save immediately to backend)
   // =====================
+  // Add a child
   const addChild = async () => {
     if (!childForm.name || !childForm.dob) return alert("Enter name and DOB");
 
-    const newChildren = [...(userData.children || []), childForm];
+    const newChildren = [...children, childForm];
     setChildSaving(true);
+
     try {
       const { data } = await axios.put(
         `${backendUrl}/api/users/me`,
         { children: newChildren },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       if (data.success) {
         setUserData(prev => ({ ...prev, children: data.user.children }));
         setChildren(data.user.children);
@@ -220,7 +216,6 @@ const MyProfile = () => {
       setChildSaving(false);
     }
   };
-
   // =====================
   // Loading/Error states
   // =====================
