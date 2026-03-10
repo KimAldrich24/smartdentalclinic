@@ -88,7 +88,7 @@ export const bookChildAppointment = async (req, res) => {
 ===================================================== */
 export const getMyAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find({ user: req.user._id })
+    const appointments = await Appointment.find({ patient: req.user._id })
       .populate("doctor", "name speciality image")
       .populate("services.service", "name price duration")
       .sort({ date: 1, time: 1 });
@@ -106,7 +106,7 @@ export const getAllAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find()
       .populate("doctor", "name speciality image")
-      .populate("user", "name email")
+      .populate("patient", "name email")
       .populate("services.service", "name price duration")
       .sort({ date: 1, time: 1 });
 
