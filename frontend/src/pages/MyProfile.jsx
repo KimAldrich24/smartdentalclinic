@@ -164,7 +164,7 @@ const MyProfile = () => {
         gender: userData.gender || "Not Selected",
         dob: userData.dob || undefined,
         image: userData.image,
-        children, // include children when saving profile
+         children: userData.children || [], // ✅ use userData.children
       };
 
       const { data } = await axios.put(`${backendUrl}/api/users/me`, payload, {
