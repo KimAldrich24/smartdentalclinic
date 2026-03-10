@@ -59,7 +59,7 @@ const AdminEquipment = () => {
         headers: { Authorization: `Bearer ${aToken}` },
       });
 
-      setSuppliers(res.data || []);
+      setSuppliers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Failed to load suppliers", err);
     }
@@ -73,14 +73,14 @@ const AdminEquipment = () => {
   }, [aToken]);
 
   /* ================================
-     HANDLE FORM INPUT
+     HANDLE INPUT
   ================================= */
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   /* ================================
-     ADD OR UPDATE EQUIPMENT
+     SUBMIT EQUIPMENT
   ================================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -198,9 +198,12 @@ const AdminEquipment = () => {
             name="supplier"
             value={formData.supplier}
             onChange={handleChange}
+            required // ✅ required so user must select
             className="border px-2 py-1"
           >
-            <option value="">Select Supplier</option>
+            <option value="" disabled>
+              Select Supplier
+            </option>
             {suppliers.map((sup) => (
               <option key={sup._id} value={sup._id}>
                 {sup.name}
@@ -251,6 +254,7 @@ const AdminEquipment = () => {
             onChange={handleChange}
             className="border px-2 py-1 flex-1"
           />
+
         </div>
 
         <button className="bg-blue-500 text-white px-4 py-1 rounded">
@@ -281,7 +285,6 @@ const AdminEquipment = () => {
             <tbody>
               {equipment.map((item) => (
                 <tr key={item._id} className="text-center">
-
                   <td className="border px-4 py-2">{item.name}</td>
                   <td className="border px-4 py-2">{item.category || "-"}</td>
                   <td className="border px-4 py-2">{item.serialNumber || "-"}</td>
@@ -290,19 +293,16 @@ const AdminEquipment = () => {
                   </td>
                   <td className="border px-4 py-2">{item.location || "-"}</td>
                   <td className="border px-4 py-2">{item.status}</td>
-
                   <td className="border px-4 py-2">
                     {item.lastMaintenance
                       ? new Date(item.lastMaintenance).toLocaleDateString()
                       : "-"}
                   </td>
-
                   <td className="border px-4 py-2">
                     {item.nextMaintenance
                       ? new Date(item.nextMaintenance).toLocaleDateString()
                       : "-"}
                   </td>
-
                   <td className="border px-4 py-2 flex gap-2 justify-center">
                     <button
                       className="bg-yellow-400 px-2 py-1 rounded"
@@ -318,7 +318,6 @@ const AdminEquipment = () => {
                       Delete
                     </button>
                   </td>
-
                 </tr>
               ))}
             </tbody>
