@@ -1,35 +1,40 @@
 import express from "express";
 import Equipment from "../models/equipmentModel.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
+import verifyToken from "../middlewares/verifyToken.js"; // make sure you have this middleware
 
 const router = express.Router();
 
 /* ===============================
    GET ALL EQUIPMENT
    Populates supplier info
+   ✅ Accessible to any logged-in doctor or admin
 ================================ */
-router.get("/", adminAuthMiddleware, async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     const equipment = await Equipment.find()
       .populate("supplier", "name phone email")
       .sort({ createdAt: -1 });
 
-    res.json(equipment);
+    res.json({
+      success: true,
+      equipment
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to fetch equipment" });
+    res.status(500).json({ success: false, message: "Failed to fetch equipment" });
   }
 });
 
-
 /* ===============================
    CREATE NEW EQUIPMENT
+   ✅ Admin only
 ================================ */
 router.post("/", adminAuthMiddleware, async (req, res) => {
   try {
     const {
       name,
-      type = "equipment", // ✅ NEW
+      type = "equipment",
       category,
       serialNumber,
       supplier,
@@ -48,7 +53,7 @@ router.post("/", adminAuthMiddleware, async (req, res) => {
 
     const newEquip = new Equipment({
       name,
-      type, // ✅ save type
+      type,
       category,
       serialNumber,
       supplier,
@@ -64,34 +69,28 @@ router.post("/", adminAuthMiddleware, async (req, res) => {
     });
 
     await newEquip.save();
-
     const populatedEquipment = await newEquip.populate("supplier", "name");
 
-    res.json(populatedEquipment);
+    res.json({ success: true, equipment: populatedEquipment });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to create equipment" });
+    res.status(500).json({ success: false, message: "Failed to create equipment" });
   }
 });
 
-
 /* ===============================
    UPDATE EXISTING EQUIPMENT
+   ✅ Admin only
 ================================ */
 router.put("/:id", adminAuthMiddleware, async (req, res) => {
   try {
-
     const updateData = { ...req.body };
 
-    // Ensure quantity never exceeds capacity
     if (updateData.capacity !== undefined && updateData.quantity !== undefined) {
       updateData.quantity = Math.min(updateData.quantity, updateData.capacity);
-    } 
-    else if (updateData.capacity !== undefined && updateData.quantity === undefined) {
-
+    } else if (updateData.capacity !== undefined && updateData.quantity === undefined) {
       const existing = await Equipment.findById(req.params.id);
-
       if (existing) {
         updateData.quantity = Math.min(existing.quantity, updateData.capacity);
       }
@@ -103,74 +102,67 @@ router.put("/:id", adminAuthMiddleware, async (req, res) => {
       { new: true }
     ).populate("supplier", "name");
 
-    res.json(updatedEquip);
+    res.json({ success: true, equipment: updatedEquip });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to update equipment" });
+    res.status(500).json({ success: false, message: "Failed to update equipment" });
   }
 });
 
-
 /* ===============================
    DELETE EQUIPMENT
+   ✅ Admin only
 ================================ */
 router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   try {
-
     const equipment = await Equipment.findById(req.params.id);
 
     if (!equipment) {
-      return res.status(404).json({ message: "Equipment not found" });
+      return res.status(404).json({ success: false, message: "Equipment not found" });
     }
 
     await Equipment.findByIdAndDelete(req.params.id);
 
-    res.json({ message: "Equipment removed successfully" });
+    res.json({ success: true, message: "Equipment removed successfully" });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to delete equipment" });
+    res.status(500).json({ success: false, message: "Failed to delete equipment" });
   }
 });
-
 
 /* ===============================
    UPDATE CONSUMABLE QUANTITY
    Example: doctor used X mL
+   ✅ Admin only (you can change to verifyToken if doctors should reduce consumables)
 ================================ */
 router.put("/:id/quantity", adminAuthMiddleware, async (req, res) => {
   try {
-
     const { used } = req.body;
 
     if (used === undefined) {
-      return res.status(400).json({ message: "Used quantity required" });
+      return res.status(400).json({ success: false, message: "Used quantity required" });
     }
 
     const equipment = await Equipment.findById(req.params.id);
 
     if (!equipment) {
-      return res.status(404).json({ message: "Equipment not found" });
+      return res.status(404).json({ success: false, message: "Equipment not found" });
     }
 
-    // ✅ Only allow consumables to reduce quantity
     if (equipment.type !== "consumable") {
-      return res.status(400).json({
-        message: "Quantity update only allowed for consumables",
-      });
+      return res.status(400).json({ success: false, message: "Quantity update only allowed for consumables" });
     }
 
-    // Reduce quantity but never below 0
     equipment.quantity = Math.max(equipment.quantity - used, 0);
-
     await equipment.save();
 
-    res.json(equipment);
+    res.json({ success: true, equipment });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to update quantity" });
+    res.status(500).json({ success: false, message: "Failed to update quantity" });
   }
 });
 
