@@ -11,7 +11,7 @@ const AdminEquipment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [formData, setFormData] = useState({
+  const initialForm = {
     name: "",
     category: "",
     serialNumber: "",
@@ -21,11 +21,12 @@ const AdminEquipment = () => {
     lastMaintenance: "",
     nextMaintenance: "",
     notes: "",
-    capacity: "",   // Total capacity for consumables
-    quantity: "",   // Remaining quantity
-    unit: "mL",    // Default unit
-  });
+    capacity: "",
+    quantity: "",
+    unit: "mL",
+  };
 
+  const [formData, setFormData] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
 
   /* ==============================
@@ -33,6 +34,7 @@ const AdminEquipment = () => {
   ============================== */
   const fetchEquipment = async () => {
     if (!aToken) return;
+
     setLoading(true);
     setError(null);
 
@@ -40,6 +42,7 @@ const AdminEquipment = () => {
       const res = await axios.get(`${backendUrl}/api/equipment`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
+
       const data = Array.isArray(res.data) ? res.data : res.data.equipment || [];
       setEquipment(data);
     } catch (err) {
@@ -59,6 +62,7 @@ const AdminEquipment = () => {
       const res = await axios.get(`${backendUrl}/api/suppliers`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
+
       setSuppliers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Failed to load suppliers", err);
@@ -76,7 +80,14 @@ const AdminEquipment = () => {
      HANDLE INPUT
   ============================== */
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // convert number fields
+    if (name === "capacity" || name === "quantity") {
+      setFormData({ ...formData, [name]: value === "" ? "" : Number(value) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   /* ==============================
@@ -86,31 +97,28 @@ const AdminEquipment = () => {
     e.preventDefault();
 
     try {
+      const payload = {
+        ...formData,
+        capacity: Number(formData.capacity) || 0,
+        quantity: Number(formData.quantity) || 0,
+        supplier: formData.supplier || null,
+      };
+
       if (editingId) {
-        await axios.put(`${backendUrl}/api/equipment/${editingId}`, formData, {
-          headers: { Authorization: `Bearer ${aToken}` },
-        });
+        await axios.put(
+          `${backendUrl}/api/equipment/${editingId}`,
+          payload,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
       } else {
-        await axios.post(`${backendUrl}/api/equipment`, formData, {
-          headers: { Authorization: `Bearer ${aToken}` },
-        });
+        await axios.post(
+          `${backendUrl}/api/equipment`,
+          payload,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
       }
 
-      setFormData({
-        name: "",
-        category: "",
-        serialNumber: "",
-        supplier: "",
-        location: "",
-        status: "Available",
-        lastMaintenance: "",
-        nextMaintenance: "",
-        notes: "",
-        capacity: "",
-        quantity: "",
-        unit: "mL",
-      });
-
+      setFormData(initialForm);
       setEditingId(null);
       fetchEquipment();
     } catch (err) {
@@ -155,6 +163,7 @@ const AdminEquipment = () => {
       await axios.delete(`${backendUrl}/api/equipment/${id}`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
+
       fetchEquipment();
     } catch (err) {
       console.error(err);
@@ -203,12 +212,9 @@ const AdminEquipment = () => {
             name="supplier"
             value={formData.supplier}
             onChange={handleChange}
-            required
             className="border px-2 py-1"
           >
-            <option value="" disabled>
-              Select Supplier
-            </option>
+            <option value="">No Supplier</option>
             {suppliers.map((sup) => (
               <option key={sup._id} value={sup._id}>
                 {sup.name}
@@ -256,7 +262,7 @@ const AdminEquipment = () => {
 
           <input
             name="unit"
-            placeholder="Unit (mL, pcs)"
+            placeholder="Unit"
             value={formData.unit}
             onChange={handleChange}
             className="border px-2 py-1 w-24"
@@ -285,7 +291,6 @@ const AdminEquipment = () => {
             onChange={handleChange}
             className="border px-2 py-1 flex-1"
           />
-
         </div>
 
         <button className="bg-blue-500 text-white px-4 py-1 rounded">
@@ -328,16 +333,19 @@ const AdminEquipment = () => {
                   <td className="border px-4 py-2">{item.capacity || "-"}</td>
                   <td className="border px-4 py-2">{item.quantity || "-"}</td>
                   <td className="border px-4 py-2">{item.unit || "-"}</td>
+
                   <td className="border px-4 py-2">
                     {item.lastMaintenance
                       ? new Date(item.lastMaintenance).toLocaleDateString()
                       : "-"}
                   </td>
+
                   <td className="border px-4 py-2">
                     {item.nextMaintenance
                       ? new Date(item.nextMaintenance).toLocaleDateString()
                       : "-"}
                   </td>
+
                   <td className="border px-4 py-2 flex gap-2 justify-center">
                     <button
                       className="bg-yellow-400 px-2 py-1 rounded"
@@ -356,6 +364,7 @@ const AdminEquipment = () => {
                 </tr>
               ))}
             </tbody>
+
           </table>
         )}
       </div>
