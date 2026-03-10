@@ -42,7 +42,7 @@ try{
 
 setLoadingAppointments(true);
 
-const res = await fetch(`${ backendUrl } /api/appointments / doctor / my - appointments`,{
+const res = await fetch(`${ backendUrl } /api/appointments/doctor/my-appointments`,{
 headers:{Authorization:`Bearer ${ dToken } `}
 });
 
@@ -69,7 +69,7 @@ if(!dToken) return;
 
 try{
 
-const res = await fetch(`${ backendUrl } /api/services`,{
+const res = await fetch(`${ backendUrl }/api/services`,{
 headers:{Authorization:`Bearer ${ dToken } `}
 });
 
@@ -91,7 +91,7 @@ const fetchEquipment = async () => {
 
 try{
 
-const res = await fetch(`${ backendUrl } /api/equipment`,{
+const res = await fetch(`${ backendUrl }/api/equipment`,{
 headers:{Authorization:`Bearer ${ dToken } `}
 });
 
@@ -113,7 +113,7 @@ try{
 
 setLoadingSchedules(true);
 
-const res = await fetch(`${ backendUrl } /api/doctor / schedule - request / doctor`,{
+const res = await fetch(`${ backendUrl }/api/doctor/schedule-request/doctor`,{
 headers:{Authorization:`Bearer ${ dToken } `}
 });
 
@@ -161,7 +161,7 @@ price:finalPrice || (svc?.price ?? 0)
 };
 });
 
-const res = await fetch(`${ backendUrl } /api/appointments / doctor / ${ apptId }/assign-services`,{
+const res = await fetch(`${ backendUrl }/api/appointments/doctor/${ apptId }/assign-services`,{
 
 method: 'PUT',
 
