@@ -189,33 +189,31 @@ const MyProfile = () => {
   // =====================
   // Add a child
   const addChild = async () => {
-    if (!childForm.name || !childForm.dob) return alert("Enter name and DOB");
+  if (!childForm.name || !childForm.dob) return alert("Enter name and DOB");
 
-    const newChildren = [...children, childForm];
-    setChildSaving(true);
+  setChildSaving(true);
 
-    try {
-      const { data } = await axios.put(
-        `${backendUrl}/api/users/me`,
-        { children: newChildren },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  try {
+    const { data } = await axios.post(
+      `${backendUrl}/api/users/children`, // ✅ POST endpoint
+      childForm,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      if (data.success) {
-        setUserData(prev => ({ ...prev, children: data.user.children }));
-        setChildren(data.user.children);
-        setChildForm({ name: "", dob: "" });
-        alert("Child added successfully!");
-      } else {
-        alert(data.message || "Failed to add child");
-      }
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || "Error adding child");
-    } finally {
-      setChildSaving(false);
+    if (data.success) {
+      setChildren(data.children || []);
+      setChildForm({ name: "", dob: "" });
+      alert("Child added successfully!");
+    } else {
+      alert(data.message || "Failed to add child");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert(err.response?.data?.message || "Error adding child");
+  } finally {
+    setChildSaving(false);
+  }
+};
   // =====================
   // Loading/Error states
   // =====================
