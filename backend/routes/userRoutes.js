@@ -42,6 +42,27 @@ router.post("/children", protect(), addChild); // Add child
 router.get("/children", protect(), getChildren); // Get all children
 
 // =======================
+// Become Guardian
+// =======================
+router.put("/become-guardian", protect(), async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (user.role === "guardian") {
+      return res.status(400).json({ success: false, message: "You are already a guardian." });
+    }
+
+    user.role = "guardian";
+    await user.save();
+
+    res.status(200).json({ success: true, message: "You are now a guardian!", role: user.role });
+  } catch (err) {
+    console.error("[ERROR] becomeGuardian:", err.message);
+    res.status(500).json({ success: false, message: "Failed to become guardian", error: err.message });
+  }
+});
+
+// =======================
 // Admin-only routes
 // =======================
 router.get("/", adminAuthMiddleware, getAllUsers);
