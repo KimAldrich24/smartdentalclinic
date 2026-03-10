@@ -91,8 +91,10 @@ const fetchEquipment = async () => {
 
 try{
 
-const res = await fetch(`${backendUrl}/api/equipment`,{
-headers:{Authorization:`Bearer ${ dToken } `}
+const res = await fetch(`${backendUrl}/api/equipment`, {
+  headers: {
+    Authorization: `Bearer ${dToken?.trim()}`
+  }
 });
 
 const data = await res.json();
