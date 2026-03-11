@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Appointment from "../models/appointmentModel.js";
 import Doctor from "../models/doctorModel.js";
 import Service from "../models/serviceModel.js";
+import User from "../models/userModel.js"; // ✅ Make sure User is imported
 import PatientRecord from "../models/patientRecordModel.js";
 import { sendSMS } from "../utils/smsHelper.js";
 import Credit from "../models/creditModel.js"; // make sure you have this model
@@ -11,30 +12,22 @@ import Credit from "../models/creditModel.js"; // make sure you have this model
 ===================================================== */
 export const bookAppointment = async (req, res) => {
   try {
-    const { doctorId, date, time, childId } = req.body;
+    const { doctorId, date, time } = req.body;
     const userId = req.user._id;
 
     if (!doctorId || !date || !time) {
-      return res.status(400).json({
-        success: false,
-        message: "Doctor, date, and time are required",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Doctor, date, and time are required" });
     }
 
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) {
-      return res.status(404).json({
-        success: false,
-        message: "Doctor not found",
-      });
-    }
-
-    // 🔹 Decide who the patient is
-    const patientId = childId || userId;
+    if (!doctor)
+      return res.status(404).json({ success: false, message: "Doctor not found" });
 
     const appointment = await Appointment.create({
-      patient: patientId,   // child OR user
-      bookedBy: userId,     // who booked it
+      patient: userId, // patient is the logged-in user
+      bookedBy: userId, // booked by themselves
       doctor: doctorId,
       date,
       time,
@@ -45,46 +38,50 @@ export const bookAppointment = async (req, res) => {
       createdBy: userId,
     });
 
-    res.status(201).json({
-      success: true,
-      message: "Appointment submitted for admin approval",
-      appointment,
-    });
-
+    res
+      .status(201)
+      .json({ success: true, message: "Appointment submitted for admin approval", appointment });
   } catch (err) {
     console.error("BOOK APPOINTMENT ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to book appointment",
-      error: err.message,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to book appointment", error: err.message });
   }
 };
+
 /* =====================================================
    PATIENT: BOOK APPOINTMENT FOR CHILD
 ===================================================== */
 export const bookChildAppointment = async (req, res) => {
   try {
-    const { childId, doctorId, date, time } = req.body;
+    const { doctorId, date, time, childId } = req.body;
     const guardianId = req.user._id;
 
-    if (!childId || !doctorId || !date || !time) {
-      return res.status(400).json({ success: false, message: "Child, doctor, date, and time are required" });
+    if (!doctorId || !date || !time || !childId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Doctor, date, time, and child are required" });
     }
 
     const guardian = await User.findById(guardianId);
-    if (!guardian || guardian.role !== "guardian") {
-      return res.status(403).json({ success: false, message: "Only guardians can book appointments for children" });
+    if (!guardian) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Guardian not found or unauthorized" });
     }
 
     // Make sure child exists in guardian's children array
-    const child = guardian.children.id(childId);
-    if (!child) return res.status(404).json({ success: false, message: "Child not found" });
+    const child = guardian.children.find((c) => c._id.toString() === childId);
+    if (!child) {
+      return res.status(404).json({ success: false, message: "Child not found" });
+    }
 
-    // ✅ Create appointment with patient + bookedBy
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+
     const appointment = new Appointment({
-      patient: childId,      // patient is the child
-      bookedBy: guardianId,  // booked by guardian
+      patient: childId,
+      bookedBy: guardianId,
       doctor: doctorId,
       date,
       time,
@@ -92,15 +89,19 @@ export const bookChildAppointment = async (req, res) => {
       services: [],
       totalPrice: 0,
       paymentStatus: "pending",
-      createdBy: guardianId, // optional tracking
+      createdBy: guardianId,
     });
 
     await appointment.save();
 
-    res.status(201).json({ success: true, message: "Appointment booked for child", appointment });
+    res
+      .status(201)
+      .json({ success: true, message: "Appointment booked for child", appointment });
   } catch (err) {
     console.error("[ERROR] bookChildAppointment:", err);
-    res.status(500).json({ success: false, message: "Failed to book appointment", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to book appointment", error: err.message });
   }
 };
 

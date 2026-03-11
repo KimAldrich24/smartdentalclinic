@@ -8,7 +8,7 @@ const Appointment = () => {
   const { docId } = useParams();
   const navigate = useNavigate();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext); // Added user info
 
   const [docInfo, setDocInfo] = useState(null);
   const [doctorSchedule, setDoctorSchedule] = useState([]);
@@ -29,7 +29,6 @@ const Appointment = () => {
         toast.error("Doctor not found");
         return;
       }
-
       setDocInfo(res.data.doctor);
       setDoctorSchedule(res.data.doctor.schedule || []);
     } catch (err) {
@@ -47,7 +46,9 @@ const Appointment = () => {
       });
       if (data.success && Array.isArray(data.user.children)) {
         setChildren(data.user.children);
-        if (data.user.children.length > 0) setSelectedChild(data.user.children[0]._id);
+        if (data.user.children.length > 0) {
+          setSelectedChild(data.user.children[0]._id);
+        }
       }
     } catch (err) {
       console.error("Error fetching children:", err);
@@ -55,14 +56,13 @@ const Appointment = () => {
   };
 
   useEffect(() => {
-  const loadData = async () => {
-    await fetchDoctor();
-    await fetchChildren();
-    setLoading(false);
-  };
-
-  loadData();
-}, [docId]);
+    const loadData = async () => {
+      await fetchDoctor();
+      await fetchChildren();
+      setLoading(false);
+    };
+    loadData();
+  }, [docId]);
 
   // ================= AVAILABLE SLOTS =================
   const getAvailableSlots = () => {
@@ -70,9 +70,17 @@ const Appointment = () => {
     const day = doctorSchedule.find((d) => d.date === selectedDate);
     if (!day || !Array.isArray(day.slots)) return [];
 
-    const bookedTimes = Array.isArray(docInfo?.slots_book?.[selectedDate])
-      ? docInfo.slots_book[selectedDate]
-      : [];
+    // Handle Map vs Object
+    let bookedTimes = [];
+    if (docInfo?.slots_book) {
+      if (typeof docInfo.slots_book.get === "function") {
+        bookedTimes = docInfo.slots_book.get(selectedDate) || [];
+      } else {
+        bookedTimes = Array.isArray(docInfo.slots_book[selectedDate])
+          ? docInfo.slots_book[selectedDate]
+          : [];
+      }
+    }
 
     return day.slots.filter((slot) => {
       const time = typeof slot === "string" ? slot : slot.time;
@@ -94,27 +102,26 @@ const Appointment = () => {
       return;
     }
 
-    if (!selectedChild) {
-      toast.error("Please select a child for this appointment");
-      return;
-    }
+    // Determine if booking for child or self
+    const isChildBooking = children.length > 0 && selectedChild;
 
     try {
       setBooking(true);
-      const res = await axios.post(
-  `${backendUrl}/api/appointments/book`,
-  {
-    doctorId: docId,
-    date: selectedDate,
-    time: selectedTime,
-    childId: selectedChild || null
-  },
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
+      const endpoint = isChildBooking
+        ? `${backendUrl}/api/appointments/book-child`
+        : `${backendUrl}/api/appointments/book`;
+
+      const payload = {
+        doctorId: docId,
+        date: selectedDate,
+        time: selectedTime,
+      };
+
+      if (isChildBooking) payload.childId = selectedChild;
+
+      const res = await axios.post(endpoint, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (res.data.success) {
         toast.success("Appointment submitted for admin approval");
@@ -137,21 +144,21 @@ const Appointment = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white shadow-xl rounded-2xl p-6 space-y-6">
-
         <div className="border-b pb-4">
           <h2 className="text-2xl font-bold">Book Appointment</h2>
           <p className="text-gray-600">Dr. {docInfo.name}</p>
         </div>
 
-        {/* SELECT CHILD */}
+        {/* SELECT CHILD (optional) */}
         {children.length > 0 && (
           <div>
-            <h3 className="font-semibold mb-2">Select Child</h3>
+            <h3 className="font-semibold mb-2">Select Child (Optional)</h3>
             <select
               value={selectedChild}
               onChange={(e) => setSelectedChild(e.target.value)}
               className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
             >
+              <option value="">Self / Adult</option>
               {children.map((child) => (
                 <option key={child._id} value={child._id}>
                   {child.name}
