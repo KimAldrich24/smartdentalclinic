@@ -49,6 +49,18 @@ const PatientPrescriptions = () => {
     fetchPrescriptions();
   }, [token, backendUrl]);
 
+  // Helper to get patient name
+  const getPatientName = (prescription) => {
+    if (prescription.patient?.name) return prescription.patient.name; // populated
+    if (prescription.bookedBy?._id === user?._id) return user.name;    // fallback
+    return "N/A";
+  };
+
+  // Helper to get doctor name
+  const getDoctorName = (prescription) => {
+    return prescription.doctor?.name || "N/A";
+  };
+
   // ✅ Download PDF
   const handleDownloadPDF = (prescription) => {
     const doc = new jsPDF();
@@ -60,9 +72,9 @@ const PatientPrescriptions = () => {
     doc.line(20, 28, 190, 28);
 
     doc.setFontSize(11);
-    doc.text(`Patient: ${prescription.patient?.name || "N/A"}`, 20, 40);
+    doc.text(`Patient: ${getPatientName(prescription)}`, 20, 40);
     doc.text(`Date: ${new Date(prescription.dateIssued).toLocaleDateString()}`, 20, 48);
-    doc.text(`Doctor: ${prescription.doctor?.name || "N/A"}`, 20, 56);
+    doc.text(`Doctor: ${getDoctorName(prescription)}`, 20, 56);
 
     let y = 70;
     doc.setFontSize(12);
@@ -116,9 +128,9 @@ const PatientPrescriptions = () => {
           <h1>Smart Dental Clinic</h1>
           <h3>Prescription Record</h3>
           <hr/>
-          <p><strong>Patient:</strong> ${prescription.patient?.name || "N/A"}</p>
+          <p><strong>Patient:</strong> ${getPatientName(prescription)}</p>
           <p><strong>Date:</strong> ${new Date(prescription.dateIssued).toLocaleDateString()}</p>
-          <p><strong>Doctor:</strong> ${prescription.doctor?.name || "N/A"}</p>
+          <p><strong>Doctor:</strong> ${getDoctorName(prescription)}</p>
           <h4>Medicines:</h4>
           <ul>${medsList}</ul>
           ${prescription.notes ? `<p><strong>Notes:</strong> ${prescription.notes}</p>` : ""}
@@ -146,9 +158,9 @@ const PatientPrescriptions = () => {
         <div className="space-y-4">
           {prescriptions.map((p) => (
             <div key={p._id} className="border p-4 rounded-lg shadow-sm bg-white flex flex-col gap-2">
-              <p><strong>Patient:</strong> {p.patient?.name || "N/A"}</p>
+              <p><strong>Patient:</strong> {getPatientName(p)}</p>
               <p><strong>Date Issued:</strong> {new Date(p.dateIssued).toLocaleDateString()}</p>
-              <p><strong>Doctor:</strong> {p.doctor?.name || "N/A"}</p>
+              <p><strong>Doctor:</strong> {getDoctorName(p)}</p>
 
               {p.notes && <p><strong>Notes:</strong> {p.notes}</p>}
 

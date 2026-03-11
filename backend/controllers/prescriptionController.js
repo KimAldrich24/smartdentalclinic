@@ -23,15 +23,21 @@ export const createPrescription = async (req, res) => {
   }
 };
 
+
 // ✅ Get all prescriptions (admin use)
 export const getAllPrescriptions = async (req, res) => {
   try {
     const prescriptions = await Prescription.find()
-      .populate("doctor")
-      .populate("patient");
-    res.json({ success: true, prescriptions });
+      .populate("patient", "name email")   // populate patient info
+      .populate("doctor", "name email speciality") // populate doctor info
+      .sort({ dateIssued: -1 });           // newest first
+
+    res.json({
+      success: true,
+      prescriptions,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Get all prescriptions error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -42,8 +48,9 @@ export const getMyPrescriptions = async (req, res) => {
     const userId = req.user.id; // From auth middleware
 
     const prescriptions = await Prescription.find({ patient: userId })
-      .populate("doctor", "name speciality") // Only get doctor name and speciality
-      .sort({ dateIssued: -1 }); // Newest first
+      .populate("patient", "name email")          // ✅ populate patient info
+      .populate("doctor", "name speciality email") // ✅ populate doctor info
+      .sort({ dateIssued: -1 });                 // newest first
 
     res.json({ success: true, prescriptions });
   } catch (err) {
