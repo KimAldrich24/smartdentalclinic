@@ -356,17 +356,25 @@ export const addPrescription = async (req, res) => {
     const { patientId, appointmentId } = req.params;
     const { medicines, notes } = req.body;
 
-    if (!patientId || !appointmentId || !medicines?.length) return res.status(400).json({ success: false, message: "Missing required fields" });
+    if (!patientId || !appointmentId || !medicines?.length) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
 
+    // Make sure patient exists
+    const patient = await User.findById(patientId);
+    if (!patient) return res.status(404).json({ success: false, message: "Patient not found" });
+
+    // Make sure appointment exists
     const appointment = await Appointment.findById(appointmentId);
     if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
 
+    // Create the prescription
     const prescription = await PatientRecord.create({
-      user: patientId,
+      user: patient._id, // store ObjectId
       doctor: appointment.doctor,
-      appointment: appointmentId,
-      services: medicines.map(m => ({
-        service: m.name,
+      appointment: appointment._id,
+      services: medicines.map((m) => ({
+        name: m.name,
         dosage: m.dosage,
         instructions: m.instructions,
       })),
@@ -376,6 +384,7 @@ export const addPrescription = async (req, res) => {
 
     res.json({ success: true, prescription });
   } catch (err) {
+    console.error("[ERROR] addPrescription:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
