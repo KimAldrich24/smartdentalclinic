@@ -397,7 +397,7 @@ const addCreditFromAppointment = async (appointment) => {
     });
   } else {
     credit = new Credit({
-      user: appointment.user,
+      user: creditUserId, // ✅ corrected
       amount: creditAmount,
       history: [
         {
