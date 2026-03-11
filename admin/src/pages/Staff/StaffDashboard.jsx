@@ -9,9 +9,8 @@ import {
   LogOut,
   Menu,
   X,
-  User,
-  Clock,
-  Shield
+  Shield,
+  Clock
 } from "lucide-react";
 
 const StaffDashboard = () => {
@@ -35,11 +34,12 @@ const StaffDashboard = () => {
     confirmPassword: "",
   });
 
+  // ================= FETCH DATA =================
   useEffect(() => {
     if (!sToken) navigate("/login");
     else fetchData();
     // eslint-disable-next-line
-  }, [activeModule, sToken]);
+  }, [activeModule, sToken, backendUrl]);
 
   const fetchData = async () => {
     if (!backendUrl || !sToken) return;
@@ -57,46 +57,73 @@ const StaffDashboard = () => {
       const data = await res.json();
 
       if (data.success) {
-        if (activeModule === "appointments") setAppointments(data.appointments || []);
+        if (activeModule === "appointments") {
+          // Map appointments to ensure patient or bookedBy name is available
+          const mappedAppointments = (data.appointments || []).map(a => ({
+            ...a,
+            displayName: a.patient?.name || a.bookedBy?.name || "Unknown",
+          }));
+          setAppointments(mappedAppointments);
+        }
         if (activeModule === "patients") setPatients(data.patients || []);
         if (activeModule === "treatments") setTreatments(data.treatments || []);
+      } else {
+        console.warn("Fetch failed:", data.message);
       }
+    } catch (err) {
+      console.error("Error fetching staff data:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // ================= FETCH PATIENT HISTORY =================
   const fetchPatientHistory = async (id) => {
-    const res = await fetch(`${backendUrl}/api/staff/patients/${id}/history`, {
-      headers: { Authorization: `Bearer ${sToken}` },
-    });
-    const data = await res.json();
-    if (data.success) {
-      setSelectedPatient(data.patient);
-      setPatientHistory(data.appointments || []);
-      setShowHistoryModal(true);
+    if (!backendUrl || !sToken) return;
+    try {
+      const res = await fetch(`${backendUrl}/api/staff/patients/${id}/history`, {
+        headers: { Authorization: `Bearer ${sToken}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedPatient(data.patient);
+        setPatientHistory(data.appointments || []);
+        setShowHistoryModal(true);
+      }
+    } catch (err) {
+      console.error("Error fetching patient history:", err);
     }
   };
 
+  // ================= CHANGE PASSWORD =================
   const handleChangePassword = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword)
-      return alert("Passwords do not match");
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
 
-    const res = await fetch(`${backendUrl}/api/staff/change-password`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${sToken}`,
-      },
-      body: JSON.stringify(passwordData),
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert("Password changed");
-      setActiveModule("appointments");
-    } else alert(data.message);
+    try {
+      const res = await fetch(`${backendUrl}/api/staff/change-password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sToken}`,
+        },
+        body: JSON.stringify(passwordData),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Password changed");
+        setActiveModule("appointments");
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error("Password change error:", err);
+    }
   };
 
+  // ================= MODULES =================
   const modules = [
     { id: "appointments", name: "Appointments", icon: Calendar },
     { id: "patients", name: "Patients", icon: Users },
@@ -105,6 +132,7 @@ const StaffDashboard = () => {
     { id: "changePassword", name: "Change Password", icon: Shield },
   ];
 
+  // ================= RENDER =================
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Mobile Overlay */}
@@ -181,17 +209,19 @@ const StaffDashboard = () => {
           {loading && <p className="text-center">Loading...</p>}
 
           {/* Appointments */}
-          {activeModule === "appointments" && (
+          {activeModule === "appointments" && !loading && (
             <div className="space-y-3">
+              {appointments.length === 0 && <p className="text-center text-gray-500">No appointments</p>}
               {appointments.map(a => (
                 <div key={a._id} className="bg-white p-4 rounded-xl shadow">
-                  <p className="font-semibold">{a.user?.name}</p>
+                  <p className="font-semibold">{a.displayName}</p>
                   <p className="text-sm text-gray-600 flex gap-2">
                     <Calendar size={14}/> {new Date(a.date).toLocaleDateString()}
                   </p>
                   <p className="text-sm text-gray-600 flex gap-2">
                     <Clock size={14}/> {a.time}
                   </p>
+                  <p className="text-sm text-gray-500">Status: {a.status}</p>
                 </div>
               ))}
             </div>

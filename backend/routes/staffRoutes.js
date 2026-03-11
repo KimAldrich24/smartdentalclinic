@@ -75,21 +75,22 @@ const staffAuth = async (req, res, next) => {
 };
 
 // Get all appointments
+// Get all appointments for staff (fixed)
 staffRouter.get('/appointments', staffAuth, async (req, res) => {
   try {
     const appointments = await Appointment.find()
-      .populate('user', 'name email phone')
-      .populate('doctor', 'name speciality')
-      .populate('service', 'name description price')
+      .populate('patient', 'name email phone')        // actual patient (child or adult)
+      .populate('bookedBy', 'name email phone')       // guardian or patient who booked
+      .populate('doctor', 'name speciality email')
+      .populate('services.service', 'name description price')
       .sort({ date: -1, time: -1 });
-    
+
     res.json({ success: true, appointments });
   } catch (error) {
     console.error('Error fetching appointments:', error);
     res.json({ success: false, message: error.message });
   }
 });
-
 // Get all patients
 staffRouter.get('/patients', staffAuth, async (req, res) => {
   try {
