@@ -55,10 +55,14 @@ const Appointment = () => {
   };
 
   useEffect(() => {
-    fetchDoctor();
-    fetchChildren();
+  const loadData = async () => {
+    await fetchDoctor();
+    await fetchChildren();
     setLoading(false);
-  }, [docId]);
+  };
+
+  loadData();
+}, [docId]);
 
   // ================= AVAILABLE SLOTS =================
   const getAvailableSlots = () => {
@@ -72,7 +76,7 @@ const Appointment = () => {
 
     return day.slots.filter((slot) => {
       const time = typeof slot === "string" ? slot : slot.time;
-      const status = typeof slot === "string" ? "available" : slot.status;
+      const status = typeof slot === "string" ? "available" : slot.status?.toLowerCase();
       return status === "available" && !bookedTimes.includes(time);
     });
   };
