@@ -55,7 +55,7 @@ const AllAppointments = () => {
     }
   };
 
-  // ✅ Mark appointment as completed (admin route)
+  // ✅ Mark appointment as completed (admin)
   const markAsDone = async (appt) => {
     if (!window.confirm("Mark appointment as completed?")) return;
 
@@ -68,6 +68,28 @@ const AllAppointments = () => {
 
       if (data.success) {
         toast.success("Appointment marked as completed ✅");
+        fetchAppointments();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+    }
+  };
+
+  // ✅ Mark payment as paid
+  const markAsPaid = async (appt) => {
+    if (!window.confirm("Mark payment as Paid?")) return;
+
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/appointments/${appt._id}/mark-paid`,
+        {},
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+
+      if (data.success) {
+        toast.success("Payment marked as Paid 💰");
         fetchAppointments();
       } else {
         toast.error(data.message);
@@ -224,7 +246,6 @@ const AllAppointments = () => {
                     {appt.status}
                   </span>
                 </p>
-                {/* 💰 Total Price */}
                 <p className="mt-1">
                   <b>Total Price:</b> ₱{appt.totalPrice?.toLocaleString() || 0}
                 </p>
@@ -233,6 +254,7 @@ const AllAppointments = () => {
                     <b>Additional Payment:</b> ₱{appt.additionalPayment.toLocaleString()}
                   </p>
                 )}
+                <p><b>Payment Status:</b> {appt.paymentStatus || "Pending"}</p>
               </div>
 
               <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -244,6 +266,7 @@ const AllAppointments = () => {
                     Approve
                   </button>
                 )}
+
                 {appt.status === "IN_PROGRESS" && (
                   <button
                     onClick={() => markAsDone(appt)}
@@ -252,6 +275,17 @@ const AllAppointments = () => {
                     Mark as Done
                   </button>
                 )}
+
+                {/* ✅ Mark Payment Paid */}
+                {appt.status === "COMPLETED" && appt.paymentStatus !== "Paid" && (
+                  <button
+                    onClick={() => markAsPaid(appt)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg w-full"
+                  >
+                    Mark Payment Paid
+                  </button>
+                )}
+
                 <button
                   onClick={() => deleteAppointment(appt._id)}
                   className="bg-red-500 text-white px-4 py-2 rounded-lg w-full"

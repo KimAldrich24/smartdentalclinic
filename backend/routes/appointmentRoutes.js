@@ -53,6 +53,24 @@ router.get("/patient/:userId", adminAuthMiddleware, async (req, res) => {
   }
 });
 
+router.put("/:id/mark-paid", adminAuthMiddleware, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+
+    if (appointment.paymentStatus === "Paid") {
+      return res.status(400).json({ success: false, message: "Payment is already marked as Paid" });
+    }
+
+    appointment.paymentStatus = "Paid";
+    await appointment.save();
+
+    res.json({ success: true, message: "Payment marked as Paid", appointment });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Approve appointment
 router.put("/:id/approve", adminAuthMiddleware, approveAppointment);
 

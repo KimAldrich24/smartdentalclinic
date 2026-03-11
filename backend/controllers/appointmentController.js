@@ -166,8 +166,8 @@ export const approveAppointment = async (req, res) => {
     await doctor.save();
 
     // Send SMS
-    if (appointment.user.phone) {
-      await sendSMS(appointment.user.phone, `Hi ${appointment.user.name}, your appointment with Dr. ${doctor.name} has been approved.`);
+    if (appointment.patient.phone) {
+      await sendSMS(appointment.patient.phone, `Hi ${appointment.user.name}, your appointment with Dr. ${doctor.name} has been approved.`);
     }
 
     res.json({ success: true, message: "Appointment approved" });
@@ -284,7 +284,7 @@ export const adminCompleteAppointment = async (req, res) => {
     if (appointment.status !== "IN_PROGRESS") return res.status(400).json({ success: false, message: "Appointment not in progress" });
 
     appointment.status = "COMPLETED";
-    appointment.paymentStatus = "paid";
+    appointment.paymentStatus = "Paid";
     await appointment.save();
 
     await PatientRecord.create({
@@ -410,4 +410,26 @@ const addCreditFromAppointment = async (appointment) => {
   }
 
   await credit.save();
+};
+
+/* =====================================================
+   ADMIN: MARK APPOINTMENT AS PAID
+===================================================== */
+export const markAppointmentAsPaid = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+
+    // Only allow marking unpaid appointments as Paid
+    if (appointment.paymentStatus === "Paid") {
+      return res.status(400).json({ success: false, message: "Appointment is already marked as Paid" });
+    }
+
+    appointment.paymentStatus = "Paid";
+    await appointment.save();
+
+    res.json({ success: true, message: "Appointment marked as Paid", appointment });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
