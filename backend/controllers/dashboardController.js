@@ -48,14 +48,14 @@ export const getDashboardStats = async (req, res) => {
 export const getRecentAppointments = async (req, res) => {
   try {
     const recent = await Appointment.find()
-      .sort({ date: -1 })
+      .sort({ updatedAt: -1 })       // show recently updated first
       .limit(5)
       .populate("user", "name email")
       .populate("doctor", "name specialization")
-      .populate("services", "name price")       // ✅ note plural 'services'
-      .populate("createdBy", "name email");     // ✅ populate creator info
+      .populate("services", "name price")
+      .populate("createdBy", "name email");
 
-    res.json(recent);
+    res.json({ appointments: recent });  // wrap in appointments key for frontend
   } catch (err) {
     console.error("Recent appointments error:", err);
     res.status(500).json({ message: err.message });
