@@ -125,7 +125,7 @@ export const getAllAppointments = async (req, res) => {
 export const approveAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
-      .populate("user", "name phone")
+      .populate("patient", "name phone")
       .populate("doctor", "name");
 
     if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
@@ -159,7 +159,7 @@ export const getDoctorAppointments = async (req, res) => {
       doctor: req.doctor._id,
       status: { $in: ["PENDING_ADMIN", "APPROVED_ADMIN", "IN_PROGRESS"] },
     })
-      .populate("user", "name email phone")
+      .populate("patient", "name email phone")
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
 
@@ -357,7 +357,7 @@ export const getPrescriptions = async (req, res) => {
 
 // Add or update patient credit when appointment is completed
 const addCreditFromAppointment = async (appointment) => {
-  if (!appointment.user) return;
+  if (!appointment.patient) return;
 
   const creditAmount = appointment.totalPrice || 0; // or some calculation
   let credit = await Credit.findOne({ user: appointment.user });
