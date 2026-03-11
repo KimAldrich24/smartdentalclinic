@@ -386,7 +386,7 @@ const addCreditFromAppointment = async (appointment) => {
   if (!appointment.patient) return;
 
   const creditAmount = appointment.totalPrice || 0; // or some calculation
-  let credit = await Credit.findOne({ user: appointment.user });
+  let credit = await Credit.findOne({ user: appointment.patient });
 
   if (credit) {
     credit.amount += creditAmount;
