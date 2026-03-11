@@ -89,6 +89,21 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       enum: ["pending", "paid_cash", "paid_online"],
       default: "pending",
+      set: (value) => {
+        if (!value) return "pending";
+
+        const normalized = value.toString().toLowerCase().replace(/\s+/g, "_");
+        switch (normalized) {
+          case "paid":
+          case "paid_cash":
+            return "paid_cash";
+          case "paidonline":
+          case "paid_online":
+            return "paid_online";
+          default:
+            return "pending";
+        }
+      },
     },
 
     paymentProofId: {
