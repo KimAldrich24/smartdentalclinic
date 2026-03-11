@@ -284,7 +284,7 @@ export const adminCompleteAppointment = async (req, res) => {
     if (appointment.status !== "IN_PROGRESS") return res.status(400).json({ success: false, message: "Appointment not in progress" });
 
     appointment.status = "COMPLETED";
-    appointment.paymentStatus = "pending";
+    appointment.paymentStatus = "paid";
     await appointment.save();
 
     await PatientRecord.create({
