@@ -110,13 +110,20 @@ export const bookChildAppointment = async (req, res) => {
 ===================================================== */
 export const getMyAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find({ patient: req.user._id })
-      .populate("doctor", "name speciality image")
+    const appointments = await Appointment.find({
+      $or: [
+        { patient: req.user._id },   // appointments booked for self
+        { bookedBy: req.user._id },  // appointments booked for children
+      ],
+    })
+      .populate("doctor", "name speciality image")     // doctor info
+      .populate("patient", "name")                     // patient (child or self)
       .populate("services.service", "name price duration")
       .sort({ date: 1, time: 1 });
 
     res.json({ success: true, appointments });
   } catch (err) {
+    console.error("GET MY APPOINTMENTS ERROR:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
