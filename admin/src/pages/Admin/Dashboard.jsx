@@ -47,19 +47,22 @@ const Dashboard = () => {
 
     // Fetch recent appointments
     const fetchRecent = async () => {
-      try {
-        const res = await axios.get(`${backendUrl}/dashboard/recent-appointments`, {
-          headers: { Authorization: `Bearer ${aToken}` }
-        });
-        setRecentAppointments(res.data);
-      } catch (err) {
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          alert("Session expired. Please log in again.");
-          setAToken("");
-          navigate("/admin-login");
-        }
+  try {
+    const res = await axios.get(
+      `${backendUrl}/dashboard/recent-appointments?status=all`, // include all statuses
+      {
+        headers: { Authorization: `Bearer ${aToken}` },
       }
-    };
+    );
+    setRecentAppointments(res.data.appointments || []); // ensure appointments array
+  } catch (err) {
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      alert("Session expired. Please log in again.");
+      setAToken("");
+      navigate("/admin-login");
+    }
+  }
+};
 
     // Fetch patient credits
     const fetchCredits = async () => {
