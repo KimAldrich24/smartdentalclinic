@@ -11,20 +11,30 @@ import Credit from "../models/creditModel.js"; // make sure you have this model
 ===================================================== */
 export const bookAppointment = async (req, res) => {
   try {
-    const { doctorId, date, time } = req.body;
-    const userId = req.user._id; // logged in user
+    const { doctorId, date, time, childId } = req.body;
+    const userId = req.user._id;
 
     if (!doctorId || !date || !time) {
-      return res.status(400).json({ success: false, message: "Doctor, date, and time are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Doctor, date, and time are required",
+      });
     }
 
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
 
-    // ✅ Create appointment with patient + bookedBy
+    // 🔹 Decide who the patient is
+    const patientId = childId || userId;
+
     const appointment = await Appointment.create({
-      patient: userId,       // patient is the user
-      bookedBy: userId,      // user booked it themselves
+      patient: patientId,   // child OR user
+      bookedBy: userId,     // who booked it
       doctor: doctorId,
       date,
       time,
@@ -32,16 +42,24 @@ export const bookAppointment = async (req, res) => {
       services: [],
       totalPrice: 0,
       paymentStatus: "pending",
-      createdBy: userId,     // optional tracking
+      createdBy: userId,
     });
 
-    res.status(201).json({ success: true, message: "Appointment submitted for admin approval", appointment });
+    res.status(201).json({
+      success: true,
+      message: "Appointment submitted for admin approval",
+      appointment,
+    });
+
   } catch (err) {
     console.error("BOOK APPOINTMENT ERROR:", err);
-    res.status(500).json({ success: false, message: "Failed to book appointment", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to book appointment",
+      error: err.message,
+    });
   }
 };
-
 /* =====================================================
    PATIENT: BOOK APPOINTMENT FOR CHILD
 ===================================================== */

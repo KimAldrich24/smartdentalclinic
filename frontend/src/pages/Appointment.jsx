@@ -102,17 +102,19 @@ const Appointment = () => {
     try {
       setBooking(true);
       const res = await axios.post(
-        `${backendUrl}/api/appointments/book`,
-        {
-          doctorId: docId,
-          date: selectedDate,
-          time: selectedTime,
-          childId: selectedChild, // <-- send childId to backend
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+  `${backendUrl}/api/appointments/book`,
+  {
+    doctorId: docId,
+    date: selectedDate,
+    time: selectedTime,
+    childId: selectedChild || null
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
       if (res.data.success) {
         toast.success("Appointment submitted for admin approval");
