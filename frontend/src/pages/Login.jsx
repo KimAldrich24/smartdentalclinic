@@ -234,7 +234,7 @@ const Login = () => {
             <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <input type="tel" name="phone" placeholder="09XXXXXXXXX" value={formData.phone} onChange={handleChange} minLength="11" maxLength="11" required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <p className="text-sm text-red-700 mt-1">
-              Note: Smart/TNT numbers currently have no service. Other carriers can proceed.
+              Note: all provider is now working.
             </p>
 
             {/* DOB */}
