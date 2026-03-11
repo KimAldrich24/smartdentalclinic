@@ -7,7 +7,7 @@ export const getDashboardStats = async (req, res) => {
   try {
     const totalAppointments = await Appointment.countDocuments();
     const totalPatients = await User.countDocuments();
-    
+
     // Monthly appointments
     const monthlyAppointments = await Appointment.aggregate([
       {
@@ -19,15 +19,18 @@ export const getDashboardStats = async (req, res) => {
       { $sort: { "_id": 1 } },
     ]);
 
-    // Calculate revenue from completed appointments
-    const completedAppointments = await Appointment.find({ status: "completed" });
-    
+    // Revenue from COMPLETED & PAID appointments
+    const completedAppointments = await Appointment.find({
+      status: "COMPLETED",          // uppercase to match your DB
+      paymentStatus: "Paid",        // only count paid
+    });
+
     let revenue = 0;
     for (let appt of completedAppointments) {
-      revenue += appt.finalPrice || 0;
+      revenue += (appt.totalPrice || 0) + (appt.additionalPayment || 0);
     }
 
-    console.log(`💰 Total revenue calculated: ₱${revenue} from ${completedAppointments.length} completed appointments`);
+    console.log(`💰 Total revenue: ₱${revenue} from ${completedAppointments.length} paid appointments`);
 
     res.json({
       totalAppointments,
