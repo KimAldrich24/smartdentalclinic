@@ -208,15 +208,14 @@ export const completeAppointment = async (req, res) => {
     await appointment.save();
 
     await PatientRecord.create({
-      user: appointment.user,
+      user: appointment.patient,  // <-- changed from appointment.user
       doctor: appointment.doctor,
       services: appointment.services,
       date: appointment.date,
       notes: "Treatment completed",
     });
 
-    // ✅ Add credits automatically
-    await addCreditFromAppointment(appointment._id);
+    await addCreditFromAppointment(appointment); // pass appointment object
 
     res.json({ success: true, message: "Appointment completed" });
   } catch (err) {
@@ -263,7 +262,7 @@ export const adminCompleteAppointment = async (req, res) => {
     await appointment.save();
 
     await PatientRecord.create({
-      user: appointment.user,
+      user: appointment.patient, // <-- changed from appointment.user
       doctor: appointment.doctor,
       appointment: appointment._id,
       services: appointment.services,
@@ -271,8 +270,7 @@ export const adminCompleteAppointment = async (req, res) => {
       notes: "Treatment completed",
     });
 
-    // ✅ Add credits automatically
-    await addCreditFromAppointment(appointment._id);
+    await addCreditFromAppointment(appointment); // pass appointment object
 
     res.json({ success: true, message: "Appointment marked completed", appointment });
   } catch (err) {
