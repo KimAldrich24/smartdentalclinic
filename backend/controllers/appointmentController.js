@@ -337,12 +337,12 @@ export const getPatientCompletedAppointments = async (req, res) => {
 
     const objectUserId = mongoose.Types.ObjectId(userId);
 
-    const appointments = await Appointment.find({ user: objectUserId, status: "COMPLETED" })
+    const appointments = await Appointment.find({ patient: objectUserId, status: "COMPLETED" })
       .populate("doctor", "name email speciality")
       .populate("services.service", "name price duration")
       .sort({ date: -1, time: -1 });
 
-    res.json({ success: true, records: appointments });
+    res.json({ success: true, appointments });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -23,7 +23,7 @@ const AddPrescription = ({ patientId }) => {
         );
 
         console.log("Completed appointments response:", res.data);
-        setAppointments(res.data.records || []);
+        setAppointments(res.data.appointments || []);
       } catch (err) {
         console.error("Error fetching completed appointments:", err.response?.data || err.message);
         setAppointments([]);
