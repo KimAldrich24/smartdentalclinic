@@ -207,7 +207,8 @@ const AllAppointments = () => {
               <div className="flex-1 text-sm">
                 <p className="text-lg font-semibold">Dr. {appt.doctor?.name}</p>
                 <p className="text-gray-500">{appt.doctor?.speciality}</p>
-                <p className="mt-2"><b>Patient:</b> {appt.user?.name}</p>
+                <p className="mt-2"><b>Patient:</b> {appt.patient?.name}</p>
+                <p><b>Booked By:</b> {appt.bookedBy?.name || "Self"}</p>
                 <p><b>Date:</b> {appt.date} | {appt.time}</p>
                 <p>
                   <b>Status:</b>{" "}
