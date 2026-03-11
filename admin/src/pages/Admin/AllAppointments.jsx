@@ -217,13 +217,22 @@ const AllAppointments = () => {
                       appt.status === "COMPLETED"
                         ? "text-green-600"
                         : appt.status === "CANCELLED"
-                        ? "text-red-500"
-                        : "text-blue-500"
+                          ? "text-red-500"
+                          : "text-blue-500"
                     }
                   >
                     {appt.status}
                   </span>
                 </p>
+                {/* 💰 Total Price */}
+                <p className="mt-1">
+                  <b>Total Price:</b> ₱{appt.totalPrice?.toLocaleString() || 0}
+                </p>
+                {appt.additionalPayment > 0 && (
+                  <p>
+                    <b>Additional Payment:</b> ₱{appt.additionalPayment.toLocaleString()}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-2 w-full md:w-auto">
