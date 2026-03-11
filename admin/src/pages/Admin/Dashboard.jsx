@@ -47,22 +47,22 @@ const Dashboard = () => {
 
     // Fetch recent appointments
     const fetchRecent = async () => {
-  try {
-    const res = await axios.get(
-      `${backendUrl}/dashboard/recent-appointments?status=all`, // include all statuses
-      {
-        headers: { Authorization: `Bearer ${aToken}` },
+      try {
+        const res = await axios.get(
+          `${backendUrl}/dashboard/recent-appointments?status=all`, // include all statuses
+          {
+            headers: { Authorization: `Bearer ${aToken}` },
+          }
+        );
+        setRecentAppointments(res.data.appointments || []); // ensure appointments array
+      } catch (err) {
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          alert("Session expired. Please log in again.");
+          setAToken("");
+          navigate("/admin-login");
+        }
       }
-    );
-    setRecentAppointments(res.data.appointments || []); // ensure appointments array
-  } catch (err) {
-    if (err.response?.status === 401 || err.response?.status === 403) {
-      alert("Session expired. Please log in again.");
-      setAToken("");
-      navigate("/admin-login");
-    }
-  }
-};
+    };
 
     // Fetch patient credits
     const fetchCredits = async () => {
@@ -201,13 +201,14 @@ const Dashboard = () => {
                     <td className="border p-2">{a.time || "N/A"}</td>
                     <td className="border p-2">
                       <span
-                        className={`px-2 py-1 rounded text-[10px] ${
-                          a.status?.toLowerCase() === "completed"
+                        className={`px-2 py-1 rounded text-[10px] ${a.status?.toLowerCase() === "completed"
                             ? "bg-green-100 text-green-800"
-                            : a.status?.toLowerCase() === "cancelled"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
+                            : a.status?.toLowerCase() === "in_progress"
+                              ? "bg-blue-100 text-blue-800"
+                              : a.status?.toLowerCase() === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-gray-100 text-gray-800"
+                          }`}
                       >
                         {a.status || "Unknown"}
                       </span>
