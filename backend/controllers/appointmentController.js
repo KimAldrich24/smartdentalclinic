@@ -335,23 +335,15 @@ export const getPatientCompletedAppointments = async (req, res) => {
     const { userId } = req.params;
     if (!userId) return res.status(400).json({ success: false, message: "User ID is required" });
 
-    // Convert to ObjectId
     const objectUserId = mongoose.Types.ObjectId(userId);
 
-    // Fetch user to get their children
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
-
-    // Build list of IDs: self + children
-    const patientIds = [objectUserId];
-    if (user.children?.length > 0) {
-      user.children.forEach((child) => patientIds.push(child._id));
-    }
-
-    // Fetch completed appointments for self or children
+    // Fetch all completed appointments for this patient OR children booked by this patient
     const appointments = await Appointment.find({
-      patient: { $in: patientIds },
       status: "COMPLETED",
+      $or: [
+        { patient: objectUserId },  // appointments for the patient themselves
+        { bookedBy: objectUserId }, // appointments booked by the patient (children)
+      ],
     })
       .populate("doctor", "name email speciality")
       .populate("patient", "name")
@@ -360,7 +352,6 @@ export const getPatientCompletedAppointments = async (req, res) => {
 
     res.json({ success: true, appointments });
   } catch (err) {
-    console.error("getPatientCompletedAppointments ERROR:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
