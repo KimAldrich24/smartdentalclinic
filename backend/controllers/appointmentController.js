@@ -6,7 +6,7 @@ import User from "../models/userModel.js"; // ✅ Make sure User is imported
 import PatientRecord from "../models/patientRecordModel.js";
 import { sendSMS } from "../utils/smsHelper.js";
 import Credit from "../models/creditModel.js"; // make sure you have this model
-
+import Equipment from "../models/equipmentModel.js"; 
 /* =====================================================
    PATIENT: BOOK APPOINTMENT
 ===================================================== */
@@ -200,11 +200,18 @@ export const getDoctorAppointments = async (req, res) => {
 ===================================================== */
 export const doctorAssignServices = async (req, res) => {
   try {
-    const { services } = req.body; // [{ serviceId, price }]
-    const appointment = await Appointment.findById(req.params.id);
-    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
-    if (appointment.status !== "APPROVED_ADMIN") return res.status(400).json({ success: false, message: "Can only assign services after admin approval" });
+    const { services, usedEquipment } = req.body; 
+    // services = [{ serviceId, price }]
+    // usedEquipment = { equipmentId: quantityUsed }
 
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment)
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+
+    if (appointment.status !== "APPROVED_ADMIN")
+      return res.status(400).json({ success: false, message: "Can only assign services after admin approval" });
+
+    // Format services
     const formattedServices = [];
     for (const s of services) {
       const service = await Service.findById(s.serviceId);
@@ -216,8 +223,23 @@ export const doctorAssignServices = async (req, res) => {
     appointment.status = "IN_PROGRESS";
     await appointment.save();
 
-    res.json({ success: true, message: "Services assigned", appointment });
+    // ============================
+    // Deduct used equipment quantities
+    // ============================
+    if (usedEquipment && typeof usedEquipment === "object") {
+      for (const [eqId, qty] of Object.entries(usedEquipment)) {
+        const equipment = await Equipment.findById(eqId);
+        if (!equipment) continue;
+
+        const usedQty = Number(qty) || 0;
+        equipment.quantity = Math.max(equipment.quantity - usedQty, 0);
+        await equipment.save();
+      }
+    }
+
+    res.json({ success: true, message: "Services assigned and equipment updated", appointment });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -433,3 +455,4 @@ export const markAppointmentAsPaid = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
