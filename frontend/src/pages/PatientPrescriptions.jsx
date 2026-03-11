@@ -60,7 +60,7 @@ const PatientPrescriptions = () => {
     doc.line(20, 28, 190, 28);
 
     doc.setFontSize(11);
-    doc.text(`Patient: ${user?.name || "N/A"}`, 20, 40);
+    doc.text(`Patient: ${prescription.patient?.name || "N/A"}`, 20, 40);
     doc.text(`Date: ${new Date(prescription.dateIssued).toLocaleDateString()}`, 20, 48);
     doc.text(`Doctor: ${prescription.doctor?.name || "N/A"}`, 20, 56);
 
@@ -116,7 +116,7 @@ const PatientPrescriptions = () => {
           <h1>Smart Dental Clinic</h1>
           <h3>Prescription Record</h3>
           <hr/>
-          <p><strong>Patient:</strong> ${user?.name || "N/A"}</p>
+          <p><strong>Patient:</strong> ${prescription.patient?.name || "N/A"}</p>
           <p><strong>Date:</strong> ${new Date(prescription.dateIssued).toLocaleDateString()}</p>
           <p><strong>Doctor:</strong> ${prescription.doctor?.name || "N/A"}</p>
           <h4>Medicines:</h4>
@@ -146,6 +146,7 @@ const PatientPrescriptions = () => {
         <div className="space-y-4">
           {prescriptions.map((p) => (
             <div key={p._id} className="border p-4 rounded-lg shadow-sm bg-white flex flex-col gap-2">
+              <p><strong>Patient:</strong> {p.patient?.name || "N/A"}</p>
               <p><strong>Date Issued:</strong> {new Date(p.dateIssued).toLocaleDateString()}</p>
               <p><strong>Doctor:</strong> {p.doctor?.name || "N/A"}</p>
 
