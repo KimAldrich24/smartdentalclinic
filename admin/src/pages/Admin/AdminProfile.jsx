@@ -46,7 +46,7 @@ const AdminProfile = () => {
 
   const fetchAdminProfile = async () => {
     try {
-      const res = await axios.get(`${backendUrl}/api/user/profile`, {
+      const res = await axios.get(`${backendUrl}/api/user/me`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
 
