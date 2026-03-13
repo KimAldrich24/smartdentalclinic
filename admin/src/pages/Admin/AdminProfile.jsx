@@ -1,6 +1,8 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AdminContext } from "../../context/AdminContext";
-import { User, Mail, Calendar, Shield, Phone, Edit2, X, Check } from "lucide-react";
+import { 
+  User, Mail, Calendar, Shield, Phone, Edit2, X, Check, Eye, EyeOff 
+} from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
 
@@ -11,10 +13,7 @@ const AdminProfile = () => {
   const [admin, setAdmin] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-  });
+  const [formData, setFormData] = useState({ name: "", phone: "" });
 
   // Password state
   const [passwordData, setPasswordData] = useState({
@@ -23,10 +22,10 @@ const AdminProfile = () => {
     confirmPassword: "",
   });
   const [pwdLoading, setPwdLoading] = useState(false);
-  const [showPasswordForm, setShowPasswordForm] = useState(true); // ✅ New state
+  const [showPasswordForm, setShowPasswordForm] = useState(true);
   const [showCurrent, setShowCurrent] = useState(false);
-const [showNew, setShowNew] = useState(false);
-const [showConfirm, setShowConfirm] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Decode token to get admin info
   useEffect(() => {
@@ -41,7 +40,7 @@ const [showConfirm, setShowConfirm] = useState(false);
   }, [aToken]);
 
   // Fetch admin profile
-  const fetchAdminProfile = async (adminId) => {
+  const fetchAdminProfile = async () => {
     try {
       const res = await axios.get(`${backendUrl}/api/admin/profile`, {
         headers: { Authorization: `Bearer ${aToken}` },
@@ -154,7 +153,7 @@ const [showConfirm, setShowConfirm] = useState(false);
           newPassword: "",
           confirmPassword: "",
         });
-        setShowPasswordForm(false); // ✅ Hide form after success
+        setShowPasswordForm(false);
       } else {
         toast.error(res.data.message || "Failed to change password");
       }
@@ -300,7 +299,7 @@ const [showConfirm, setShowConfirm] = useState(false);
           </div>
         </div>
 
-        {/* Change Password Button/Form */}
+        {/* Change Password */}
         <div className="mt-6">
           {!showPasswordForm ? (
             <button
@@ -311,32 +310,64 @@ const [showConfirm, setShowConfirm] = useState(false);
             </button>
           ) : (
             <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Change Password</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Change Password
+              </h3>
               <div className="space-y-4">
-                <input
-                  type="password"
-                  name="currentPassword"
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordChange}
-                  placeholder="Current Password"
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-                />
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  placeholder="New Password"
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-                />
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordChange}
-                  placeholder="Confirm New Password"
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-                />
+                {/* Current Password */}
+                <div className="relative">
+                  <input
+                    type={showCurrent ? "text" : "password"}
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Current Password"
+                    className="w-full border rounded-lg px-3 py-2 pr-10 focus:ring-2 focus:ring-blue-400 outline-none"
+                  />
+                  <span
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                  >
+                    {showCurrent ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </span>
+                </div>
+
+                {/* New Password */}
+                <div className="relative">
+                  <input
+                    type={showNew ? "text" : "password"}
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="New Password"
+                    className="w-full border rounded-lg px-3 py-2 pr-10 focus:ring-2 focus:ring-blue-400 outline-none"
+                  />
+                  <span
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500"
+                    onClick={() => setShowNew(!showNew)}
+                  >
+                    {showNew ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </span>
+                </div>
+
+                {/* Confirm Password */}
+                <div className="relative">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Confirm New Password"
+                    className="w-full border rounded-lg px-3 py-2 pr-10 focus:ring-2 focus:ring-blue-400 outline-none"
+                  />
+                  <span
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                  >
+                    {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </span>
+                </div>
+
                 <div className="flex gap-2">
                   <button
                     onClick={handleChangePassword}
