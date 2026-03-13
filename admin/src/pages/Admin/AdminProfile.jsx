@@ -46,15 +46,15 @@ const AdminProfile = () => {
 
   const fetchAdminProfile = async () => {
     try {
-      const res = await axios.get(`${backendUrl}/api/admin/profile`, {
+      const res = await axios.get(`${backendUrl}/api/user/profile`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
 
       if (res.data.success) {
-        setAdmin(res.data.admin);
+        setAdmin(res.data.user);
         setFormData({
-          name: res.data.admin.name || "",
-          phone: res.data.admin.phone || "",
+          name: res.data.user.name || "",
+          phone: res.data.user.phone || "",
         });
       }
     } catch (err) {
