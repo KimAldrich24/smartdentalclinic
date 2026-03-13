@@ -70,14 +70,14 @@ const AdminProfile = () => {
     setLoading(true);
     try {
       const res = await axios.put(
-        `${backendUrl}/api/admin/profile`,
+        `${backendUrl}/api/users/me`,
         formData,
         { headers: { Authorization: `Bearer ${aToken}` } }
       );
 
       if (res.data.success) {
         toast.success("Profile updated successfully");
-        setAdmin(res.data.admin);
+        setAdmin(res.data.user);
         setIsEdit(false);
       }
     } catch (err) {
