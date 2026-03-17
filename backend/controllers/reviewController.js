@@ -10,7 +10,7 @@ export const addReview = async (req, res) => {
     }
 
     const review = new Review({
-      user: req.userId, // from auth middleware
+      user: req.user._id, // from auth middleware
       service,
       rating,
       comment,
