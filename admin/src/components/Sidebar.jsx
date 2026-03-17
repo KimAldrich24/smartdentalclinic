@@ -281,6 +281,22 @@ const Sidebar = () => {
         <img className="w-5 h-5 md:w-auto md:h-auto" src={assets.pending_icon || assets.add_icon} alt="Payment Proofs" />
         <p className="text-sm md:text-base">💳 Payment Proofs</p>
       </NavLink>
+
+      <NavLink
+        onClick={handleLinkClick}
+        className={({ isActive }) =>
+          `flex items-center gap-2 py-2 px-2 md:py-3.5 md:px-9 cursor-pointer ${isActive ? "bg-[#F2F3FF] border-r-4 border-primary" : ""
+          }`
+        }
+        to="/admin/reviews"
+      >
+        <img
+          className="w-5 h-5 md:w-auto md:h-auto"
+          src={assets.review_icon || assets.add_icon}
+          alt="Reviews"
+        />
+        <p className="text-sm md:text-base">⭐ Reviews</p>
+      </NavLink>
     </>
   );
 

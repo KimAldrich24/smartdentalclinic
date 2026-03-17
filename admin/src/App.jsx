@@ -40,6 +40,7 @@ import AdminRegister from "./pages/Admin/AdminRegister";
 import AdminPaymentProofs from "./pages/Admin/AdminPaymentProofs";
 import AdminSchedule from "./pages/Admin/AdminSchedule";
 import AdminSuppliers from "./pages/Admin/AdminSuppliers";
+import AdminReviews from "./pages/AdminReviews";
 
 // Doctor Pages
 import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
@@ -127,6 +128,7 @@ if (aToken && userRole === "admin") {
               <Route path="/admin/payment-proofs" element={<AdminPaymentProofs />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
               <Route path="/admin/schedules" element={<AdminSchedule />} />
+              <Route path="/reviews" element={<AdminReviews />} />
 
             </Routes>
           </main>
