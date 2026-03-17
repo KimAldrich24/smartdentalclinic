@@ -6,21 +6,21 @@ import {
   deleteReview,
   getAllReviewsAdmin,
 } from "../controllers/reviewController.js";
-import authUser from "../middleware/authUser.js";
-import authAdmin from "../middleware/authAdmin.js";
+import protect from "../middleware/authMiddleware.js";
+
 
 const router = express.Router();
 
 // patient
-router.post("/add", authUser, addReview);
+router.post("/add", protect(["user", "patient"]), addReview);
 
 // public
 router.get("/", getReviews);
 
 // admin
-router.get("/admin", authAdmin, getAllReviewsAdmin);
-router.put("/approve/:id", authAdmin, approveReview);
-router.delete("/:id", authAdmin, deleteReview);
+router.get("/admin", protect(["admin"]), getAllReviewsAdmin);
+router.put("/approve/:id", protect(["admin"]), approveReview);
+router.delete("/:id", protect(["admin"]), deleteReview);
 
 
 export default router;
