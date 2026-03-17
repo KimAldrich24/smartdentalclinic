@@ -17,6 +17,8 @@ import PatientPrescriptions from "./pages/PatientPrescriptions";
 import JobApplication from "./pages/JobApplication";
 import Settings from "./pages/Settings";
 import PatientGCashPayment from './pages/PatientGCashPayment';
+import Reviews from "./components/Reviews";       // To show reviews on Home
+import AddReview from "./components/AddReview";   // To let patients submit reviews
 
 const App = () => {
   return (
@@ -41,6 +43,7 @@ const App = () => {
           <Route path="/apply" element={<JobApplication />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/payment/gcash/:appointmentId" element={<PatientGCashPayment />} />
+          <Route path="/add-review" element={<AddReview />} />
         </Routes>
 
         <Footer />

@@ -40,7 +40,7 @@ import AdminRegister from "./pages/Admin/AdminRegister";
 import AdminPaymentProofs from "./pages/Admin/AdminPaymentProofs";
 import AdminSchedule from "./pages/Admin/AdminSchedule";
 import AdminSuppliers from "./pages/Admin/AdminSuppliers";
-import AdminReviews from "./pages/AdminReviews";
+import AdminReviews from "./pages/Admin/AdminReviews";
 
 // Doctor Pages
 import DoctorDashboard from "./pages/Doctor/DoctorDashboard";

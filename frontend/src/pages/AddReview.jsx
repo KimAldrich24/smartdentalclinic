@@ -12,19 +12,29 @@ const AddReview = () => {
   const submitReview = async (e) => {
     e.preventDefault();
 
+    if (!comment.trim()) {
+      return toast.error("Please write a comment!");
+    }
+
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-axios.post(backendUrl + "/api/reviews/add", { rating, comment }, config);
+
+      // ✅ Await the POST request and destructure the response
+      const { data } = await axios.post(
+        backendUrl + "/api/reviews/add",
+        { rating, comment },
+        config
+      );
 
       if (data.success) {
         toast.success("Review submitted!");
         setComment("");
         setRating(5);
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to submit review.");
       }
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
@@ -34,7 +44,7 @@ axios.post(backendUrl + "/api/reviews/add", { rating, comment }, config);
 
       <select
         value={rating}
-        onChange={(e) => setRating(e.target.value)}
+        onChange={(e) => setRating(Number(e.target.value))}
         className="border p-2 mb-2 w-full"
       >
         {[1, 2, 3, 4, 5].map((r) => (
@@ -49,9 +59,10 @@ axios.post(backendUrl + "/api/reviews/add", { rating, comment }, config);
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         className="border p-2 w-full mb-2"
+        rows={4}
       />
 
-      <button className="bg-blue-500 text-white px-4 py-2 rounded">
+      <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
         Submit Review
       </button>
     </form>
