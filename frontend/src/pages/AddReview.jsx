@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import { Star } from "lucide-react"; // ✅ Lucide star icon
+import { Star } from "lucide-react";
 
 const AddReview = () => {
   const { token, backendUrl } = useContext(AuthContext);
@@ -10,6 +10,7 @@ const AddReview = () => {
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0); // for hover effect
   const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState(false); // ✅ loading state
 
   const submitReview = async (e) => {
     e.preventDefault();
@@ -19,10 +20,11 @@ const AddReview = () => {
     }
 
     try {
+      setLoading(true); // start loading
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const { data } = await axios.post(
-        backendUrl + "/api/reviews/add",
+        `${backendUrl}/api/reviews/add`,
         { rating, comment },
         config
       );
@@ -36,11 +38,13 @@ const AddReview = () => {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false); // stop loading
     }
   };
 
   return (
-    <form onSubmit={submitReview} className="p-4 border rounded">
+    <form onSubmit={submitReview} className="p-4 border rounded bg-white shadow-md">
       <h2 className="text-lg font-bold mb-2">Leave a Review</h2>
 
       {/* ⭐ Star rating */}
@@ -65,10 +69,20 @@ const AddReview = () => {
         onChange={(e) => setComment(e.target.value)}
         className="border p-2 w-full mb-2"
         rows={4}
+        disabled={loading} // disable textarea while submitting
       />
 
-      <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-        Submit Review
+      <button
+        type="submit"
+        className={`bg-blue-500 text-white px-4 py-2 rounded flex items-center justify-center ${
+          loading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
+        disabled={loading} // disable button while loading
+      >
+        {loading ? "Submitting..." : "Submit Review"}
+        {loading && (
+          <span className="ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+        )}
       </button>
     </form>
   );

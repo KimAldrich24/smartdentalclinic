@@ -66,12 +66,25 @@ export const deleteReview = async (req, res) => {
 export const getAllReviewsAdmin = async (req, res) => {
   try {
     const reviews = await Review.find()
-      .populate("user", "name")
-      .populate("service", "name")
+      .populate({ path: "user", select: "name", options: { lean: true } })
+      .populate({ path: "service", select: "name", options: { lean: true } })
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, reviews });
+    // Map null users to placeholder
+    const safeReviews = reviews.map((r) => ({
+      _id: r._id,
+      rating: r.rating,
+      comment: r.comment,
+      isApproved: r.isApproved,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      user: r.user || { name: "Deleted User" },
+      service: r.service || { name: "N/A" },
+    }));
+
+    res.json({ success: true, reviews: safeReviews });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.error("Admin Get Reviews Error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -1,26 +1,32 @@
-// Reviews.jsx
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
-import { AuthContext } from "../context/AuthContext"; // get backendUrl from context
+import { AuthContext } from "../context/AuthContext";
 import { Star } from "lucide-react";
 
-const Reviews = () => {
-  const { backendUrl } = useContext(AuthContext); // ✅ must use context
+const Reviews = ({ refreshTrigger = 0 }) => {
+  const { backendUrl } = useContext(AuthContext);
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true); // loading state
 
   useEffect(() => {
     fetchReviews();
     // eslint-disable-next-line
-  }, []);
+  }, [refreshTrigger]); // re-fetch whenever parent triggers refresh
 
   const fetchReviews = async () => {
     try {
+      setLoading(true);
       const { data } = await axios.get(`${backendUrl}/api/reviews`);
       if (data.success) setReviews(data.reviews);
     } catch (err) {
       console.error("Failed to fetch reviews:", err.response?.data?.message || err.message);
+      setReviews([]);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) return <p>Loading reviews...</p>;
 
   return (
     <div>
@@ -31,7 +37,7 @@ const Reviews = () => {
         <div key={r._id} className="border p-3 mb-3 rounded shadow-sm bg-white">
           <h3 className="font-semibold">{r.user?.name || "Anonymous"}</h3>
 
-          {/* ⭐ Visual star rating */}
+          {/* ⭐ Star rating */}
           <div className="flex mb-2">
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
