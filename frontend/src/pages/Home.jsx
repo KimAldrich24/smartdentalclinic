@@ -5,7 +5,7 @@ import SpecialityMenu from '../components/SpecialityMenu';
 import TopDoctors from '../components/TopDoctors';
 import Banner from '../components/Banner';
 import Reviews from '../components/Reviews';
-import AddReview from '../components/AddReview';
+import AddReview from '../pages/AddReview';
 
 const Home = () => {
   return (
