@@ -4,64 +4,85 @@ import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 
 const AdminReviews = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken, backendUrl } = useContext(AdminContext); // get URL & token from context
   const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
     fetchReviews();
+    // eslint-disable-next-line
   }, []);
 
+  // Fetch all reviews for admin
   const fetchReviews = async () => {
     try {
-      const { data } = await axios.get(
-        backendUrl + "/api/reviews/admin",
-        { headers: { aToken } }
-      );
+      const config = {
+        headers: {
+          Authorization: `Bearer ${aToken}`, // ✅ correct header
+        },
+      };
+
+      const { data } = await axios.get(backendUrl + "/api/reviews/admin", config);
 
       if (data.success) {
         setReviews(data.reviews);
       }
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
+  // Approve a pending review
   const approveReview = async (id) => {
     try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${aToken}`,
+        },
+      };
+
       const { data } = await axios.put(
         backendUrl + "/api/reviews/approve/" + id,
         {},
-        { headers: { aToken } }
+        config
       );
 
       if (data.success) {
-        toast.success("Approved!");
-        fetchReviews(); // refresh
+        toast.success("Review approved!");
+        fetchReviews(); // refresh list
       }
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
+  // Delete a review
   const deleteReview = async (id) => {
     try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${aToken}`,
+        },
+      };
+
       const { data } = await axios.delete(
         backendUrl + "/api/reviews/" + id,
-        { headers: { aToken } }
+        config
       );
 
       if (data.success) {
-        toast.success("Deleted!");
-        fetchReviews();
+        toast.success("Review deleted!");
+        fetchReviews(); // refresh list
       }
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Manage Reviews</h2>
+
+      {reviews.length === 0 && <p>No reviews yet.</p>}
 
       {reviews.map((r) => (
         <div key={r._id} className="border p-3 mb-2 rounded">

@@ -13,11 +13,8 @@ const AddReview = () => {
     e.preventDefault();
 
     try {
-      const { data } = await axios.post(
-        backendUrl + "/api/reviews/add",
-        { rating, comment },
-        { headers: { token } }
-      );
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+axios.post(backendUrl + "/api/reviews/add", { rating, comment }, config);
 
       if (data.success) {
         toast.success("Review submitted!");
