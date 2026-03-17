@@ -4,6 +4,9 @@ import axios from "axios";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL; // ✅ Add this
+
+
   // ✅ Load token + user from localStorage on init
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [user, setUser] = useState(
@@ -74,7 +77,7 @@ export const AuthProvider = ({ children }) => {
   }, [token, user]);
 
   return (
-    <AuthContext.Provider value={{ user, token, register, login, logout }}>
+    <AuthContext.Provider value={{ user, token, backendUrl, register, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
