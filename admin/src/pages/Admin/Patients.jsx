@@ -120,7 +120,6 @@ const Patients = () => {
           <option value="Not Selected">Not Selected</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
-          <option value="Other">Other</option>
         </select>
 
         <button className="bg-blue-500 text-white py-2 rounded">
