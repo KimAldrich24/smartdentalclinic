@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import SpecialityMenu from '../components/SpecialityMenu';
 import TopDoctors from '../components/TopDoctors';
 import Banner from '../components/Banner';
-import Reviews from '../components/Reviews';
+import Reviews from '../pages/Reviews';
 import AddReview from '../pages/AddReview';
 
 const Home = () => {
