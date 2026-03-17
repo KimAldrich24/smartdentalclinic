@@ -1,6 +1,8 @@
+// Reviews.jsx
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext"; // get backendUrl from context
+import { Star } from "lucide-react";
 
 const Reviews = () => {
   const { backendUrl } = useContext(AuthContext); // ✅ must use context
@@ -13,7 +15,7 @@ const Reviews = () => {
 
   const fetchReviews = async () => {
     try {
-      const { data } = await axios.get(backendUrl + "/api/reviews");
+      const { data } = await axios.get(`${backendUrl}/api/reviews`);
       if (data.success) setReviews(data.reviews);
     } catch (err) {
       console.error("Failed to fetch reviews:", err.response?.data?.message || err.message);
@@ -26,10 +28,27 @@ const Reviews = () => {
       {reviews.length === 0 && <p>No reviews yet.</p>}
 
       {reviews.map((r) => (
-        <div key={r._id} className="border p-3 mb-2 rounded">
-          <h3 className="font-semibold">{r.user?.name}</h3>
-          <p>⭐ {r.rating}/5</p>
-          <p>{r.comment}</p>
+        <div key={r._id} className="border p-3 mb-3 rounded shadow-sm bg-white">
+          <h3 className="font-semibold">{r.user?.name || "Anonymous"}</h3>
+
+          {/* ⭐ Visual star rating */}
+          <div className="flex mb-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                size={20}
+                className={(r.rating || 0) >= star ? "text-yellow-400" : "text-gray-300"}
+              />
+            ))}
+          </div>
+
+          <p className="text-gray-700 mb-1">{r.comment}</p>
+
+          {r.isApproved !== undefined && (
+            <p className="text-sm text-gray-500">
+              {r.isApproved ? "✅ Approved" : "⏳ Pending Approval"}
+            </p>
+          )}
         </div>
       ))}
     </div>
