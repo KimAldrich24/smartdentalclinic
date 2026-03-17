@@ -17,7 +17,7 @@ import PatientPrescriptions from "./pages/PatientPrescriptions";
 import JobApplication from "./pages/JobApplication";
 import Settings from "./pages/Settings";
 import PatientGCashPayment from './pages/PatientGCashPayment';
-import Reviews from "./components/Reviews";       // To show reviews on Home
+import Reviews from "./pages/Reviews";       // To show reviews on Home
 import AddReview from "./pages/AddReview";   // To let patients submit reviews
 
 const App = () => {
