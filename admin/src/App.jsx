@@ -126,9 +126,10 @@ if (aToken && userRole === "admin") {
               <Route path="/job-applications" element={<AdminJobApplications />} />
               <Route path="/staff-management" element={<StaffManagement />} />
               <Route path="/admin/payment-proofs" element={<AdminPaymentProofs />} />
+              <Route path="/admin/reviews" element={<AdminReviews />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
               <Route path="/admin/schedules" element={<AdminSchedule />} />
-              <Route path="/reviews" element={<AdminReviews />} />
+              
 
             </Routes>
           </main>
