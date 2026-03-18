@@ -16,13 +16,15 @@ const Patients = () => {
     import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
   const fetchPatients = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/patients`);
-      setPatients(res.data);
-    } catch (err) {
-      console.error(err.message);
-    }
-  };
+  try {
+    const res = await axios.get(`${backendUrl}/api/patients`);
+    // Filter only patients by role
+    const onlyPatients = res.data.filter(user => user.role === "patient");
+    setPatients(onlyPatients);
+  } catch (err) {
+    console.error(err.message);
+  }
+};
 
   useEffect(() => {
     fetchPatients();
