@@ -27,6 +27,7 @@ const AdminEquipment = () => {
 
   const [formData, setFormData] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
+  const today = new Date().toISOString().split("T")[0];
 
   /* ==============================
      FETCH EQUIPMENT
@@ -81,7 +82,6 @@ const AdminEquipment = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // convert number fields
     if (name === "capacity" || name === "quantity") {
       setFormData({ ...formData, [name]: value === "" ? "" : Number(value) });
     } else {
@@ -90,10 +90,24 @@ const AdminEquipment = () => {
   };
 
   /* ==============================
+     CHECK IF EXPIRED
+  ============================== */
+  const isExpired = (date) => {
+    if (!date) return false;
+    return new Date(date) < new Date(today);
+  };
+
+  /* ==============================
      SUBMIT EQUIPMENT
   ============================== */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ✅ prevent past expiration
+    if (formData.expirationDate && formData.expirationDate < today) {
+      setError("Expiration date cannot be in the past.");
+      return;
+    }
 
     try {
       const payload = {
@@ -101,7 +115,7 @@ const AdminEquipment = () => {
         capacity: Number(formData.capacity) || 0,
         quantity: Number(formData.quantity) || 0,
         supplier: formData.supplier || null,
-        expirationDate: formData.expirationDate || null, // ✅ ADD THIS
+        expirationDate: formData.expirationDate || null,
       };
 
       if (editingId) {
@@ -120,6 +134,7 @@ const AdminEquipment = () => {
 
       setFormData(initialForm);
       setEditingId(null);
+      setError(null);
       fetchEquipment();
     } catch (err) {
       console.error(err);
@@ -265,13 +280,17 @@ const AdminEquipment = () => {
             className="border px-2 py-1 w-24"
           />
 
-          <input
-            type="date"
-            name="expirationDate"
-            value={formData.expirationDate}
-            onChange={handleChange}
-            className="border px-2 py-1"
-          />
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-600">Expiration Date</label>
+            <input
+              type="date"
+              name="expirationDate"
+              value={formData.expirationDate}
+              onChange={handleChange}
+              min={today} // prevents past dates
+              className="border px-2 py-1"
+            />
+          </div>
 
           <input
             name="notes"
@@ -311,7 +330,12 @@ const AdminEquipment = () => {
 
             <tbody>
               {equipment.map((item) => (
-                <tr key={item._id} className="text-center">
+                <tr
+                  key={item._id}
+                  className={`text-center ${
+                    isExpired(item.expirationDate) ? "bg-red-100" : ""
+                  }`}
+                >
                   <td className="border px-4 py-2">{item.name}</td>
                   <td className="border px-4 py-2">{item.category || "-"}</td>
                   <td className="border px-4 py-2">{item.serialNumber || "-"}</td>
@@ -322,7 +346,11 @@ const AdminEquipment = () => {
                   <td className="border px-4 py-2">{item.quantity || "-"}</td>
                   <td className="border px-4 py-2">{item.unit || "-"}</td>
 
-                  <td className="border px-4 py-2">
+                  <td
+                    className={`border px-4 py-2 ${
+                      isExpired(item.expirationDate) ? "text-red-600 font-semibold" : ""
+                    }`}
+                  >
                     {item.expirationDate
                       ? new Date(item.expirationDate).toLocaleDateString()
                       : "-"}
