@@ -101,13 +101,7 @@ const equipmentSchema = new mongoose.Schema(
        MAINTENANCE TRACKING
        Only used by machines
     ============================ */
-    lastMaintenance: {
-      type: Date,
-    },
-
-    nextMaintenance: {
-      type: Date,
-    },
+    
 
     /* ===========================
        EXTRA NOTES

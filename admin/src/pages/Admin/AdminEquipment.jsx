@@ -18,8 +18,7 @@ const AdminEquipment = () => {
     supplier: "",
     location: "",
     status: "Available",
-    lastMaintenance: "",
-    nextMaintenance: "",
+    expirationDate: "",
     notes: "",
     capacity: "",
     quantity: "",
@@ -102,6 +101,7 @@ const AdminEquipment = () => {
         capacity: Number(formData.capacity) || 0,
         quantity: Number(formData.quantity) || 0,
         supplier: formData.supplier || null,
+        expirationDate: formData.expirationDate || null, // ✅ ADD THIS
       };
 
       if (editingId) {
@@ -138,11 +138,8 @@ const AdminEquipment = () => {
       supplier: item.supplier?._id || "",
       location: item.location || "",
       status: item.status || "Available",
-      lastMaintenance: item.lastMaintenance
-        ? new Date(item.lastMaintenance).toISOString().split("T")[0]
-        : "",
-      nextMaintenance: item.nextMaintenance
-        ? new Date(item.nextMaintenance).toISOString().split("T")[0]
+      expirationDate: item.expirationDate
+        ? new Date(item.expirationDate).toISOString().split("T")[0]
         : "",
       notes: item.notes || "",
       capacity: item.capacity || "",
@@ -270,16 +267,8 @@ const AdminEquipment = () => {
 
           <input
             type="date"
-            name="lastMaintenance"
-            value={formData.lastMaintenance}
-            onChange={handleChange}
-            className="border px-2 py-1"
-          />
-
-          <input
-            type="date"
-            name="nextMaintenance"
-            value={formData.nextMaintenance}
+            name="expirationDate"
+            value={formData.expirationDate}
             onChange={handleChange}
             className="border px-2 py-1"
           />
@@ -315,8 +304,7 @@ const AdminEquipment = () => {
                 <th className="border px-4 py-2">Capacity</th>
                 <th className="border px-4 py-2">Remaining</th>
                 <th className="border px-4 py-2">Unit</th>
-                <th className="border px-4 py-2">Last Maintenance</th>
-                <th className="border px-4 py-2">Next Maintenance</th>
+                <th className="border px-4 py-2">Expiration</th>
                 <th className="border px-4 py-2">Actions</th>
               </tr>
             </thead>
@@ -335,14 +323,8 @@ const AdminEquipment = () => {
                   <td className="border px-4 py-2">{item.unit || "-"}</td>
 
                   <td className="border px-4 py-2">
-                    {item.lastMaintenance
-                      ? new Date(item.lastMaintenance).toLocaleDateString()
-                      : "-"}
-                  </td>
-
-                  <td className="border px-4 py-2">
-                    {item.nextMaintenance
-                      ? new Date(item.nextMaintenance).toLocaleDateString()
+                    {item.expirationDate
+                      ? new Date(item.expirationDate).toLocaleDateString()
                       : "-"}
                   </td>
 
