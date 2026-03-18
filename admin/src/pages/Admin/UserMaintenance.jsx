@@ -3,7 +3,6 @@ import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
-import assets from "../../assets"; // make sure this points to your assets folder
 
 const UserMaintenance = () => {
   const { aToken, doctors, getAllDoctors } = useContext(AdminContext);
@@ -99,19 +98,13 @@ const UserMaintenance = () => {
     <div className="p-6">
       <h2 className="text-xl font-bold mb-4">User Maintenance</h2>
 
-      {/* =========================
-          🔹 ADD DOCTOR & RECEPTIONIST BUTTONS
-      ========================= */}
+      {/* 🔹 Add Doctor & Receptionist Buttons (Emoji version) */}
       <div className="flex justify-end gap-4 mb-4">
         <button
           onClick={() => navigate("/add-doctor")}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
         >
-          <img
-            className="w-5 h-5"
-            src={assets.add_icon}
-            alt="Add Doctor"
-          />
+          <span>➕</span>
           <span>Add Dentist</span>
         </button>
 
@@ -119,11 +112,7 @@ const UserMaintenance = () => {
           onClick={() => navigate("/staff-management")}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
         >
-          <img
-            className="w-5 h-5"
-            src={assets.pending_icon || assets.add_icon}
-            alt="Add Receptionist"
-          />
+          <span>👥</span>
           <span>Receptionist</span>
         </button>
       </div>
