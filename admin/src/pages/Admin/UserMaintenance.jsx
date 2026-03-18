@@ -1,13 +1,16 @@
 // src/pages/Admin/UserMaintenance.jsx
 import React, { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import assets from "../../assets"; // make sure this points to your assets folder
 
 const UserMaintenance = () => {
-  const { aToken, doctors, getAllDoctors } = useContext(AdminContext); // ✅ include doctors
+  const { aToken, doctors, getAllDoctors } = useContext(AdminContext);
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const navigate = useNavigate();
 
-  const [patients, setPatients] = useState([]); // ✅ separate state
+  const [patients, setPatients] = useState([]);
   const [staff, setStaff] = useState([]);
 
   // =========================
@@ -33,12 +36,11 @@ const UserMaintenance = () => {
   };
 
   // =========================
-  // 🔥 DELETE (patient only for now)
+  // 🔥 DELETE USER
   // =========================
   const deleteUser = async (id, role) => {
     try {
       if (role === "doctor") {
-        // 👉 call your doctor delete function later if needed
         console.log("Doctor delete not implemented yet");
         return;
       }
@@ -53,39 +55,42 @@ const UserMaintenance = () => {
     }
   };
 
+  // =========================
+  // 🔥 FETCH STAFF
+  // =========================
   const fetchStaff = async () => {
-  try {
-    const res = await axios.get(`${backendUrl}/api/admin/staff`, {
-      headers: { Authorization: `Bearer ${aToken}` },
-    });
+    try {
+      const res = await axios.get(`${backendUrl}/api/admin/staff`, {
+        headers: { Authorization: `Bearer ${aToken}` },
+      });
 
-    if (res.data.success) {
-      setStaff(res.data.staff);
+      if (res.data.success) {
+        setStaff(res.data.staff);
+      }
+    } catch (err) {
+      console.error("Error fetching staff:", err);
     }
-  } catch (err) {
-    console.error("Error fetching staff:", err);
-  }
-};
+  };
 
   // =========================
-  // 🔥 FETCH BOTH
+  // 🔥 FETCH ALL ON LOAD
   // =========================
   useEffect(() => {
     if (aToken) {
-      fetchUsers();      // patients
-      getAllDoctors();   // doctors
-      fetchStaff(); // ✅ ADD THIS
+      fetchUsers();
+      getAllDoctors();
+      fetchStaff();
     }
   }, [aToken]);
 
- // =========================
-// 🔥 MERGE DATA
-// =========================
-const allUsers = [
-  ...patients.map((u) => ({ ...u, role: "patient" })),     // optional: make role explicit
-  ...doctors.map((doc) => ({ ...doc, role: "doctor" })),
-  ...staff.map((s) => ({ ...s, role: "receptionist" })),  // 🔥 add staff here
-];
+  // =========================
+  // 🔥 MERGE DATA
+  // =========================
+  const allUsers = [
+    ...patients.map((u) => ({ ...u, role: "patient" })),
+    ...doctors.map((doc) => ({ ...doc, role: "doctor" })),
+    ...staff.map((s) => ({ ...s, role: "receptionist" })),
+  ];
 
   // =========================
   // UI
@@ -93,6 +98,35 @@ const allUsers = [
   return (
     <div className="p-6">
       <h2 className="text-xl font-bold mb-4">User Maintenance</h2>
+
+      {/* =========================
+          🔹 ADD DOCTOR & RECEPTIONIST BUTTONS
+      ========================= */}
+      <div className="flex justify-end gap-4 mb-4">
+        <button
+          onClick={() => navigate("/add-doctor")}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+        >
+          <img
+            className="w-5 h-5"
+            src={assets.add_icon}
+            alt="Add Doctor"
+          />
+          <span>Add Dentist</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/staff-management")}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+        >
+          <img
+            className="w-5 h-5"
+            src={assets.pending_icon || assets.add_icon}
+            alt="Add Receptionist"
+          />
+          <span>Receptionist</span>
+        </button>
+      </div>
 
       <table className="min-w-full border">
         <thead>
