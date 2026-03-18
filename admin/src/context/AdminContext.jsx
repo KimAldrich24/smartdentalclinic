@@ -9,6 +9,7 @@ const AdminContextProvider = ({ children }) => {
   const [userRole, setUserRole] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [admin, setAdmin] = useState(null); // ✅ ADD THIS
+  const [staff, setStaff] = useState([]);
 
   // ✅ Save token to localStorage whenever it changes
   useEffect(() => {
@@ -87,11 +88,29 @@ const getAdminProfile = async () => {
     }
   };
 
+  const getAllStaff = async () => {
+  if (!aToken || userRole !== "admin") return;
+
+  try {
+    const res = await fetch(`${backendUrl}/api/admin/staff`, {
+      headers: { Authorization: `Bearer ${aToken}` },
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setStaff(data.staff || []);
+    }
+  } catch (err) {
+    console.error("Get staff error:", err);
+  }
+};
+
   // ✅ Trigger fetch when token and role are valid
   useEffect(() => {
     if (aToken && userRole === "admin") {
       getAdminProfile(); // ✅ ADD THIS
       getAllDoctors();
+      getAllStaff(); // 🔥 ADD THIS
     }
   }, [aToken, userRole]);
 
@@ -105,7 +124,9 @@ const getAdminProfile = async () => {
         setAdmin, // ✅ ADD THIS
         getAdminProfile, // ✅ ADD THIS
         getAllDoctors,
+        getAllStaff,
         doctors,
+        staff,
         backendUrl,
       }}
     >
