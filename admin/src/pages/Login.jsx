@@ -101,7 +101,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${backendUrl}/api/user/verify-register`, {
+      const res = await fetch(`${backendUrl}/api/user/verify-and-register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
