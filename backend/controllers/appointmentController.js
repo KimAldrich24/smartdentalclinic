@@ -330,27 +330,25 @@ export const adminCompleteAppointment = async (req, res) => {
 /* =====================================================
    ADMIN: GET COMPLETED APPOINTMENTS FOR PATIENT
 ===================================================== */
+// Admin fetch completed appointments for a patient (self + children)
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { patientId } = req.params;
-    if (!patientId)
-      return res.status(400).json({ success: false, message: "User ID is required" });
+    if (!patientId) return res.status(400).json({ success: false, message: "Patient ID is required" });
 
-    // Convert patientId to ObjectId
-    const parentIdObj = mongoose.Types.ObjectId(patientId);
+    const objectPatientId = mongoose.Types.ObjectId(patientId);
 
-    // Get patient + children IDs as ObjectIds
+    // Fetch the parent user to get children IDs
     const parent = await User.findById(patientId).select("children");
-    const childIds = parent?.children?.map(c => mongoose.Types.ObjectId(c._id)) || [];
+    const childIds = (parent?.children || []).map((c) => mongoose.Types.ObjectId(c._id));
 
-    // Combine parent + children IDs
-    const idsToCheck = [parentIdObj, ...childIds];
+    // Include patient + children
+    const idsToCheck = [objectPatientId, ...childIds];
 
-    // Fetch completed appointments where patient is self or child
+    // Query completed appointments where patient is in idsToCheck
     const appointments = await Appointment.find({
       status: "COMPLETED",
-      patient: { $in: idsToCheck },          // ✅ patient or children
-      // bookedBy can also be included if needed, but patient $in is enough for completed appointments
+      patient: { $in: idsToCheck },
     })
       .populate("doctor", "name email speciality")
       .populate("patient", "name")
