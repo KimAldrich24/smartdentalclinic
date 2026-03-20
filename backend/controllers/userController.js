@@ -178,19 +178,20 @@ export const sendEmailOtp = async (req, res) => {
 
 // ✅ Verify Both OTPs and Register
 export const verifyAndRegister = async (req, res) => {
-  try { 
-    const { name, email, password, phone, dob, phoneOtp } = req.body;
+  try {
+    const { name, email, password, phone, dob, phoneOtp, isAdmin, adminSecret } = req.body;
 
-    console.log("[DEBUG] verifyAndRegister received:", { name, email, phone, phoneOtp, dob });
+    console.log("[DEBUG] verifyAndRegister received:", { name, email, phone, phoneOtp, dob, isAdmin });
 
-    // ✅ IMPROVED ERROR MESSAGE - SHOWS WHICH FIELDS ARE MISSING
+    // ✅ Check for missing fields
     const missingFields = [];
     if (!phone) missingFields.push('phone');
-    if (!phoneOtp) missingFields.push('phoneOtp');
     if (!password) missingFields.push('password');
     if (!email) missingFields.push('email');
     if (!name) missingFields.push('name');
     if (!dob) missingFields.push('dob');
+    if (isAdmin && !adminSecret) missingFields.push('adminSecret');
+    if (!isAdmin && !phoneOtp) missingFields.push('phoneOtp'); // Only non-admin users require phone OTP
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -205,43 +206,51 @@ export const verifyAndRegister = async (req, res) => {
       formattedPhone = "0" + formattedPhone.slice(2);
     }
 
-    // === VERIFY PHONE OTP ONLY ===
-    if (!otpStorage.has(formattedPhone)) {
-      return res.status(400).json({
-        success: false,
-        message: "Phone OTP not found or expired. Please request a new one.",
-      });
-    }
+    // 🔥 Check if first admin
+    const adminExists = await User.findOne({ role: "admin" });
+    const isFirstAdmin = isAdmin && !adminExists;
 
-    const phoneStored = otpStorage.get(formattedPhone);
+    // === VERIFY PHONE OTP ONLY FOR NON-FIRST-ADMIN USERS ===
+    if (!isFirstAdmin) {
+      if (!otpStorage.has(formattedPhone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone OTP not found or expired. Please request a new one.",
+        });
+      }
 
-    if (Date.now() > phoneStored.expiresAt) {
+      const phoneStored = otpStorage.get(formattedPhone);
+
+      if (Date.now() > phoneStored.expiresAt) {
+        otpStorage.delete(formattedPhone);
+        return res.status(400).json({
+          success: false,
+          message: "Phone OTP has expired. Please request a new one.",
+        });
+      }
+
+      if (phoneStored.attempts >= 3) {
+        otpStorage.delete(formattedPhone);
+        return res.status(400).json({
+          success: false,
+          message: "Too many failed attempts. Please request a new OTP.",
+        });
+      }
+
+      if (phoneStored.code !== phoneOtp.trim()) {
+        phoneStored.attempts++;
+        return res.status(400).json({
+          success: false,
+          message: "Invalid OTP code. Please try again.",
+        });
+      }
+
+      // Phone OTP verified - remove from storage
       otpStorage.delete(formattedPhone);
-      return res.status(400).json({
-        success: false,
-        message: "Phone OTP has expired. Please request a new one.",
-      });
+      console.log("[DEBUG] Phone OTP verified successfully");
+    } else {
+      console.log("[DEBUG] First admin creation — skipping phone OTP verification");
     }
-
-    if (phoneStored.attempts >= 3) {
-      otpStorage.delete(formattedPhone);
-      return res.status(400).json({
-        success: false,
-        message: "Too many failed attempts. Please request a new OTP.",
-      });
-    }
-
-    if (phoneStored.code !== phoneOtp.trim()) {
-      phoneStored.attempts++;
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP code. Please try again.",
-      });
-    }
-
-    // Phone OTP verified - remove from storage
-    otpStorage.delete(formattedPhone);
-    console.log("[DEBUG] Phone OTP verified successfully");
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -255,34 +264,28 @@ export const verifyAndRegister = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Set role
+    let role = "patient"; // default
+    if (isFirstAdmin) {
+      if (adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(403).json({
+          success: false,
+          message: "Invalid admin secret key",
+        });
+      }
+      role = "admin";
+    }
+
     // Create new user
-    // 🔥 CHECK IF ADMIN EXISTS
-const adminExists = await User.findOne({ role: "admin" });
-
-let role = "patient"; // default
-
-// 🔥 ADMIN CREATION LOGIC
-if (!adminExists && req.body.isAdmin) {
-  if (req.body.adminSecret !== process.env.ADMIN_SECRET) {
-    return res.status(403).json({
-      success: false,
-      message: "Invalid admin secret key",
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      phone: formattedPhone,
+      dob: new Date(dob),
+      role,
+      status: "active",
     });
-  }
-
-  role = "admin";
-}
-
-// Create new user
-const newUser = await User.create({
-  name,
-  email,
-  password: hashedPassword,
-  phone: formattedPhone,
-  dob: new Date(dob),
-  role, // ✅ dynamic now
-  status: "active",
-});
 
     console.log("[DEBUG] User created successfully:", newUser._id, "with DOB:", newUser.dob);
 
