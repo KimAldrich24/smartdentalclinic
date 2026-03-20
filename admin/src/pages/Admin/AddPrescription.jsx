@@ -11,37 +11,36 @@ const AddPrescription = ({ patientId }) => {
   const [notes, setNotes] = useState("");
   const [loadingAppointments, setLoadingAppointments] = useState(false);
 
-  // Fetch completed appointments for patient + children
   useEffect(() => {
-  const fetchAppointments = async () => {
-    if (!patientId) return;
+    const fetchAppointments = async () => {
+      if (!patientId) return;
 
-    setLoadingAppointments(true);
-    try {
-      const res = await axios.get(
-        `${backendUrl}/api/appointments/admin/completed/${patientId}`,
-        { headers: { Authorization: `Bearer ${aToken}` } }
-      );
+      setLoadingAppointments(true);
+      try {
+        const res = await axios.get(
+          `${backendUrl}/api/appointments/admin/completed/${patientId}`,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
 
-      console.log("Completed appointments response:", res.data);
+        // Ensure IDs are strings before comparing
+        const appointmentsWithLabel = res.data.appointments.map((appt) => {
+          const patientIdStr = patientId.toString();
+          const apptPatientIdStr = appt.patient?._id?.toString();
+          const isChild = patientIdStr !== apptPatientIdStr;
+          return { ...appt, patientLabel: isChild ? `${appt.patient?.name} (child)` : "Self" };
+        });
 
-      // Restructure appointments to mark children
-      const appointmentsWithLabel = res.data.appointments.map((appt) => {
-        const isChild = appt.patient?._id !== patientId;
-        return { ...appt, patientLabel: isChild ? `${appt.patient?.name} (child)` : "Self" };
-      });
+        setAppointments(appointmentsWithLabel);
+      } catch (err) {
+        console.error("Error fetching completed appointments:", err.response?.data || err.message);
+        setAppointments([]);
+      } finally {
+        setLoadingAppointments(false);
+      }
+    };
 
-      setAppointments(appointmentsWithLabel);
-    } catch (err) {
-      console.error("Error fetching completed appointments:", err.response?.data || err.message);
-      setAppointments([]);
-    } finally {
-      setLoadingAppointments(false);
-    }
-  };
-
-  fetchAppointments();
-}, [patientId, aToken, backendUrl]);
+    fetchAppointments();
+  }, [patientId, aToken, backendUrl]);
 
   const handleMedicineChange = (index, field, value) => {
     const newMedicines = [...medicines];
@@ -80,7 +79,6 @@ const AddPrescription = ({ patientId }) => {
 
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: "600px", margin: "auto" }}>
-      {/* Appointment select */}
       <div style={{ marginBottom: "15px" }}>
         <label>Select Completed Appointment:</label>
         <select
@@ -95,20 +93,15 @@ const AddPrescription = ({ patientId }) => {
             <option disabled>No completed appointments available</option>
           )}
           {!loadingAppointments &&
-            appointments.map((appt) => {
-              const patientLabel =
-                appt.patient && appt.patient._id !== patientId ? `${appt.patient.name} (child)` : "Self";
-              return (
-                <option key={appt._id} value={appt._id}>
-                  {new Date(appt.date).toLocaleDateString()} at {appt.time} with{" "}
-                  {appt.doctor?.name || "N/A"} - {patientLabel}
-                </option>
-              );
-            })}
+            appointments.map((appt) => (
+              <option key={appt._id} value={appt._id}>
+                {new Date(appt.date).toLocaleDateString()} at {appt.time} with{" "}
+                {appt.doctor?.name || "N/A"} - {appt.patientLabel}
+              </option>
+            ))}
         </select>
       </div>
 
-      {/* Medicines */}
       {medicines.map((med, i) => (
         <div key={i} style={{ marginBottom: "10px", display: "flex", gap: "2%" }}>
           <input
@@ -142,7 +135,6 @@ const AddPrescription = ({ patientId }) => {
         Add Another Medicine
       </button>
 
-      {/* Notes */}
       <div style={{ marginBottom: "15px" }}>
         <textarea
           placeholder="Notes"

@@ -336,19 +336,21 @@ export const getPatientCompletedAppointments = async (req, res) => {
     if (!patientId)
       return res.status(400).json({ success: false, message: "User ID is required" });
 
-    // Get patient + children IDs
+    // Convert patientId to ObjectId
+    const parentIdObj = mongoose.Types.ObjectId(patientId);
+
+    // Get patient + children IDs as ObjectIds
     const parent = await User.findById(patientId).select("children");
-    const childIds = parent?.children?.map(c => c._id) || [];
+    const childIds = parent?.children?.map(c => mongoose.Types.ObjectId(c._id)) || [];
 
-    // Include patient and children IDs in the query
-    const idsToCheck = [patientId, ...childIds];
+    // Combine parent + children IDs
+    const idsToCheck = [parentIdObj, ...childIds];
 
+    // Fetch completed appointments where patient is self or child
     const appointments = await Appointment.find({
       status: "COMPLETED",
-      $or: [
-        { patient: { $in: idsToCheck } },
-        { bookedBy: { $in: idsToCheck } }
-      ],
+      patient: { $in: idsToCheck },          // ✅ patient or children
+      // bookedBy can also be included if needed, but patient $in is enough for completed appointments
     })
       .populate("doctor", "name email speciality")
       .populate("patient", "name")
@@ -361,7 +363,6 @@ export const getPatientCompletedAppointments = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 /* =====================================================
    ADMIN: ADD PRESCRIPTION
 ===================================================== */
