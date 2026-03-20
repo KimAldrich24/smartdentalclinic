@@ -66,23 +66,27 @@ const AdminPrescriptions = () => {
   // Fetch Completed Appointments for Patient
   // ===========================================
   const fetchAppointmentsForPatient = useCallback(async (pid) => {
-    if (!pid) return;
-    setLoadingAppointments(true);
-    try {
-      const res = await axios.get(`${backendUrl}/api/admin/appointments/admin/completed/${pid}`, {
-        headers: { Authorization: `Bearer ${aToken}` },
-      });
+  if (!pid) return;
 
-      const appts = res.data.appointments || [];
-      const completed = appts.filter((a) => a.status === "COMPLETED");
-      setAppointments(completed);
-    } catch (err) {
-      console.error("Error fetching appointments:", err.response?.data || err.message);
-      setAppointments([]);
-    } finally {
-      setLoadingAppointments(false);
-    }
-  }, [aToken, backendUrl]);
+  setLoadingAppointments(true);
+  try {
+    const res = await axios.get(
+      `${backendUrl}/api/admin/appointments/admin/completed/${pid}`,
+      {
+        headers: { Authorization: `Bearer ${aToken}` },
+      }
+    );
+
+    console.log("🔥 RAW APPOINTMENTS:", res.data.appointments);
+
+    setAppointments(res.data.appointments || []);
+  } catch (err) {
+    console.error("❌ Error fetching appointments:", err.response?.data || err.message);
+    setAppointments([]);
+  } finally {
+    setLoadingAppointments(false);
+  }
+}, [aToken, backendUrl]);
 
   // ===========================================
   // Fetch Prescriptions
