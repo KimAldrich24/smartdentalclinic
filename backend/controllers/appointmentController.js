@@ -359,6 +359,7 @@ export const getPatientCompletedAppointments = async (req, res) => {
 /* =====================================================
    ADMIN: ADD PRESCRIPTION
 ===================================================== */
+// ✅ Add prescription (for completed appointments)
 export const addPrescription = async (req, res) => {
   try {
     const { patientId, appointmentId } = req.params;
@@ -368,26 +369,22 @@ export const addPrescription = async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
-    // Make sure patient exists
-    const patient = await User.findById(patientId);
-    if (!patient) return res.status(404).json({ success: false, message: "Patient not found" });
-
-    // Make sure appointment exists
+    // Check appointment
     const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+    if (!appointment) 
+      return res.status(404).json({ success: false, message: "Appointment not found" });
 
-    // Create the prescription
-    const prescription = await PatientRecord.create({
-      user: patient._id, // store ObjectId
+    if (appointment.status !== "COMPLETED") {
+      return res.status(400).json({ success: false, message: "Appointment is not completed" });
+    }
+
+    // Create prescription
+    const prescription = await Prescription.create({
+      patient: appointment.patient,
       doctor: appointment.doctor,
-      appointment: appointment._id,
-      services: medicines.map((m) => ({
-        name: m.name,
-        dosage: m.dosage,
-        instructions: m.instructions,
-      })),
+      medicines,  // <-- match frontend
       notes,
-      date: new Date(),
+      appointment: appointment._id,
     });
 
     res.json({ success: true, prescription });
@@ -399,22 +396,22 @@ export const addPrescription = async (req, res) => {
 /* =====================================================
    ADMIN / PATIENT: GET PRESCRIPTIONS
 ===================================================== */
+// ✅ Get prescriptions (for patient or admin)
 export const getPrescriptions = async (req, res) => {
   try {
-    const { patientId, appointmentId } = req.query; // optional filters
+    const { patientId, appointmentId } = req.query;
 
     const filter = {};
-    if (patientId) filter.user = patientId;
+    if (patientId) filter.patient = patientId;
     if (appointmentId) filter.appointment = appointmentId;
 
-    const prescriptions = await PatientRecord.find(filter)
+    const prescriptions = await Prescription.find(filter)
       .populate("doctor", "name email speciality")
-      .populate("user", "name email")
-      .populate("services.service", "name price");
+      .populate("patient", "name email");
 
     res.json({ success: true, prescriptions });
   } catch (err) {
-    console.error("Error fetching prescriptions:", err);
+    console.error("[ERROR] getPrescriptions:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

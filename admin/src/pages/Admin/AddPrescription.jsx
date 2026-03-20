@@ -20,7 +20,10 @@ const AddPrescription = ({ patientId }) => {
       try {
         const res = await axios.get(
           `${backendUrl}/api/appointments/admin/completed/${patientId}`,
-          { headers: { Authorization: `Bearer ${aToken}` } }
+          {
+            headers: { Authorization: `Bearer ${aToken}` },
+            params: { patientId }, // optional but safe
+          }
         );
 
         console.log("Completed appointments response:", res.data);
@@ -90,7 +93,7 @@ const AddPrescription = ({ patientId }) => {
           {!loadingAppointments &&
             appointments.map((appt) => {
               const patientLabel =
-                appt.patient?._id !== patientId ? `${appt.patient?.name} (child)` : "Self";
+                appt.patient && appt.patient._id !== patientId ? `${appt.patient.name} (child)` : "Self";
               return (
                 <option key={appt._id} value={appt._id}>
                   {new Date(appt.date).toLocaleDateString()} at {appt.time} with{" "}
