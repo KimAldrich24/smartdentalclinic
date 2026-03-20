@@ -6,6 +6,7 @@ import { getAllPrescriptions } from "../controllers/prescriptionController.js";
 import User from "../models/userModel.js";
 import AuditTrail from "../models/auditModel.js";
 import { addSchedule, getDoctorSchedule } from "../controllers/adminScheduleController.js";
+import { getPatientCompletedAppointments } from "../controllers/appointmentController.js";
 
 const router = express.Router();
 
@@ -74,5 +75,8 @@ router.post("/add-schedule", adminAuthMiddleware, addSchedule);
 
 // Get schedule of a specific doctor
 router.get("/doctor-schedule/:doctorId", adminAuthMiddleware, getDoctorSchedule);
+
+// Add this line with the other router.get() calls
+router.get("/appointments/admin/completed/:patientId", adminAuthMiddleware, getPatientCompletedAppointments);
 
 export default router;
