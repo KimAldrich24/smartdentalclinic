@@ -22,6 +22,8 @@ const AddPrescription = ({ patientId }) => {
           { headers: { Authorization: `Bearer ${aToken}` } }
         );
 
+        console.log("Admin completed appointments response:", res.data);
+
         // Label children
         const appointmentsWithLabel = res.data.appointments.map((appt) => {
           const patientIdStr = patientId.toString();
