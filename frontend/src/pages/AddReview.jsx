@@ -1,16 +1,38 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { Star } from "lucide-react";
 
-const AddReview = () => {
+const AddReview = ({ serviceId }) => {
   const { token, backendUrl } = useContext(AuthContext);
 
   const [rating, setRating] = useState(5);
-  const [hoverRating, setHoverRating] = useState(0); // for hover effect
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ loading state
+  const [loading, setLoading] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+
+  // 🔹 Check if user already reviewed
+  useEffect(() => {
+    const checkReview = async () => {
+      try {
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const { data } = await axios.get(
+          `${backendUrl}/api/reviews/my-review?service=${serviceId || ""}`,
+          config
+        );
+
+        if (data.success && data.review) {
+          setHasReviewed(true);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    if (token) checkReview();
+  }, [token, serviceId]);
 
   const submitReview = async (e) => {
     e.preventDefault();
@@ -20,12 +42,12 @@ const AddReview = () => {
     }
 
     try {
-      setLoading(true); // start loading
+      setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const { data } = await axios.post(
         `${backendUrl}/api/reviews/add`,
-        { rating, comment },
+        { rating, comment, service: serviceId },
         config
       );
 
@@ -33,18 +55,30 @@ const AddReview = () => {
         toast.success("Review submitted!");
         setComment("");
         setRating(5);
+        setHasReviewed(true); // hide form after submit
       } else {
         toast.error(data.message || "Failed to submit review.");
       }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message);
     } finally {
-      setLoading(false); // stop loading
+      setLoading(false);
     }
   };
 
+  if (hasReviewed) {
+    return (
+      <div className="p-4 border rounded bg-green-100 text-green-700">
+        ✅ You already submitted a review. Thank you!
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={submitReview} className="p-4 border rounded bg-white shadow-md">
+    <form
+      onSubmit={submitReview}
+      className="p-4 border rounded bg-white shadow-md"
+    >
       <h2 className="text-lg font-bold mb-2">Leave a Review</h2>
 
       {/* ⭐ Star rating */}
@@ -69,7 +103,7 @@ const AddReview = () => {
         onChange={(e) => setComment(e.target.value)}
         className="border p-2 w-full mb-2"
         rows={4}
-        disabled={loading} // disable textarea while submitting
+        disabled={loading}
       />
 
       <button
@@ -77,7 +111,7 @@ const AddReview = () => {
         className={`bg-blue-500 text-white px-4 py-2 rounded flex items-center justify-center ${
           loading ? "opacity-50 cursor-not-allowed" : ""
         }`}
-        disabled={loading} // disable button while loading
+        disabled={loading}
       >
         {loading ? "Submitting..." : "Submit Review"}
         {loading && (

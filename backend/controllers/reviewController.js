@@ -1,6 +1,6 @@
 import Review from "../models/reviewModel.js";
 
-// ➕ Add Review (Patient)
+// ➕ Add Review (Patient) with duplicate check
 export const addReview = async (req, res) => {
   try {
     const { rating, comment, service } = req.body;
@@ -9,8 +9,21 @@ export const addReview = async (req, res) => {
       return res.json({ success: false, message: "All fields required" });
     }
 
+    // 🔥 Check if user already reviewed this service
+    const existingReview = await Review.findOne({
+      user: req.user._id,
+      service: service || null, // null if no service provided
+    });
+
+    if (existingReview) {
+      return res.status(400).json({
+        success: false,
+        message: "You already submitted a review for this service.",
+      });
+    }
+
     const review = new Review({
-      user: req.user._id, // from auth middleware
+      user: req.user._id,
       service,
       rating,
       comment,
@@ -70,7 +83,6 @@ export const getAllReviewsAdmin = async (req, res) => {
       .populate({ path: "service", select: "name", options: { lean: true } })
       .sort({ createdAt: -1 });
 
-    // Map null users to placeholder
     const safeReviews = reviews.map((r) => ({
       _id: r._id,
       rating: r.rating,
@@ -86,5 +98,22 @@ export const getAllReviewsAdmin = async (req, res) => {
   } catch (error) {
     console.error("Admin Get Reviews Error:", error);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 🔹 NEW: Get current user's review
+export const getMyReview = async (req, res) => {
+  try {
+    const review = await Review.findOne({
+      user: req.user._id,
+      service: req.query.service || null, // optional service
+    });
+
+    res.json({
+      success: true,
+      review, // null if not found
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
   }
 };
