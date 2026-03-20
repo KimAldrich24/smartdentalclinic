@@ -335,15 +335,17 @@ export const getPatientCompletedAppointments = async (req, res) => {
     const { patientId } = req.params;
     if (!patientId) return res.status(400).json({ success: false, message: "User ID is required" });
 
-    const objectUserId = mongoose.Types.ObjectId(patientId);
+    // Find the parent user and their children
+    const parent = await User.findById(patientId).select("children");
+    const childIds = parent?.children?.map(c => c._id) || [];
 
-    // Fetch all completed appointments for this patient OR children booked by this patient
+    // Fetch completed appointments for patient + children
     const appointments = await Appointment.find({
       status: "COMPLETED",
       $or: [
-        { patient: objectUserId },  // appointments for the patient themselves
-        { bookedBy: objectUserId }, // appointments booked by the patient (children)
-      ],
+        { patient: patientId },           // for the patient themselves
+        { patient: { $in: childIds } }    // for their children
+      ]
     })
       .populate("doctor", "name email speciality")
       .populate("patient", "name")
@@ -352,6 +354,7 @@ export const getPatientCompletedAppointments = async (req, res) => {
 
     res.json({ success: true, appointments });
   } catch (err) {
+    console.error("[ERROR] getPatientCompletedAppointments:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

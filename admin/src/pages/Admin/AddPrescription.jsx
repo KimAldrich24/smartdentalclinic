@@ -13,31 +13,35 @@ const AddPrescription = ({ patientId }) => {
 
   // Fetch completed appointments for patient + children
   useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!patientId) return;
+  const fetchAppointments = async () => {
+    if (!patientId) return;
 
-      setLoadingAppointments(true);
-      try {
-        const res = await axios.get(
-          `${backendUrl}/api/appointments/admin/completed/${patientId}`,
-          {
-            headers: { Authorization: `Bearer ${aToken}` },
-            params: { patientId }, // optional but safe
-          }
-        );
+    setLoadingAppointments(true);
+    try {
+      const res = await axios.get(
+        `${backendUrl}/api/appointments/admin/completed/${patientId}`,
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
 
-        console.log("Completed appointments response:", res.data);
-        setAppointments(res.data.appointments || []);
-      } catch (err) {
-        console.error("Error fetching completed appointments:", err.response?.data || err.message);
-        setAppointments([]);
-      } finally {
-        setLoadingAppointments(false);
-      }
-    };
+      console.log("Completed appointments response:", res.data);
 
-    fetchAppointments();
-  }, [patientId, aToken, backendUrl]);
+      // Restructure appointments to mark children
+      const appointmentsWithLabel = res.data.appointments.map((appt) => {
+        const isChild = appt.patient?._id !== patientId;
+        return { ...appt, patientLabel: isChild ? `${appt.patient?.name} (child)` : "Self" };
+      });
+
+      setAppointments(appointmentsWithLabel);
+    } catch (err) {
+      console.error("Error fetching completed appointments:", err.response?.data || err.message);
+      setAppointments([]);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
+  fetchAppointments();
+}, [patientId, aToken, backendUrl]);
 
   const handleMedicineChange = (index, field, value) => {
     const newMedicines = [...medicines];
