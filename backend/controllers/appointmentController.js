@@ -334,18 +334,20 @@ export const adminCompleteAppointment = async (req, res) => {
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { patientId } = req.params;
-    if (!patientId) return res.status(400).json({ success: false, message: "Patient ID is required" });
+    if (!patientId)
+      return res.status(400).json({ success: false, message: "User ID is required" });
 
-    const objectPatientId = mongoose.Types.ObjectId(patientId);
+    // Convert patientId to ObjectId
+    const parentId = mongoose.Types.ObjectId(patientId);
 
-    // Fetch the parent user to get children IDs
-    const parent = await User.findById(patientId).select("children");
-    const childIds = (parent?.children || []).map((c) => mongoose.Types.ObjectId(c._id));
+    // Get children IDs
+    const parent = await User.findById(parentId).select("children");
+    const childIds = parent?.children?.map((c) => mongoose.Types.ObjectId(c._id)) || [];
 
-    // Include patient + children
-    const idsToCheck = [objectPatientId, ...childIds];
+    // IDs to check
+    const idsToCheck = [parentId, ...childIds];
 
-    // Query completed appointments where patient is in idsToCheck
+    // Query completed appointments
     const appointments = await Appointment.find({
       status: "COMPLETED",
       patient: { $in: idsToCheck },
@@ -353,7 +355,8 @@ export const getPatientCompletedAppointments = async (req, res) => {
       .populate("doctor", "name email speciality")
       .populate("patient", "name")
       .populate("services.service", "name price duration")
-      .sort({ date: -1, time: -1 });
+      .sort({ date: -1, time: -1 })
+      .lean();
 
     res.json({ success: true, appointments });
   } catch (err) {
