@@ -69,7 +69,7 @@ const AdminPrescriptions = () => {
     if (!pid) return;
     setLoadingAppointments(true);
     try {
-      const res = await axios.get(`${backendUrl}/api/appointments/patient/${pid}`, {
+      const res = await axios.get(`${backendUrl}/api/admin/appointments/admin/completed/${pid}`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
 
