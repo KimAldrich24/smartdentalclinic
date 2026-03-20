@@ -12,35 +12,35 @@ const AddPrescription = ({ patientId }) => {
   const [loadingAppointments, setLoadingAppointments] = useState(false);
 
   useEffect(() => {
-  const fetchAppointments = async () => {
-    if (!patientId) return;
+    const fetchAppointments = async () => {
+      if (!patientId) return;
 
-    setLoadingAppointments(true);
-    try {
-      const res = await axios.get(
-        `${backendUrl}/api/admin/completed-appointments/${patientId}`,
-        { headers: { Authorization: `Bearer ${aToken}` } }
-      );
+      setLoadingAppointments(true);
+      try {
+        const res = await axios.get(
+          `${backendUrl}/api/admin/appointments/admin/completed/${patientId}`,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
 
-      // Label children
-      const appointmentsWithLabel = res.data.appointments.map((appt) => {
-        const patientIdStr = patientId.toString();
-        const apptPatientIdStr = appt.patient?._id?.toString();
-        const isChild = patientIdStr !== apptPatientIdStr;
-        return { ...appt, patientLabel: isChild ? `${appt.patient?.name} (child)` : "Self" };
-      });
+        // Label children
+        const appointmentsWithLabel = res.data.appointments.map((appt) => {
+          const patientIdStr = patientId.toString();
+          const apptPatientIdStr = appt.patient?._id?.toString();
+          const isChild = patientIdStr !== apptPatientIdStr;
+          return { ...appt, patientLabel: isChild ? `${appt.patient?.name} (child)` : "Self" };
+        });
 
-      setAppointments(appointmentsWithLabel);
-    } catch (err) {
-      console.error("Error fetching completed appointments:", err.response?.data || err.message);
-      setAppointments([]);
-    } finally {
-      setLoadingAppointments(false);
-    }
-  };
+        setAppointments(appointmentsWithLabel);
+      } catch (err) {
+        console.error("Error fetching completed appointments:", err.response?.data || err.message);
+        setAppointments([]);
+      } finally {
+        setLoadingAppointments(false);
+      }
+    };
 
-  fetchAppointments();
-}, [patientId, aToken, backendUrl]);
+    fetchAppointments();
+  }, [patientId, aToken, backendUrl]);
 
   const handleMedicineChange = (index, field, value) => {
     const newMedicines = [...medicines];
