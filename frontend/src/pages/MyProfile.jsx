@@ -313,7 +313,7 @@ const MyProfile = () => {
       </div>
 
       {/* CREDIT */}
-      <div>
+      {/* <div>
         <p className="text-lg font-semibold text-gray-700 mb-3">CREDIT BALANCE</p>
         {creditLoading ? <p className="text-gray-500">Loading credit...</p> :
         creditError ? <p className="text-red-500">{creditError}</p> :
@@ -332,7 +332,7 @@ const MyProfile = () => {
             </div>
           }
         </div>}
-      </div>
+      </div> */}
 
       {/* TOOTH HISTORY */}
       <div>
