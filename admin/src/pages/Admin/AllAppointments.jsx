@@ -286,12 +286,12 @@ const AllAppointments = () => {
                   </button>
                 )}
 
-                <button
+                {/* <button
                   onClick={() => deleteAppointment(appt._id)}
                   className="bg-red-500 text-white px-4 py-2 rounded-lg w-full"
                 >
                   Delete
-                </button>
+                </button> */}
               </div>
             </div>
           ))}
