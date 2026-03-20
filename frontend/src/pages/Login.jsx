@@ -313,6 +313,11 @@ const Login = () => {
             <button type="submit" disabled={loading} className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? "Signing In..." : "Sign In"}
             </button>
+
+            {/* ADMIN LOGIN LINK BUTTON */}
+            <button type="button" onClick={() => navigate("/admin-login")} className="w-full mt-2 bg-gray-100 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-200 transition-all text-sm">
+              Admin Login
+            </button>
           </form>
         )}
 
