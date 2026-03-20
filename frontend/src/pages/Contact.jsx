@@ -113,7 +113,7 @@ const Contact = () => {
           </div>
 
           {/* ✅ Careers Section (Visible only when hiring is ON) */}
-          {contact.active && (
+          {/* {contact.active && (
             <div className="pt-4 border-t border-gray-200">
               <p className="text-lg font-semibold text-gray-800">
                 Careers at Smart Dental Clinic
@@ -129,7 +129,7 @@ const Contact = () => {
                 Explore Jobs
               </button>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>
