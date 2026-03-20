@@ -333,19 +333,22 @@ export const adminCompleteAppointment = async (req, res) => {
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { patientId } = req.params;
-    if (!patientId) return res.status(400).json({ success: false, message: "User ID is required" });
+    if (!patientId)
+      return res.status(400).json({ success: false, message: "User ID is required" });
 
-    // Find the parent user and their children
+    // Get patient + children IDs
     const parent = await User.findById(patientId).select("children");
     const childIds = parent?.children?.map(c => c._id) || [];
 
-    // Fetch completed appointments for patient + children
+    // Include patient and children IDs in the query
+    const idsToCheck = [patientId, ...childIds];
+
     const appointments = await Appointment.find({
       status: "COMPLETED",
       $or: [
-        { patient: patientId },           // for the patient themselves
-        { patient: { $in: childIds } }    // for their children
-      ]
+        { patient: { $in: idsToCheck } },
+        { bookedBy: { $in: idsToCheck } }
+      ],
     })
       .populate("doctor", "name email speciality")
       .populate("patient", "name")
