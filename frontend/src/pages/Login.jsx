@@ -314,8 +314,8 @@ const Login = () => {
               {loading ? "Signing In..." : "Sign In"}
             </button>
 
-            {/* ADMIN LOGIN LINK BUTTON */}
-            <button type="button" onClick={() => navigate("/admin-login")} className="w-full mt-2 bg-gray-100 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-200 transition-all text-sm">
+            {/* ✅ FIXED ADMIN LOGIN LINK */}
+            <button type="button" onClick={() => window.open("https://admin.smartdental.site", "_blank")} className="w-full mt-2 bg-gray-100 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-200 transition-all text-sm">
               Admin Login
             </button>
           </form>
