@@ -332,10 +332,10 @@ export const adminCompleteAppointment = async (req, res) => {
 ===================================================== */
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
-    const { userId } = req.params;
-    if (!userId) return res.status(400).json({ success: false, message: "User ID is required" });
+    const { patientId } = req.params;
+    if (!patientId) return res.status(400).json({ success: false, message: "User ID is required" });
 
-    const objectUserId = mongoose.Types.ObjectId(userId);
+    const objectUserId = mongoose.Types.ObjectId(patientId);
 
     // Fetch all completed appointments for this patient OR children booked by this patient
     const appointments = await Appointment.find({

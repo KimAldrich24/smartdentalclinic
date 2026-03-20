@@ -42,7 +42,7 @@ const AdminPrescriptions = () => {
       const seen = new Set();
 
       appts.forEach((appt) => {
-        const user = appt.user;
+  const user = appt.patient;
         if (user && !seen.has(user._id)) {
           seen.add(user._id);
           uniquePatients.push({
