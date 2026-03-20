@@ -16,9 +16,19 @@ router.post("/register", createAdmin);
 router.get("/check-admin", async (req, res) => {
   try {
     const admin = await User.findOne({ role: "admin" });
-    res.json({ exists: !!admin });
-  } catch (error) {
-    res.status(500).json({ exists: false, message: error.message });
+
+    // 🔥 PREVENT CACHE
+    res.set("Cache-Control", "no-store");
+
+    res.json({
+      success: true,
+      exists: !!admin,
+    });
+  } catch (err) {
+    res.json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
