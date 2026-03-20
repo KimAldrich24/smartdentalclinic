@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
 import { DoctorContext } from "../context/DoctorContext";
@@ -11,11 +11,31 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [adminExists, setAdminExists] = useState(true);
 
   const { setAToken, getAllDoctors, backendUrl } = useContext(AdminContext);
   const { loginDoctor } = useContext(DoctorContext);
   const { loginStaff } = useContext(StaffContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!backendUrl) return;
+
+    const checkAdmin = async () => {
+      try {
+        const res = await fetch(`${backendUrl}/api/admin/check-admin`);
+        const data = await res.json();
+
+        if (data.success) {
+          setAdminExists(data.exists);
+        }
+      } catch (err) {
+        console.error("Error checking admin:", err);
+      }
+    };
+
+    checkAdmin();
+  }, [backendUrl]);
 
   const handleLogin = async () => {
     try {
@@ -122,16 +142,26 @@ const Login = () => {
         </div>
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-3 rounded-lg text-white font-semibold transition shadow-md ${
-            loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-
+        {adminExists ? (
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full py-3 rounded-lg text-white font-semibold transition shadow-md ${loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+              }`}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => navigate("/?admin=true")}
+            className="w-full py-3 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700"
+          >
+            Create Admin Account
+          </button>
+        )}
         {/* Footer */}
         <div className="mt-6 pt-6 border-t border-gray-200 text-center">
           <p className="text-xs text-gray-400">

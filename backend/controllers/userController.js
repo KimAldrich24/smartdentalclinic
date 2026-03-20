@@ -256,15 +256,33 @@ export const verifyAndRegister = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      phone: formattedPhone,
-      dob: new Date(dob),
-      role: "patient",
-      status: "active",
+    // 🔥 CHECK IF ADMIN EXISTS
+const adminExists = await User.findOne({ role: "admin" });
+
+let role = "patient"; // default
+
+// 🔥 ADMIN CREATION LOGIC
+if (!adminExists && req.body.isAdmin) {
+  if (req.body.adminSecret !== process.env.ADMIN_SECRET) {
+    return res.status(403).json({
+      success: false,
+      message: "Invalid admin secret key",
     });
+  }
+
+  role = "admin";
+}
+
+// Create new user
+const newUser = await User.create({
+  name,
+  email,
+  password: hashedPassword,
+  phone: formattedPhone,
+  dob: new Date(dob),
+  role, // ✅ dynamic now
+  status: "active",
+});
 
     console.log("[DEBUG] User created successfully:", newUser._id, "with DOB:", newUser.dob);
 
