@@ -334,33 +334,29 @@ export const adminCompleteAppointment = async (req, res) => {
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { patientId } = req.params;
-    if (!patientId)
-      return res.status(400).json({ success: false, message: "User ID is required" });
+    console.log("Fetching completed appointments for:", patientId);
 
-    // Convert patientId to ObjectId
-    const parentId = mongoose.Types.ObjectId(patientId);
+    const parent = await User.findById(patientId).select("children");
+    const childIds = parent?.children?.map(c => c._id) || [];
+    const idsToCheck = [patientId, ...childIds];
 
-    // Get children IDs
-    const parent = await User.findById(parentId).select("children");
-    const childIds = parent?.children?.map((c) => mongoose.Types.ObjectId(c._id)) || [];
-
-    // IDs to check
-    const idsToCheck = [parentId, ...childIds];
-
-    // Query completed appointments
     const appointments = await Appointment.find({
-      status: "COMPLETED",
-      patient: { $in: idsToCheck },
+      $or: [
+        { patient: { $in: idsToCheck } },
+        { bookedBy: { $in: idsToCheck } } // include who booked
+      ],
+      status: { $regex: /completed/i } // match any case: Completed, COMPLETED, completed
     })
       .populate("doctor", "name email speciality")
       .populate("patient", "name")
       .populate("services.service", "name price duration")
-      .sort({ date: -1, time: -1 })
-      .lean();
+      .sort({ date: -1, time: -1 });
+
+    console.log("Appointments found:", appointments.length);
 
     res.json({ success: true, appointments });
   } catch (err) {
-    console.error("[ERROR] getPatientCompletedAppointments:", err);
+    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
