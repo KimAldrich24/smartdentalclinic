@@ -206,30 +206,42 @@ export const getAllAppointments = async (req, res) => {
 /* =====================================================
    ADMIN: APPROVE APPOINTMENT
 ===================================================== */
+/* =====================================================
+   ADMIN: APPROVE APPOINTMENT
+===================================================== */
 export const approveAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
       .populate("patient", "name phone")
       .populate("doctor", "name");
 
-    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
-    if (appointment.status !== "PENDING_ADMIN") return res.status(400).json({ success: false, message: "Invalid appointment status" });
+    if (!appointment) 
+      return res.status(404).json({ success: false, message: "Appointment not found" });
 
+    if (appointment.status !== "PENDING_ADMIN") 
+      return res.status(400).json({ success: false, message: "Invalid appointment status" });
+
+    // ✅ 1. Update status
     appointment.status = "APPROVED_ADMIN";
     await appointment.save();
 
-    // Block doctor slot
+    // ✅ 2. Block doctor slot
     const doctor = await Doctor.findById(appointment.doctor._id);
-    doctor.slots_book[appointment.date] = [...(doctor.slots_book[appointment.date] || []), appointment.time];
+    doctor.slots_book[appointment.date] = [
+      ...(doctor.slots_book[appointment.date] || []),
+      appointment.time,
+    ];
     await doctor.save();
 
-    // Send SMS
-    if (appointment.patient.phone) {
-      await sendSMS(appointment.patient.phone, `Hi ${appointment.user.name}, your appointment with Dr. ${doctor.name} has been approved.`);
+    // ✅ 3. Send SMS to patient
+    if (appointment.patient?.phone) {
+      const message = `Hi ${appointment.patient.name}, your appointment with Dr. ${doctor.name} on ${appointment.date} at ${appointment.time} has been approved.`;
+      await sendSMS(appointment.patient.phone, message);
     }
 
-    res.json({ success: true, message: "Appointment approved" });
+    res.json({ success: true, message: "Appointment approved and SMS sent" });
   } catch (err) {
+    console.error("APPROVE APPOINTMENT ERROR:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -537,37 +549,37 @@ export const addWalkInAppointment = async (req, res) => {
   try {
     const { patientName, patientEmail, patientPhone, doctorId, date, time, service } = req.body;
 
-    // Generate a random password for walk-in patient
-const randomPassword = Math.random().toString(36).slice(-8); // 8-char random password
-const hashedPassword = await bcrypt.hash(randomPassword, 10);
+    // Generate random password for patient
+    const randomPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-// Create patient with hashed password
-const patient = await User.create({
-  name: patientName,
-  email: patientEmail,
-  phone: patientPhone,
-  password: hashedPassword,
-  role: "patient",
-  verified: true,
-});
+    // Create patient
+    const patient = await User.create({
+      name: patientName,
+      email: patientEmail,
+      phone: patientPhone,
+      password: hashedPassword,
+      role: "patient",
+      verified: true,
+    });
 
-    // 2. Get doctor
+    // Get doctor
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    // 3. Create appointment
+    // Create appointment
     const appointment = await Appointment.create({
       patient: patient._id,
       doctor: doctorId,
-      bookedBy: req.userId, // admin/receptionist who added
+      bookedBy: null, // optional
       date,
       time,
       service,
-      status: "confirmed",
+      status: "APPROVED_ADMIN", // must match enum
       type: "walk-in",
     });
 
-    // 4. Add to doctor's schedule
+    // Add appointment to doctor's schedule
     doctor.appointments.push(appointment._id);
     await doctor.save();
 

@@ -19,7 +19,7 @@ const appointmentSchema = new mongoose.Schema(
     bookedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
     },
 
     /* ===========================
@@ -62,7 +62,7 @@ const appointmentSchema = new mongoose.Schema(
         "COMPLETED",
         "CANCELLED",
       ],
-      default: "PENDING_ADMIN",
+      default: "APPROVED_ADMIN",
     },
 
     /* ===========================
