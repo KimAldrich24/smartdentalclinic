@@ -38,21 +38,21 @@ router.get("/all-doctors", adminAuthMiddleware, allDoctors);
 router.delete("/remove-doctor/:id", adminAuthMiddleware, removeDoctor);
 router.get("/prescriptions", getAllPrescriptions);
 
-// GET /api/admin/profile
 router.get("/profile", adminAuthMiddleware, async (req, res) => {
   try {
-    // Ensure req.userId exists
+    // Make sure token provided userId
     if (!req.userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    // Find admin by ID and confirm role
+    // Find admin by token ID & role
     const admin = await User.findOne({ _id: req.userId, role: "admin" }).select("-password");
 
     if (!admin) {
       return res.status(404).json({ success: false, message: "Admin not found" });
     }
 
+    // Return clean admin object
     res.status(200).json({
       success: true,
       admin: {
@@ -63,6 +63,7 @@ router.get("/profile", adminAuthMiddleware, async (req, res) => {
         dob: admin.dob || null,
         role: admin.role,
         status: admin.status || "active",
+        image: admin.image || null,
       },
     });
   } catch (error) {
@@ -70,6 +71,7 @@ router.get("/profile", adminAuthMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
 
 router.put("/profile", adminAuthMiddleware, async (req, res) => {
   try {
