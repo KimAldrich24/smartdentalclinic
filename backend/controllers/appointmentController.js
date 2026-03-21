@@ -193,8 +193,8 @@ export const getAllAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find()
       .populate("doctor", "name speciality image")
-      .populate("patient", "name email")  // patient (self or guardian)
-      .populate("child", "name")          // 🔑 add this line
+      .populate("patient", "name email")    // who the appointment is for
+      .populate("bookedBy", "name email")   // who booked it
       .populate("services.service", "name price duration")
       .sort({ date: 1, time: 1 });
 

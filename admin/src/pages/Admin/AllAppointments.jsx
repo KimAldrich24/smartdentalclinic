@@ -254,9 +254,9 @@ const AllAppointments = () => {
                 <p className="text-lg font-semibold">Dr. {appt.doctor?.name}</p>
                 <p className="text-gray-500">{appt.doctor?.speciality}</p>
                 <p className="mt-2">
-  <b>Patient:</b> {appt.child?.name || appt.patient?.name || "N/A"}{" "}
-  {appt.child && `(Child of ${appt.patient?.name})`}
-</p>
+                  <b>Patient:</b> {appt.patient?.name || "N/A"}{" "}
+                  {appt.bookedBy && appt.bookedBy._id !== appt.patient?._id && `(Child of ${appt.bookedBy?.name})`}
+                </p>
                 <p><b>Booked By:</b> {appt.bookedBy?.name || "Self"}</p>
                 <p><b>Date:</b> {appt.date} | {appt.time}</p>
                 <p>
@@ -266,8 +266,8 @@ const AllAppointments = () => {
                       appt.status === "COMPLETED"
                         ? "text-green-600"
                         : appt.status === "CANCELLED"
-                        ? "text-red-500"
-                        : "text-blue-500"
+                          ? "text-red-500"
+                          : "text-blue-500"
                     }
                   >
                     {appt.status}
