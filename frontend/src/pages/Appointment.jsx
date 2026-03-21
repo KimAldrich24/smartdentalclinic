@@ -8,7 +8,7 @@ const Appointment = () => {
   const { docId } = useParams();
   const navigate = useNavigate();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const { token, user } = useContext(AuthContext); // Added user info
+  const { token, user } = useContext(AuthContext);
 
   const [docInfo, setDocInfo] = useState(null);
   const [doctorSchedule, setDoctorSchedule] = useState([]);
@@ -20,7 +20,7 @@ const Appointment = () => {
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
-  const [services, setServices] = useState([]); // ✅ New state for services
+  const [services, setServices] = useState([]);
 
   // ================= FETCH DOCTOR =================
   const fetchDoctor = async () => {
@@ -72,7 +72,7 @@ const Appointment = () => {
     const loadData = async () => {
       await fetchDoctor();
       await fetchChildren();
-      await fetchServices(); // ✅ Fetch services here
+      await fetchServices();
       setLoading(false);
     };
     loadData();
@@ -81,10 +81,11 @@ const Appointment = () => {
   // ================= AVAILABLE SLOTS =================
   const getAvailableSlots = () => {
     if (!selectedDate) return [];
+    const today = new Date();
     const day = doctorSchedule.find((d) => d.date === selectedDate);
     if (!day || !Array.isArray(day.slots)) return [];
 
-    // Handle Map vs Object
+    // Handle booked slots
     let bookedTimes = [];
     if (docInfo?.slots_book) {
       if (typeof docInfo.slots_book.get === "function") {
@@ -99,7 +100,15 @@ const Appointment = () => {
     return day.slots.filter((slot) => {
       const time = typeof slot === "string" ? slot : slot.time;
       const status = typeof slot === "string" ? "available" : slot.status?.toLowerCase();
-      return status === "available" && !bookedTimes.includes(time);
+
+      // Hide booked slots
+      if (bookedTimes.includes(time)) return false;
+
+      // Auto-expire past slots
+      const slotDateTime = new Date(`${selectedDate}T${time}`);
+      if (slotDateTime <= today) return false;
+
+      return status === "available";
     });
   };
 
@@ -116,7 +125,6 @@ const Appointment = () => {
       return;
     }
 
-    // Determine if booking for child or self
     const isChildBooking = children.length > 0 && selectedChild;
 
     try {
@@ -154,6 +162,17 @@ const Appointment = () => {
   // ================= RENDER =================
   if (loading) return <p className="text-center mt-10">Loading...</p>;
   if (!docInfo) return <p className="text-center mt-10 text-red-500">Doctor not found</p>;
+
+  // Optional: Hide doctor if no available slots at all
+  const hasAvailableSlots = doctorSchedule.some(d => getAvailableSlots().length > 0);
+
+  if (!hasAvailableSlots) {
+    return (
+      <p className="text-center mt-10 text-gray-500">
+        No available appointments for this doctor.
+      </p>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -201,20 +220,28 @@ const Appointment = () => {
         <div>
           <h3 className="font-semibold mb-2">Select Date</h3>
           <div className="flex gap-2 overflow-x-auto">
-            {doctorSchedule.map((d) => (
-              <button
-                key={d.date}
-                onClick={() => {
-                  setSelectedDate(d.date);
-                  setSelectedTime("");
-                }}
-                className={`px-4 py-2 rounded-lg border ${
-                  selectedDate === d.date ? "bg-blue-600 text-white" : "bg-gray-100"
-                }`}
-              >
-                {new Date(d.date).toLocaleDateString()}
-              </button>
-            ))}
+            {doctorSchedule.map((d) => {
+              const slotAvailable = getAvailableSlots().length > 0;
+              return (
+                <button
+                  key={d.date}
+                  onClick={() => {
+                    setSelectedDate(d.date);
+                    setSelectedTime("");
+                  }}
+                  disabled={!slotAvailable} // Disable date if no slots
+                  className={`px-4 py-2 rounded-lg border ${
+                    selectedDate === d.date
+                      ? "bg-blue-600 text-white"
+                      : slotAvailable
+                      ? "bg-gray-100"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  {new Date(d.date).toLocaleDateString()}
+                </button>
+              );
+            })}
           </div>
         </div>
 
