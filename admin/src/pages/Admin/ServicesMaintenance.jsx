@@ -44,23 +44,23 @@ const ServicesMaintenance = () => {
       return;
     }
 
-    if (price === "" || price < 0) {
-      toast.error("Price must be a positive number");
-      return;
-    }
+    if (price === "" || Number(price) < 0 || Number(price) > 1000000) {
+  toast.error("Price must be a number between 0 and 1,000,000");
+  return;
+}
 
     try {
       const payload = { name, description, duration, price: Number(price) };
 
       const res = editingId
         ? await axios.put(
-            `${backendUrl}/api/services/${editingId}`,
-            payload,
-            { headers: { Authorization: `Bearer ${aToken}` } }
-          )
+          `${backendUrl}/api/services/${editingId}`,
+          payload,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        )
         : await axios.post(`${backendUrl}/api/services`, payload, {
-            headers: { Authorization: `Bearer ${aToken}` },
-          });
+          headers: { Authorization: `Bearer ${aToken}` },
+        });
 
       if (res.data.success) {
         toast.success(res.data.message);
@@ -138,14 +138,20 @@ const ServicesMaintenance = () => {
         />
 
         {/* ✅ Price Input */}
+        {/* ✅ Price Input with restrictions */}
         <input
           type="number"
           placeholder="Price (PHP)"
           value={price}
-          onChange={(e) => setPrice(e.target.value)}
+          onChange={(e) => {
+            // Prevent letters and restrict to max 1,000,000
+            const val = e.target.value;
+            if (/^\d*$/.test(val)) setPrice(val); // only digits
+          }}
           className="w-full border px-3 py-2 rounded"
           required
           min="0"
+          max="1000000" // maximum allowed price
         />
 
         <button className="bg-blue-500 text-white px-4 py-2 rounded">
