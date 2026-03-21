@@ -152,46 +152,47 @@ const DoctorDashboard = () => {
 
 
   const handleUpdateAppointment = async (apptId, selectedServiceIds, finalPrice, usedEquipment) => {
-    try {
-      // 1️⃣ Update appointment services
-      const servicesPayload = selectedServiceIds.map(id => {
-        const svc = services.find(s => s._id === id);
-        return { serviceId: id, price: finalPrice || (svc?.price ?? 0) };
-      });
+  try {
+    // Prepare services payload
+    const servicesPayload = selectedServiceIds.map(id => {
+      const svc = services.find(s => s._id === id);
+      return { serviceId: id, price: finalPrice || (svc?.price ?? 0) };
+    });
 
-      const res1 = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${dToken}`,
-          'Content-Type': 'application/json'
-        },
-         body: JSON.stringify({ services: servicesPayload, equipmentUsed: usedEquipment }) // ✅ fixed
-      });
+    // Update appointment services
+    const res1 = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${dToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ services: servicesPayload, equipmentUsed: usedEquipment }) // FIXED HERE
+    });
 
-      const data1 = await res1.json();
-      if (!data1.success) return toast.error(data1.message || 'Failed to update appointment');
+    const data1 = await res1.json();
+    if (!data1.success) return toast.error(data1.message || 'Failed to update appointment');
 
-      // 2️⃣ Deduct equipment quantities automatically
-      const res2 = await fetch(`${backendUrl}/api/equipment/deduct`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${dToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ equipmentUsed })
-      });
+    // Deduct equipment quantities automatically
+    const res2 = await fetch(`${backendUrl}/api/equipment/deduct`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${dToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ equipmentUsed: usedEquipment }) // FIXED HERE
+    });
 
-      const data2 = await res2.json();
-      if (data2.success) toast.success('Appointment updated & equipment deducted');
-      else toast.warning('Appointment updated but failed to deduct equipment');
+    const data2 = await res2.json();
+    if (data2.success) toast.success('Appointment updated & equipment deducted');
+    else toast.warning('Appointment updated but failed to deduct equipment');
 
-      fetchAppointments();
+    fetchAppointments();
 
-    } catch (err) {
-      console.error(err);
-      toast.error('Error updating appointment or equipment');
-    }
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error('Error updating appointment or equipment');
+  }
+};
 
 
 
