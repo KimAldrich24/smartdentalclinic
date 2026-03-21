@@ -549,9 +549,8 @@ export const addWalkInAppointment = async (req, res) => {
   try {
     const { patientName, patientEmail, patientPhone, doctorId, date, time, service } = req.body;
 
-    // --- 1. Check if patient already exists ---
-    let patient = await User.findOne({ email: patientEmail.trim().toLowerCase() });
-
+    // Check if patient already exists
+    let patient = await User.findOne({ email: patientEmail });
     if (!patient) {
       // Generate random password
       const randomPassword = Math.random().toString(36).slice(-8);
@@ -560,7 +559,7 @@ export const addWalkInAppointment = async (req, res) => {
       // Create new patient
       patient = await User.create({
         name: patientName,
-        email: patientEmail.trim().toLowerCase(),
+        email: patientEmail,
         phone: patientPhone,
         password: hashedPassword,
         role: "patient",
@@ -568,27 +567,26 @@ export const addWalkInAppointment = async (req, res) => {
       });
     }
 
-    // --- 2. Get doctor ---
+    // Get doctor
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    // --- 3. Create appointment ---
+    // Ensure appointments array exists
+    if (!doctor.appointments) doctor.appointments = [];
+
+    // Create appointment
     const appointment = await Appointment.create({
       patient: patient._id,
       doctor: doctor._id,
-      bookedBy: patient._id, // Since no admin/receptionist login, set patient as bookedBy
+      bookedBy: null, // optional, since no auth for walk-in
       date,
       time,
-      // Map service to services array if provided
-      services: service
-        ? [{ service: null, price: 0 }] // optional: set service ID & price if needed
-        : [],
-      status: "APPROVED_ADMIN", // Auto-approved walk-in
+      status: "PENDING_ADMIN", // match your enum
       type: "walk-in",
-      paymentStatus: "pending",
+      services: service ? [{ service: null, price: 0 }] : [], // optional placeholder
     });
 
-    // --- 4. Add to doctor's appointments ---
+    // Add appointment to doctor
     doctor.appointments.push(appointment._id);
     await doctor.save();
 
