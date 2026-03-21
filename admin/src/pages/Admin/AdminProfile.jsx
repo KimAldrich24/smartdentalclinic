@@ -41,45 +41,43 @@ const AdminProfile = () => {
 
   // Fetch admin profile
   const fetchAdminProfile = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/admin/profile`, {
-        headers: { Authorization: `Bearer ${aToken}` },
+  try {
+    const res = await axios.get(`${backendUrl}/api/admin/profile`, {
+      headers: { Authorization: `Bearer ${aToken}` },
+    });
+
+    if (res.data.success) {
+      setAdmin(res.data.admin);
+      setFormData({
+        name: res.data.admin.name || "",
+        phone: res.data.admin.phone || "",
       });
-
-      if (res.data.success) {
-        setAdmin(res.data.user);
-        setFormData({
-          name: res.data.user.name || "",
-          phone: res.data.user.phone || "",
-        });
-      } else {
-        throw new Error(res.data.message);
-      }
-    } catch (err) {
-      console.error("Fetch profile error:", err);
-
-      // Fallback: use token data
-      try {
-        const decoded = JSON.parse(atob(aToken.split(".")[1]));
-        const fallbackAdmin = {
-          id: decoded.id,
-          name: decoded.name || "Admin User",
-          email: decoded.email,
-          role: decoded.role,
-          phone: "Not set",
-          gender: "Not Selected",
-          status: "active",
-        };
-        setAdmin(fallbackAdmin);
-        setFormData({
-          name: fallbackAdmin.name,
-          phone: fallbackAdmin.phone,
-        });
-      } catch (decodeErr) {
-        console.error("Fallback failed:", decodeErr);
-      }
+    } else {
+      throw new Error(res.data.message);
     }
-  };
+  } catch (err) {
+    console.error("Fetch profile error:", err);
+
+    // Fallback: use token data if backend fails
+    try {
+      const decoded = JSON.parse(atob(aToken.split(".")[1]));
+      setAdmin({
+        id: decoded.id,
+        name: decoded.name || "Admin User",
+        email: decoded.email || "Not set",
+        phone: decoded.phone || "Not set",
+        role: decoded.role,
+        status: "active",
+      });
+      setFormData({
+        name: decoded.name || "Admin User",
+        phone: decoded.phone || "Not set",
+      });
+    } catch (decodeErr) {
+      console.error("Fallback failed:", decodeErr);
+    }
+  }
+};
 
   // Handle profile input change
   const handleChange = (e) => {

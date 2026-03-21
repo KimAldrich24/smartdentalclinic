@@ -38,17 +38,30 @@ router.get("/all-doctors", adminAuthMiddleware, allDoctors);
 router.delete("/remove-doctor/:id", adminAuthMiddleware, removeDoctor);
 router.get("/prescriptions", getAllPrescriptions);
 
+// GET /api/admin/profile
 router.get("/profile", adminAuthMiddleware, async (req, res) => {
   try {
     const admin = await User.findById(req.userId).select("-password");
-    
-    if (!admin) {
-      return res.json({ success: false, message: "Admin not found" });
+
+    if (!admin || admin.role !== "admin") {
+      return res.status(404).json({ success: false, message: "Admin not found" });
     }
 
-    res.json({ success: true, admin });
+    res.status(200).json({
+      success: true,
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        phone: admin.phone || "Not set",
+        dob: admin.dob || null,
+        role: admin.role,
+        status: admin.status,
+      },
+    });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.error("GET /profile error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
