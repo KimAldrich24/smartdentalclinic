@@ -41,9 +41,15 @@ router.get("/prescriptions", getAllPrescriptions);
 // GET /api/admin/profile
 router.get("/profile", adminAuthMiddleware, async (req, res) => {
   try {
-    const admin = await User.findById(req.userId).select("-password");
+    // Ensure req.userId exists
+    if (!req.userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
 
-    if (!admin || admin.role !== "admin") {
+    // Find admin by ID and confirm role
+    const admin = await User.findOne({ _id: req.userId, role: "admin" }).select("-password");
+
+    if (!admin) {
       return res.status(404).json({ success: false, message: "Admin not found" });
     }
 
@@ -56,7 +62,7 @@ router.get("/profile", adminAuthMiddleware, async (req, res) => {
         phone: admin.phone || "Not set",
         dob: admin.dob || null,
         role: admin.role,
-        status: admin.status,
+        status: admin.status || "active",
       },
     });
   } catch (error) {
