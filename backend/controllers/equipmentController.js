@@ -234,3 +234,30 @@ export const updateQuantity = async (req, res) => {
 
   }
 };
+
+export const deductEquipmentBatch = async (req, res) => {
+  try {
+    const { equipmentUsed } = req.body; // { equipmentId: qty, ... }
+
+    if (!equipmentUsed || Object.keys(equipmentUsed).length === 0) {
+      return res.status(400).json({ success: false, message: "No equipment provided" });
+    }
+
+    for (const [eqId, qty] of Object.entries(equipmentUsed)) {
+      const equipment = await Equipment.findById(eqId);
+      if (!equipment) continue;
+
+      // Deduct only if quantity exists
+      if (equipment.quantity !== undefined) {
+        equipment.quantity = Math.max(0, equipment.quantity - Number(qty));
+        await equipment.save();
+      }
+    }
+
+    res.json({ success: true, message: "Equipment quantities updated" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to update equipment" });
+  }
+};

@@ -1,6 +1,7 @@
 import express from "express";
 import Equipment from "../models/equipmentModel.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
+import { deductEquipmentBatch } from "../controllers/equipmentController.js";
 import verifyToken from "../middlewares/verifyToken.js"; // make sure you have this middleware
 
 const router = express.Router();
@@ -165,5 +166,8 @@ router.put("/:id/quantity", adminAuthMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to update quantity" });
   }
 });
+
+// PUT /api/equipment/deduct
+router.put("/deduct", verifyToken, deductEquipmentBatch);
 
 export default router;
