@@ -2,6 +2,8 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
+import WalkInAppointmentForm from "../WalkInAppointmentForm"; // 🔑 import your form
+
 
 const AllAppointments = () => {
   const { aToken, backendUrl } = useContext(AdminContext);
@@ -9,12 +11,35 @@ const AllAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState(null);
 
+  <div className="flex justify-between items-center mb-4">
+  <p className="text-xl md:text-2xl font-semibold">All Appointments</p>
+  <button
+    onClick={() => setShowWalkInForm(prev => !prev)}
+    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+  >
+    + Add Walk-in
+  </button>
+</div>
+
+{showWalkInForm && (
+  <div className="bg-white p-4 rounded-xl shadow mb-6">
+    <WalkInAppointmentForm />
+    <button
+      onClick={() => setShowWalkInForm(false)}
+      className="mt-2 bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+    >
+      Cancel
+    </button>
+  </div>
+)}
+
   // 🔥 Filters
   const [sortOrder, setSortOrder] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [showWalkInForm, setShowWalkInForm] = useState(false);
 
   // ✅ Fetch all appointments
   const fetchAppointments = async () => {
