@@ -17,6 +17,8 @@ export const addDoctor = async (req, res) => {
       speciality,
       degree,
       address,
+      gender,
+      dob,
     } = req.body;
 
     // ✅ 1. Password required
@@ -62,6 +64,8 @@ export const addDoctor = async (req, res) => {
       speciality: speciality || degree,
       degree,
       address: typeof address === "string" ? JSON.parse(address) : address || {},
+      gender,
+      dob,
       image,
       available: true,
       date: Date.now(),
@@ -164,21 +168,21 @@ export const getAllDoctors = async (req, res) => {
 export const getDoctorById = async (req, res) => {
   try {
     console.log("📋 Fetching doctor with ID:", req.params.id);
-    
+
     const doctor = await Doctor.findById(req.params.id)
       .select("-password")
       .populate('services'); // Populate services
-    
+
     if (!doctor) {
       console.log("❌ Doctor not found");
       return res.status(404).json({ success: false, message: "Doctor not found" });
     }
-    
+
     // ✅ Debug what's being sent
     console.log("📋 Doctor services (should be objects):", doctor.services);
     console.log("📋 First service type:", typeof doctor.services[0]);
     console.log("📅 Doctor schedule:", doctor.schedule);
-    
+
     res.json({ success: true, doctor });
   } catch (err) {
     console.error("❌ Error in getDoctorById:", err);
@@ -246,16 +250,16 @@ export const bookDoctorSlot = async (req, res) => {
 export const deleteDoctor = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     console.log("🗑️ Attempting to delete doctor:", id);
-    
+
     const doctor = await Doctor.findByIdAndDelete(id);
-    
+
     if (!doctor) {
       console.log("❌ Doctor not found");
       return res.status(404).json({ success: false, message: 'Doctor not found' });
     }
-    
+
     console.log("✅ Doctor deleted successfully:", doctor.email);
     res.json({ success: true, message: 'Doctor deleted successfully' });
   } catch (err) {
@@ -269,7 +273,7 @@ export const deleteDoctor = async (req, res) => {
 export const getAllServices = async (req, res) => {
   try {
     const services = await Service.find(); // ✅ Use imported Service model
-    
+
     res.json({ success: true, services });
   } catch (err) {
     console.error("❌ Error fetching services:", err);
@@ -295,7 +299,7 @@ export const addDoctorService = async (req, res) => {
     await doctor.save();
 
     const updatedDoctor = await Doctor.findById(doctorId).populate('services');
-    
+
     console.log("✅ Service added to doctor");
     res.json({ success: true, message: 'Service added successfully', services: updatedDoctor.services });
   } catch (err) {
@@ -337,11 +341,11 @@ export const addDoctorSchedule = async (req, res) => {
     const today = new Date();
     scheduleDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-    
+
     if (scheduleDate < today) {
-      return res.json({ 
-        success: false, 
-        message: 'Cannot create schedule for past dates' 
+      return res.json({
+        success: false,
+        message: 'Cannot create schedule for past dates'
       });
     }
 
@@ -350,7 +354,7 @@ export const addDoctorSchedule = async (req, res) => {
 
     // Check if schedule for this date already exists
     const existingScheduleIndex = doctor.schedule.findIndex(s => s.date === date);
-    
+
     if (existingScheduleIndex !== -1) {
       doctor.schedule[existingScheduleIndex].slots = slots;
     } else {
@@ -385,21 +389,21 @@ export const getDoctorServicesAndSchedule = async (req, res) => {
     // ✅ Filter out past schedules
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const activeSchedule = doctor.schedule.filter(sch => {
       const scheduleDate = new Date(sch.date);
       scheduleDate.setHours(0, 0, 0, 0);
       return scheduleDate >= today;
     });
 
-    console.log("✅ Fetched doctor data:", { 
-      services: doctor.services.length, 
-      activeSchedules: activeSchedule.length 
+    console.log("✅ Fetched doctor data:", {
+      services: doctor.services.length,
+      activeSchedules: activeSchedule.length
     });
 
-    res.json({ 
-      success: true, 
-      schedule: activeSchedule, 
+    res.json({
+      success: true,
+      schedule: activeSchedule,
       services: doctor.services || []
     });
   } catch (err) {
