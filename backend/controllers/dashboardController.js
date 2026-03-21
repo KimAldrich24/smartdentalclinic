@@ -6,31 +6,30 @@ import Credit from "../models/creditModel.js";
 export const getDashboardStats = async (req, res) => {
   try {
     const totalAppointments = await Appointment.countDocuments();
-    const totalPatients = await User.countDocuments();
 
-    // Monthly appointments
+    const totalPatients = await User.countDocuments({ role: "patient" });
+
+    // ✅ FIXED monthly (use createdAt)
     const monthlyAppointments = await Appointment.aggregate([
       {
         $group: {
-          _id: { $month: { $dateFromString: { dateString: "$date" } } },
+          _id: { $month: "$createdAt" },
           total: { $sum: 1 },
         },
       },
-      { $sort: { "_id": 1 } },
+      { $sort: { _id: 1 } },
     ]);
 
-    // Revenue from COMPLETED & PAID appointments
+    // ✅ FIXED revenue (case-safe)
     const completedAppointments = await Appointment.find({
-      status: "COMPLETED",          // uppercase to match your DB
-      paymentStatus: "Paid",        // only count paid
+      status: { $in: ["COMPLETED", "completed"] },
+      paymentStatus: { $in: ["Paid", "paid"] },
     });
 
     let revenue = 0;
     for (let appt of completedAppointments) {
       revenue += (appt.totalPrice || 0) + (appt.additionalPayment || 0);
     }
-
-    console.log(`💰 Total revenue: ₱${revenue} from ${completedAppointments.length} paid appointments`);
 
     res.json({
       totalAppointments,
