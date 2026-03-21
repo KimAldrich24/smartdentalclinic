@@ -552,11 +552,9 @@ export const addWalkInAppointment = async (req, res) => {
     // Check if patient already exists
     let patient = await User.findOne({ email: patientEmail });
     if (!patient) {
-      // Generate random password
       const randomPassword = Math.random().toString(36).slice(-8);
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-      // Create new patient
       patient = await User.create({
         name: patientName,
         email: patientEmail,
@@ -571,24 +569,22 @@ export const addWalkInAppointment = async (req, res) => {
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    // Ensure appointments array exists
-    if (!doctor.appointments) doctor.appointments = [];
-
     // Create appointment
     const appointment = await Appointment.create({
       patient: patient._id,
       doctor: doctor._id,
-      bookedBy: null, // optional, since no auth for walk-in
+      bookedBy: null, // walk-in, no specific user
       date,
       time,
-      status: "PENDING_ADMIN", // match your enum
+      status: "PENDING_ADMIN", // matches enum in your model
       type: "walk-in",
-      services: service ? [{ service: null, price: 0 }] : [], // optional placeholder
+      services: service ? [{ service: null, price: 0 }] : [],
     });
 
-    // Add appointment to doctor
-    doctor.appointments.push(appointment._id);
-    await doctor.save();
+    // Push appointment into doctor without triggering full validation
+    await Doctor.findByIdAndUpdate(doctor._id, {
+      $push: { appointments: appointment._id },
+    });
 
     res.status(201).json({ success: true, appointment, patient });
   } catch (error) {
