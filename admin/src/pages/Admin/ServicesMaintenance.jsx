@@ -9,6 +9,7 @@ const ServicesMaintenance = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState("");
+  const [price, setPrice] = useState(""); // ✅ Added price
   const [editingId, setEditingId] = useState(null);
 
   // Fetch all services
@@ -43,8 +44,13 @@ const ServicesMaintenance = () => {
       return;
     }
 
+    if (price === "" || price < 0) {
+      toast.error("Price must be a positive number");
+      return;
+    }
+
     try {
-      const payload = { name, description, duration };
+      const payload = { name, description, duration, price: Number(price) };
 
       const res = editingId
         ? await axios.put(
@@ -61,6 +67,7 @@ const ServicesMaintenance = () => {
         setName("");
         setDescription("");
         setDuration("");
+        setPrice(""); // ✅ Clear price
         setEditingId(null);
         fetchServices();
       }
@@ -74,6 +81,7 @@ const ServicesMaintenance = () => {
     setName(service.name);
     setDescription(service.description);
     setDuration(service.duration);
+    setPrice(service.price || ""); // ✅ Populate price
     setEditingId(service._id);
   };
 
@@ -103,31 +111,42 @@ const ServicesMaintenance = () => {
         className="mb-6 space-y-4 bg-white p-4 shadow rounded-lg"
       >
         <input
-  type="text"
-  placeholder="Service Name"
-  value={name}
-  onChange={(e) => setName(e.target.value)}
-  className="w-full border px-3 py-2 rounded"
-  required
-/>
+          type="text"
+          placeholder="Service Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+          required
+        />
 
-<input
-  type="text"
-  placeholder="Description"
-  value={description}
-  onChange={(e) => setDescription(e.target.value)}
-  className="w-full border px-3 py-2 rounded"
-  required
-/>
+        <input
+          type="text"
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+          required
+        />
 
-<input
-  type="text"
-  placeholder="Duration"
-  value={duration}
-  onChange={(e) => setDuration(e.target.value)}
-  className="w-full border px-3 py-2 rounded"
-  required
-/>
+        <input
+          type="text"
+          placeholder="Duration"
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+          required
+        />
+
+        {/* ✅ Price Input */}
+        <input
+          type="number"
+          placeholder="Price (PHP)"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+          required
+          min="0"
+        />
 
         <button className="bg-blue-500 text-white px-4 py-2 rounded">
           {editingId ? "Update Service" : "Add Service"}
@@ -142,6 +161,7 @@ const ServicesMaintenance = () => {
               <th className="border p-2">Name</th>
               <th className="border p-2">Description</th>
               <th className="border p-2">Duration</th>
+              <th className="border p-2">Price</th> {/* ✅ Added Price */}
               <th className="border p-2">Actions</th>
             </tr>
           </thead>
@@ -151,6 +171,7 @@ const ServicesMaintenance = () => {
                 <td className="border p-2">{s.name}</td>
                 <td className="border p-2">{s.description}</td>
                 <td className="border p-2">{s.duration}</td>
+                <td className="border p-2">₱{s.price}</td> {/* ✅ Show Price */}
                 <td className="border p-2 flex gap-2">
                   <button
                     onClick={() => handleEdit(s)}
@@ -179,6 +200,9 @@ const ServicesMaintenance = () => {
             <p className="text-sm text-gray-600">{s.description}</p>
             <p>
               <span className="font-semibold">Duration:</span> {s.duration}
+            </p>
+            <p>
+              <span className="font-semibold">Price:</span> ₱{s.price} {/* ✅ Show Price */}
             </p>
 
             <div className="flex gap-2 mt-3">

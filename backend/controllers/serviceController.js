@@ -5,11 +5,14 @@ import Service from "../models/serviceModel.js";
 // --------------------------
 export const addService = async (req, res) => {
   try {
-    const { name, description, duration } = req.body;
+    const { name, description, duration, price } = req.body;
 
     // Validation
-    if (!name) {
-      return res.status(400).json({ success: false, message: "Name is required" });
+    if (!name || price == null) {
+      return res.status(400).json({ success: false, message: "Name and price are required" });
+    }
+    if (price < 0) {
+      return res.status(400).json({ success: false, message: "Price cannot be negative" });
     }
 
     // ✅ Check for duplicate (case-insensitive)
@@ -18,7 +21,7 @@ export const addService = async (req, res) => {
       return res.status(400).json({ success: false, message: "Service with this name already exists" });
     }
 
-    const service = new Service({ name, description, duration });
+    const service = new Service({ name, description, duration, price });
     await service.save();
 
     res.json({ success: true, message: "Service added successfully", service });
@@ -47,7 +50,7 @@ export const getAllServices = async (req, res) => {
 export const updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, price } = req.body;
 
     // Check if service exists
     const service = await Service.findById(id);
@@ -55,13 +58,18 @@ export const updateService = async (req, res) => {
 
     // ✅ Check for duplicate name (exclude current service)
     if (name) {
-      const duplicate = await Service.findOne({ 
-        _id: { $ne: id }, 
-        name: { $regex: `^${name}$`, $options: "i" } 
+      const duplicate = await Service.findOne({
+        _id: { $ne: id },
+        name: { $regex: `^${name}$`, $options: "i" },
       });
       if (duplicate) {
         return res.status(400).json({ success: false, message: "Another service with this name already exists" });
       }
+    }
+
+    // Validate price if provided
+    if (price != null && price < 0) {
+      return res.status(400).json({ success: false, message: "Price cannot be negative" });
     }
 
     // Update fields
