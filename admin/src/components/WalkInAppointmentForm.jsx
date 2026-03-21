@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
 const WalkInAppointmentForm = () => {
-  const { token } = useContext(AuthContext);
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [doctors, setDoctors] = useState([]);
@@ -18,41 +16,32 @@ const WalkInAppointmentForm = () => {
     service: "",
   });
 
-  // Fetch doctors for select dropdown
+  // Fetch doctors for dropdown
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const res = await axios.get(`${backendUrl}/api/doctors`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setDoctors(res.data.doctors || res.data); // adjust based on your API response
+        const res = await axios.get(`${backendUrl}/api/doctors`);
+        const doctorList = res.data.doctors || res.data;
+        setDoctors(doctorList);
+
+        if (doctorList.length > 0) {
+          setForm(prev => ({ ...prev, doctorId: doctorList[0]._id }));
+        }
       } catch (err) {
         console.error("Failed to fetch doctors:", err.message);
         toast.error("Failed to load doctors");
       }
     };
     fetchDoctors();
-  }, [backendUrl, token]);
+  }, [backendUrl]);
 
-  // Set default doctor once fetched
-  useEffect(() => {
-    if (doctors.length > 0) {
-      setForm(prev => ({ ...prev, doctorId: doctors[0]._id }));
-    }
-  }, [doctors]);
-
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = e =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      const { data } = await axios.post(
-        `${backendUrl}/api/appointments/walk-in`, // ✅ fixed URL
-        form,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const { data } = await axios.post(`${backendUrl}/api/appointments/walk-in`, form);
 
       toast.success("Walk-in appointment created!");
       setForm({
@@ -71,7 +60,7 @@ const WalkInAppointmentForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-4 rounded-xl shadow">
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded shadow">
       <div className="flex flex-col md:flex-row gap-4">
         <input
           name="patientName"
@@ -108,7 +97,7 @@ const WalkInAppointmentForm = () => {
         >
           {doctors.map(d => (
             <option key={d._id} value={d._id}>
-              {d.name} ({d.speciality})
+              {d.name} ({d.speciality || "General"})
             </option>
           ))}
         </select>
