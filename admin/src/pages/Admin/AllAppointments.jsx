@@ -254,8 +254,8 @@ const AllAppointments = () => {
                 <p className="text-lg font-semibold">Dr. {appt.doctor?.name}</p>
                 <p className="text-gray-500">{appt.doctor?.speciality}</p>
                 <p className="mt-2">
-                  <b>Patient:</b> {appt.patient?.name || "N/A"}{" "}
-                  {appt.bookedBy && appt.bookedBy._id !== appt.patient?._id && `(Child of ${appt.bookedBy?.name})`}
+                  <b>Patient:</b> {appt.childName || appt.patient?.name || "N/A"}{" "}
+                  {appt.childName && `(Child of ${appt.bookedBy?.name})`}
                 </p>
                 <p><b>Booked By:</b> {appt.bookedBy?.name || "Self"}</p>
                 <p><b>Date:</b> {appt.date} | {appt.time}</p>

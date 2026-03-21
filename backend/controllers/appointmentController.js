@@ -191,12 +191,28 @@ export const getMyAppointments = async (req, res) => {
 ===================================================== */
 export const getAllAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find()
+    let appointments = await Appointment.find()
       .populate("doctor", "name speciality image")
-      .populate("patient", "name email")    // who the appointment is for
-      .populate("bookedBy", "name email")   // who booked it
+      .populate("bookedBy", "name email children") // include children array
       .populate("services.service", "name price duration")
       .sort({ date: 1, time: 1 });
+
+    // Attach child name if patient is a child
+    appointments = appointments.map((appt) => {
+      const apptObj = appt.toObject();
+
+      // Check if patient is in bookedBy.children
+      if (appt.bookedBy && appt.bookedBy.children) {
+        const child = appt.bookedBy.children.find(
+          (c) => c._id.toString() === appt.patient.toString()
+        );
+        if (child) {
+          apptObj.childName = child.name;
+        }
+      }
+
+      return apptObj;
+    });
 
     res.json({ success: true, appointments });
   } catch (err) {
