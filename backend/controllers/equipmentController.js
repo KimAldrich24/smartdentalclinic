@@ -262,3 +262,29 @@ export const deductEquipmentBatch = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to deduct equipment" });
   }
 };
+
+// PUT /api/equipment/deduct
+export const deductEquipment = async (req, res) => {
+  try {
+    const { equipmentUsed } = req.body; // { equipmentId: quantityUsed }
+
+    if (!equipmentUsed || Object.keys(equipmentUsed).length === 0) {
+      return res.status(400).json({ success: false, message: "No equipment to deduct" });
+    }
+
+    for (const [eqId, qty] of Object.entries(equipmentUsed)) {
+      const equipment = await Equipment.findById(eqId);
+      if (!equipment) continue;
+
+      // Deduct quantity, prevent negative stock
+      equipment.quantity = Math.max(equipment.quantity - qty, 0);
+      await equipment.save();
+    }
+
+    res.json({ success: true, message: "Equipment deducted successfully" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

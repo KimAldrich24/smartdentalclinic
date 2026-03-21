@@ -284,9 +284,12 @@ export const getDoctorAppointments = async (req, res) => {
 /* =====================================================
    DOCTOR: ASSIGN SERVICES
 ===================================================== */
+/* =====================================================
+   DOCTOR: ASSIGN SERVICES & DEDUCT EQUIPMENT
+===================================================== */
 export const doctorAssignServices = async (req, res) => {
   try {
-    const { services, usedEquipment } = req.body; 
+    const { services, usedEquipment } = req.body;
     // services = [{ serviceId, price }]
     // usedEquipment = { equipmentId: quantityUsed }
 
@@ -295,14 +298,22 @@ export const doctorAssignServices = async (req, res) => {
       return res.status(404).json({ success: false, message: "Appointment not found" });
 
     if (appointment.status !== "APPROVED_ADMIN")
-      return res.status(400).json({ success: false, message: "Can only assign services after admin approval" });
+      return res.status(400).json({
+        success: false,
+        message: "Can only assign services after admin approval",
+      });
 
-    // Format services
+    // ============================
+    // 1. Assign Services
+    // ============================
     const formattedServices = [];
     for (const s of services) {
       const service = await Service.findById(s.serviceId);
       if (!service) continue;
-      formattedServices.push({ service: service._id, price: s.price ?? service.price });
+      formattedServices.push({
+        service: service._id,
+        price: s.price ?? service.price,
+      });
     }
 
     appointment.services = formattedServices;
@@ -310,22 +321,52 @@ export const doctorAssignServices = async (req, res) => {
     await appointment.save();
 
     // ============================
-    // Deduct used equipment quantities
+    // 2. Deduct Used Equipment
     // ============================
+    let equipmentDeduction = [];
+
     if (usedEquipment && typeof usedEquipment === "object") {
       for (const [eqId, qty] of Object.entries(usedEquipment)) {
         const equipment = await Equipment.findById(eqId);
-        if (!equipment) continue;
+        if (!equipment) {
+          equipmentDeduction.push({
+            equipmentId: eqId,
+            success: false,
+            message: "Equipment not found",
+          });
+          continue;
+        }
 
         const usedQty = Number(qty) || 0;
-        equipment.quantity = Math.max(equipment.quantity - usedQty, 0);
+        if (equipment.quantity < usedQty) {
+          equipmentDeduction.push({
+            equipmentId: eqId,
+            success: false,
+            message: `Not enough quantity. Available: ${equipment.quantity}, requested: ${usedQty}`,
+          });
+          continue;
+        }
+
+        equipment.quantity -= usedQty;
         await equipment.save();
+
+        equipmentDeduction.push({
+          equipmentId: eqId,
+          success: true,
+          deducted: usedQty,
+          remaining: equipment.quantity,
+        });
       }
     }
 
-    res.json({ success: true, message: "Services assigned and equipment updated", appointment });
+    res.json({
+      success: true,
+      message: "Services assigned and equipment updated",
+      appointment,
+      equipmentDeduction,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("doctorAssignServices ERROR:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -606,5 +647,30 @@ export const addWalkInAppointment = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const assignServices = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { services, equipmentUsed } = req.body;
+
+    const appointment = await Appointment.findById(id);
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+
+    // Save selected services and equipment used
+    appointment.services = services.map(s => ({
+      service: s.serviceId,
+      price: s.price
+    }));
+    appointment.equipmentUsed = equipmentUsed || {};
+    appointment.status = 'IN_PROGRESS'; // mark appointment in progress
+    await appointment.save();
+
+    res.json({ success: true, message: "Services assigned successfully", appointment });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };

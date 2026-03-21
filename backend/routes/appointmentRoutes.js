@@ -18,7 +18,7 @@ import {
   getPrescriptions,
   addWalkInAppointment,
 } from "../controllers/appointmentController.js";
-
+import { deductEquipment } from '../controllers/equipmentController.js';
 import protect from "../middlewares/authMiddleware.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
@@ -117,5 +117,7 @@ router.get("/doctor/my-appointments", protect(["doctor"]), async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
+router.put('/doctor/:id/assign-services', authMiddleware, assignServices);
 
 export default router;
