@@ -165,7 +165,7 @@ const DoctorDashboard = () => {
           Authorization: `Bearer ${dToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ services: servicesPayload, equipmentUsed })
+         body: JSON.stringify({ services: servicesPayload, equipmentUsed: usedEquipment }) // ✅ fixed
       });
 
       const data1 = await res1.json();
