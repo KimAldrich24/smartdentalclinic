@@ -20,7 +20,7 @@ import {
 } from "../controllers/appointmentController.js";
 import { deductEquipment } from '../controllers/equipmentController.js';
 import protect from "../middlewares/authMiddleware.js";
-import { authMiddleware } from "../middlewares/adminMiddleware.js";
+import { adminMiddleware } from "../middlewares/adminMiddleware.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 
@@ -119,6 +119,6 @@ router.get("/doctor/my-appointments", protect(["doctor"]), async (req, res) => {
   }
 });
 
-router.put('/doctor/:id/assign-services', authMiddleware, assignServices);
+// router.put('/doctor/:id/assign-services', authMiddleware, assignServices);
 
 export default router;
