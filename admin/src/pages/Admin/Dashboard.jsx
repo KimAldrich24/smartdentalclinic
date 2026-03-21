@@ -229,7 +229,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ================= PATIENT CREDITS ================= */}
+      {/* ================= PATIENT CREDITS =================
       <div className="bg-white p-3 rounded-xl shadow">
         <p className="text-sm font-semibold mb-2">Patient Credits</p>
         <div className="overflow-x-auto">
@@ -258,7 +258,7 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> */}
 
     </div>
   );
