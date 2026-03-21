@@ -139,13 +139,27 @@ const DoctorSchedule = () => {
   };
 
   const handleEditSchedule = (date) => {
-    const sch = schedule.find((s) => s.date === date);
-    if (!sch) return;
-    if (isPastDate(sch.date)) return toast.error('Cannot edit past schedule');
-    setSelectedDate(sch.date);
-    setTimeSlots(sch.slots.map((s) => s.time));
-    setIsEditing(true);
-  };
+  const sch = schedule.find((s) => s.date === date);
+  if (!sch) return;
+
+  const today = new Date();
+  const maxDate = new Date();
+  maxDate.setMonth(maxDate.getMonth() + 1);
+  const schDate = new Date(sch.date);
+
+  // Reset time
+  today.setHours(0,0,0,0);
+  maxDate.setHours(0,0,0,0);
+  schDate.setHours(0,0,0,0);
+
+  if (schDate < today || schDate > maxDate) {
+    return toast.error('Cannot edit past or too-far schedule');
+  }
+
+  setSelectedDate(sch.date);
+  setTimeSlots(sch.slots.map((s) => s.time));
+  setIsEditing(true);
+};
 
   const handleDeleteSchedule = async (date) => {
     if (!window.confirm('Are you sure you want to delete this schedule?')) return;
