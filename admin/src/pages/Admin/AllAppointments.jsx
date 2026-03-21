@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
-import WalkInAppointmentForm from "../WalkInAppointmentForm"; // 🔑 import your form
+import WalkInAppointmentForm from "../../components/WalkInAppointmentForm"; // 🔑 import your form
 
 const AllAppointments = () => {
   const { aToken, backendUrl } = useContext(AdminContext);
