@@ -241,6 +241,15 @@ export const approveAppointment = async (req, res) => {
     appointment.status = "APPROVED"; // or "PENDING_DOCTOR" depending on your workflow
     await appointment.save();
 
+    if (appointment.totalPrice) {
+      const creditUserId = appointment.user; // ✅ fetch the user from appointment
+      await Credit.create({
+        user: creditUserId,
+        amount: appointment.totalPrice,
+        description: `Credit for appointment ${appointment._id}`,
+      });
+    }
+
     res.json({ success: true, appointment });
   } catch (err) {
     console.error("Approve appointment error:", err);
