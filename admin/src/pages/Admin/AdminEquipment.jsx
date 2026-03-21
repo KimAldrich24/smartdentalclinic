@@ -97,50 +97,64 @@ const AdminEquipment = () => {
     return new Date(date) < new Date(today);
   };
 
+  
   /* ==============================
      SUBMIT EQUIPMENT
   ============================== */
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    // ✅ prevent past expiration
-    if (formData.expirationDate && formData.expirationDate < today) {
-      setError("Expiration date cannot be in the past.");
-      return;
+  // ✅ prevent past expiration
+  if (formData.expirationDate && formData.expirationDate < today) {
+    setError("Expiration date cannot be in the past.");
+    return;
+  }
+
+  // ✅ prevent duplicate name + unit
+  const duplicate = equipment.find(
+    (eq) =>
+      eq.name.toLowerCase() === formData.name.toLowerCase() &&
+      eq.unit.toLowerCase() === formData.unit.toLowerCase() &&
+      eq._id !== editingId // allow updating same item
+  );
+
+  if (duplicate) {
+    setError(`Equipment with name "${formData.name}" and unit "${formData.unit}" already exists.`);
+    return;
+  }
+
+  try {
+    const payload = {
+      ...formData,
+      capacity: Number(formData.capacity) || 0,
+      quantity: Number(formData.quantity) || 0,
+      supplier: formData.supplier || null,
+      expirationDate: formData.expirationDate || null,
+    };
+
+    if (editingId) {
+      await axios.put(
+        `${backendUrl}/api/equipment/${editingId}`,
+        payload,
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+    } else {
+      await axios.post(
+        `${backendUrl}/api/equipment`,
+        payload,
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
     }
 
-    try {
-      const payload = {
-        ...formData,
-        capacity: Number(formData.capacity) || 0,
-        quantity: Number(formData.quantity) || 0,
-        supplier: formData.supplier || null,
-        expirationDate: formData.expirationDate || null,
-      };
-
-      if (editingId) {
-        await axios.put(
-          `${backendUrl}/api/equipment/${editingId}`,
-          payload,
-          { headers: { Authorization: `Bearer ${aToken}` } }
-        );
-      } else {
-        await axios.post(
-          `${backendUrl}/api/equipment`,
-          payload,
-          { headers: { Authorization: `Bearer ${aToken}` } }
-        );
-      }
-
-      setFormData(initialForm);
-      setEditingId(null);
-      setError(null);
-      fetchEquipment();
-    } catch (err) {
-      console.error(err);
-      setError("Failed to save equipment.");
-    }
-  };
+    setFormData(initialForm);
+    setEditingId(null);
+    setError(null);
+    fetchEquipment();
+  } catch (err) {
+    console.error(err);
+    setError("Failed to save equipment.");
+  }
+};
 
   /* ==============================
      EDIT EQUIPMENT
