@@ -80,37 +80,35 @@ const Appointment = () => {
 
   // ================= AVAILABLE SLOTS =================
   const getAvailableSlots = () => {
-    if (!selectedDate) return [];
-    const today = new Date();
-    const day = doctorSchedule.find((d) => d.date === selectedDate);
-    if (!day || !Array.isArray(day.slots)) return [];
+  if (!selectedDate) return [];
+  const today = new Date();
 
-    // Handle booked slots
-    let bookedTimes = [];
-    if (docInfo?.slots_book) {
-      if (typeof docInfo.slots_book.get === "function") {
-        bookedTimes = docInfo.slots_book.get(selectedDate) || [];
-      } else {
-        bookedTimes = Array.isArray(docInfo.slots_book[selectedDate])
-          ? docInfo.slots_book[selectedDate]
-          : [];
-      }
-    }
+  // Find schedule for the selected date
+  const day = docInfo?.schedule?.find(s => s.date === selectedDate);
+  if (!day || !Array.isArray(day.slots)) return [];
 
-    return day.slots.filter((slot) => {
-      const time = typeof slot === "string" ? slot : slot.time;
-      const status = typeof slot === "string" ? "available" : slot.status?.toLowerCase();
+  // Filter out past slots and booked slots
+  let bookedTimes = [];
+  if (docInfo?.slots_book) {
+    bookedTimes = Array.isArray(docInfo.slots_book[selectedDate])
+      ? docInfo.slots_book[selectedDate]
+      : [];
+  }
 
-      // Hide booked slots
-      if (bookedTimes.includes(time)) return false;
+  return day.slots.filter((slot) => {
+    const time = typeof slot === "string" ? slot : slot.time;
+    const status = typeof slot === "string" ? "available" : slot.status?.toLowerCase();
 
-      // Auto-expire past slots
-      const slotDateTime = new Date(`${selectedDate}T${time}`);
-      if (slotDateTime <= today) return false;
+    // Hide booked slots
+    if (bookedTimes.includes(time)) return false;
 
-      return status === "available";
-    });
-  };
+    // Hide past times
+    const slotDateTime = new Date(`${selectedDate}T${time}`);
+    if (slotDateTime <= today) return false;
+
+    return status === "available";
+  });
+};
 
   // ================= BOOK APPOINTMENT =================
   const handleBooking = async () => {
@@ -164,7 +162,17 @@ const Appointment = () => {
   if (!docInfo) return <p className="text-center mt-10 text-red-500">Doctor not found</p>;
 
   // Optional: Hide doctor if no available slots at all
-  const hasAvailableSlots = doctorSchedule.some(d => getAvailableSlots().length > 0);
+  const hasAvailableSlots = doctorSchedule.some(d => {
+  if (!Array.isArray(d.slots) || d.slots.length === 0) return false;
+
+  // Check if any slot is available and not in the past
+  const today = new Date();
+  return d.slots.some((slot) => {
+    const time = typeof slot === "string" ? slot : slot.time;
+    const slotDateTime = new Date(`${d.date}T${time}`);
+    return slotDateTime > today;
+  });
+});
 
   if (!hasAvailableSlots) {
     return (
@@ -221,7 +229,11 @@ const Appointment = () => {
           <h3 className="font-semibold mb-2">Select Date</h3>
           <div className="flex gap-2 overflow-x-auto">
             {doctorSchedule.map((d) => {
-              const slotAvailable = getAvailableSlots().length > 0;
+              const slotAvailable = Array.isArray(d.slots) && d.slots.some((slot) => {
+  const time = typeof slot === "string" ? slot : slot.time;
+  const slotDateTime = new Date(`${d.date}T${time}`);
+  return slotDateTime > new Date();
+});
               return (
                 <button
                   key={d.date}
