@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import Appointment from "../models/appointmentModel.js";
 import Doctor from "../models/doctorModel.js";
 import Service from "../models/serviceModel.js";
@@ -536,14 +537,19 @@ export const addWalkInAppointment = async (req, res) => {
   try {
     const { patientName, patientEmail, patientPhone, doctorId, date, time, service } = req.body;
 
-    // 1. Create patient record
-    const patient = await User.create({
-      name: patientName,
-      email: patientEmail,
-      phone: patientPhone,
-      role: "patient",
-      verified: true,
-    });
+    // Generate a random password for walk-in patient
+const randomPassword = Math.random().toString(36).slice(-8); // 8-char random password
+const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+// Create patient with hashed password
+const patient = await User.create({
+  name: patientName,
+  email: patientEmail,
+  phone: patientPhone,
+  password: hashedPassword,
+  role: "patient",
+  verified: true,
+});
 
     // 2. Get doctor
     const doctor = await Doctor.findById(doctorId);
