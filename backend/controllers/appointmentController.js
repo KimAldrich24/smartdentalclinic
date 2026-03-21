@@ -531,3 +531,43 @@ export const markAppointmentAsPaid = async (req, res) => {
   }
 };
 
+// Add Walk-in Appointment (Admin / Receptionist)
+export const addWalkInAppointment = async (req, res) => {
+  try {
+    const { patientName, patientEmail, patientPhone, doctorId, date, time, service } = req.body;
+
+    // 1. Create patient record
+    const patient = await User.create({
+      name: patientName,
+      email: patientEmail,
+      phone: patientPhone,
+      role: "patient",
+      verified: true,
+    });
+
+    // 2. Get doctor
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+
+    // 3. Create appointment
+    const appointment = await Appointment.create({
+      patient: patient._id,
+      doctor: doctorId,
+      bookedBy: req.userId, // admin/receptionist who added
+      date,
+      time,
+      service,
+      status: "confirmed",
+      type: "walk-in",
+    });
+
+    // 4. Add to doctor's schedule
+    doctor.appointments.push(appointment._id);
+    await doctor.save();
+
+    res.status(201).json({ success: true, appointment, patient });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

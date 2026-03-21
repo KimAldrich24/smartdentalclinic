@@ -16,6 +16,7 @@ import {
   getPatientCompletedAppointments,
   addPrescription,
   getPrescriptions,
+  addWalkInAppointment,
 } from "../controllers/appointmentController.js";
 
 import protect from "../middlewares/authMiddleware.js";
@@ -98,5 +99,22 @@ router.put("/doctor/:id/assign-services", doctorAuthMiddleware, doctorAssignServ
 
 // Complete appointment
 router.put("/doctor/:id/complete", doctorAuthMiddleware, completeAppointment);
+
+// Only admin/receptionist can add walk-in appointments
+router.post("/walk-in", protect(["admin", "receptionist"]), addWalkInAppointment);
+
+// routes/appointmentRoutes.js
+router.get("/doctor/my-appointments", protect(["doctor"]), async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ doctor: req.userId }) // req.userId = doctor ID
+      .populate("patient", "name email phone")
+      .populate("bookedBy", "name role")
+      .sort({ date: 1, time: 1 });
+
+    res.json({ success: true, appointments });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 export default router;
