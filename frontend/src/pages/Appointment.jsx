@@ -20,6 +20,7 @@ const Appointment = () => {
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
+  const [services, setServices] = useState([]); // ✅ New state for services
 
   // ================= FETCH DOCTOR =================
   const fetchDoctor = async () => {
@@ -34,6 +35,18 @@ const Appointment = () => {
     } catch (err) {
       console.error("Doctor fetch error:", err);
       toast.error("Failed to load doctor");
+    }
+  };
+
+  // ================= FETCH SERVICES =================
+  const fetchServices = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/services`);
+      if (res.data.success && Array.isArray(res.data.services)) {
+        setServices(res.data.services);
+      }
+    } catch (err) {
+      console.error("Error fetching services:", err);
     }
   };
 
@@ -59,6 +72,7 @@ const Appointment = () => {
     const loadData = async () => {
       await fetchDoctor();
       await fetchChildren();
+      await fetchServices(); // ✅ Fetch services here
       setLoading(false);
     };
     loadData();
@@ -148,6 +162,21 @@ const Appointment = () => {
           <h2 className="text-2xl font-bold">Book Appointment</h2>
           <p className="text-gray-600">Dr. {docInfo.name}</p>
         </div>
+
+        {/* ================= SERVICES SUMMARY ================= */}
+        {services.length > 0 && (
+          <div className="bg-gray-50 p-4 rounded-lg border mb-4">
+            <h3 className="font-semibold mb-2">Services Summary</h3>
+            <ul className="space-y-1">
+              {services.map((s) => (
+                <li key={s._id} className="flex justify-between border-b pb-1">
+                  <span>{s.name}</span>
+                  <span>₱{s.price}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* SELECT CHILD (optional) */}
         {children.length > 0 && (
