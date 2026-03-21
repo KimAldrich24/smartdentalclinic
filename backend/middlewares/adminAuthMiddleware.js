@@ -17,7 +17,7 @@ const adminAuthMiddleware = async (req, res, next) => {
     console.log("✅ Token decoded:", decoded);
 
     // Check if admin or staff
-    if (!decoded.role || !["admin", "staff"].includes(decoded.role)) {
+    if (!decoded.role || !["admin", "staff", "doctor"].includes(decoded.role)) {
       console.log("❌ Access denied - not admin/staff");
       return res.status(403).json({ success: false, message: "Access denied - admin/staff only" });
     }
