@@ -193,7 +193,8 @@ export const getAllAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find()
       .populate("doctor", "name speciality image")
-      .populate("patient", "name email")
+      .populate("patient", "name email")  // patient (self or guardian)
+      .populate("child", "name")          // 🔑 add this line
       .populate("services.service", "name price duration")
       .sort({ date: 1, time: 1 });
 
@@ -202,7 +203,6 @@ export const getAllAppointments = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 /* =====================================================
    ADMIN: APPROVE APPOINTMENT
 ===================================================== */
