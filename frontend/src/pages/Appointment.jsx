@@ -110,6 +110,8 @@ const Appointment = () => {
 
   // ================= HANDLE BOOKING =================
   const handleBooking = async () => {
+console.warn("test")
+    if (e) e.preventDefault();
     if (!token) {
       toast.error("Please login first");
       navigate("/login");
@@ -152,15 +154,15 @@ const Appointment = () => {
         toast.error(res.data.message || "Booking failed");
       }
     } catch (err) {
-  if (err.response) {
-    // Backend blocked it (duplicate slot)
-    toast.error(err.response.data.message);
-  } else {
-    toast.error("Something went wrong");
-  }
+      if (err.response) {
+        // Backend blocked it (duplicate slot)
+        toast.error(err.response.data.message);
+      } else {
+        toast.error("Something went wrong");
+      }
 
-  console.log("Booking blocked:", err.response?.data);
-} finally {
+      console.log("Booking blocked:", err.response?.data);
+    } finally {
       setBooking(false);
     }
   };
@@ -188,20 +190,20 @@ const Appointment = () => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white shadow-xl rounded-2xl p-6 space-y-6">
         <div className="border-b pb-4">
-  <h2 className="text-2xl font-bold">Book Appointment</h2>
-  <p className="text-gray-600">Dr. {docInfo.name}</p>
+          <h2 className="text-2xl font-bold">Book Appointment</h2>
+          <p className="text-gray-600">Dr. {docInfo.name}</p>
 
-  {/* Add Gender & DOB */}
-  <p className="text-gray-600">
-    Gender: <span className="font-medium">{docInfo.gender}</span>
-  </p>
-  <p className="text-gray-600">
-    Birthday:{" "}
-    <span className="font-medium">
-      {docInfo.dob ? new Date(docInfo.dob).toLocaleDateString() : "N/A"}
-    </span>
-  </p>
-</div>
+          {/* Add Gender & DOB */}
+          <p className="text-gray-600">
+            Gender: <span className="font-medium">{docInfo.gender}</span>
+          </p>
+          <p className="text-gray-600">
+            Birthday:{" "}
+            <span className="font-medium">
+              {docInfo.dob ? new Date(docInfo.dob).toLocaleDateString() : "N/A"}
+            </span>
+          </p>
+        </div>
 
         {/* SERVICES SUMMARY */}
         {services.length > 0 && (
@@ -256,13 +258,12 @@ const Appointment = () => {
                     setSelectedTime("");
                   }}
                   disabled={!slotAvailable}
-                  className={`px-4 py-2 rounded-lg border ${
-                    selectedDate === d.date
+                  className={`px-4 py-2 rounded-lg border ${selectedDate === d.date
                       ? "bg-blue-600 text-white"
                       : slotAvailable
-                      ? "bg-gray-100"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
+                        ? "bg-gray-100"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                 >
                   {new Date(d.date).toLocaleDateString()}
                 </button>
@@ -285,9 +286,8 @@ const Appointment = () => {
                     <button
                       key={i}
                       onClick={() => setSelectedTime(time)}
-                      className={`p-2 rounded-lg border ${
-                        selectedTime === time ? "bg-blue-600 text-white" : "bg-gray-100"
-                      }`}
+                      className={`p-2 rounded-lg border ${selectedTime === time ? "bg-blue-600 text-white" : "bg-gray-100"
+                        }`}
                     >
                       {time}
                     </button>
@@ -298,13 +298,15 @@ const Appointment = () => {
           </div>
         )}
 
-        <button
-          onClick={handleBooking}
-          disabled={booking}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
-        >
-          {booking ? "Booking..." : "Confirm Appointment"}
-        </button>
+        <form onSubmit={handleBooking}>
+          <button
+            onClick={handleBooking}
+            disabled={booking}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
+          >
+            {booking ? "Booking..." : "Confirm Appointment"}
+          </button>
+        </form>
       </div>
     </div>
   );
