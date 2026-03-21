@@ -109,7 +109,7 @@ const Appointment = () => {
   };
 
   // ================= HANDLE BOOKING =================
-  const handleBooking = async () => {
+  const handleBooking = async (e) => {
 console.warn("test")
     if (e) e.preventDefault();
     if (!token) {
