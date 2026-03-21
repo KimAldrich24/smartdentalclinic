@@ -101,7 +101,8 @@ router.put("/doctor/:id/assign-services", doctorAuthMiddleware, doctorAssignServ
 router.put("/doctor/:id/complete", doctorAuthMiddleware, completeAppointment);
 
 // Only admin/receptionist can add walk-in appointments
-router.post("/walk-in", protect(["admin", "receptionist"]), addWalkInAppointment);
+// Walk-in appointment (no auth)
+router.post("/walk-in", addWalkInAppointment);
 
 // routes/appointmentRoutes.js
 router.get("/doctor/my-appointments", protect(["doctor"]), async (req, res) => {
