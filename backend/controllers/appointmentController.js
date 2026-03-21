@@ -227,38 +227,54 @@ export const getAllAppointments = async (req, res) => {
 ===================================================== */
 export const approveAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id)
-      .populate("patient", "name phone")
-      .populate("doctor", "name");
+    const { appointmentId } = req.params;
 
-    if (!appointment) 
-      return res.status(404).json({ success: false, message: "Appointment not found" });
-
-    if (appointment.status !== "PENDING_ADMIN") 
-      return res.status(400).json({ success: false, message: "Invalid appointment status" });
-
-    // ✅ 1. Update status
-    appointment.status = "APPROVED_ADMIN";
-    await appointment.save();
-
-    // ✅ 2. Block doctor slot
-    const doctor = await Doctor.findById(appointment.doctor._id);
-    doctor.slots_book[appointment.date] = [
-      ...(doctor.slots_book[appointment.date] || []),
-      appointment.time,
-    ];
-    await doctor.save();
-
-    // ✅ 3. Send SMS to patient
-    if (appointment.patient?.phone) {
-      const message = `Hi ${appointment.patient.name}, your appointment with Dr. ${doctor.name} on ${appointment.date} at ${appointment.time} has been approved.`;
-      await sendSMS(appointment.patient.phone, message);
+    // Find the appointment
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Appointment not found" });
     }
 
-    res.json({ success: true, message: "Appointment approved and SMS sent" });
+    // Update status
+    appointment.status = "APPROVED"; // or "PENDING_DOCTOR" depending on your workflow
+    await appointment.save();
+
+    res.json({ success: true, appointment });
   } catch (err) {
-    console.error("APPROVE APPOINTMENT ERROR:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Approve appointment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+// Optional: Reject appointment
+export const rejectAppointment = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Appointment not found" });
+    }
+
+    appointment.status = "REJECTED";
+    await appointment.save();
+
+    res.json({ success: true, appointment });
+  } catch (err) {
+    console.error("Reject appointment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
