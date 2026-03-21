@@ -4,34 +4,12 @@ import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 import WalkInAppointmentForm from "../WalkInAppointmentForm"; // 🔑 import your form
 
-
 const AllAppointments = () => {
   const { aToken, backendUrl } = useContext(AdminContext);
 
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState(null);
-
-  <div className="flex justify-between items-center mb-4">
-  <p className="text-xl md:text-2xl font-semibold">All Appointments</p>
-  <button
-    onClick={() => setShowWalkInForm(prev => !prev)}
-    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
-  >
-    + Add Walk-in
-  </button>
-</div>
-
-{showWalkInForm && (
-  <div className="bg-white p-4 rounded-xl shadow mb-6">
-    <WalkInAppointmentForm />
-    <button
-      onClick={() => setShowWalkInForm(false)}
-      className="mt-2 bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-    >
-      Cancel
-    </button>
-  </div>
-)}
+  const [showWalkInForm, setShowWalkInForm] = useState(false); // 🔑 Walk-in form toggle
 
   // 🔥 Filters
   const [sortOrder, setSortOrder] = useState("newest");
@@ -39,7 +17,6 @@ const AllAppointments = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [showWalkInForm, setShowWalkInForm] = useState(false);
 
   // ✅ Fetch all appointments
   const fetchAppointments = async () => {
@@ -182,7 +159,29 @@ const AllAppointments = () => {
 
   return (
     <div className="w-full min-w-0 overflow-x-hidden p-4 md:p-6">
-      <p className="text-xl md:text-2xl font-semibold mb-4">All Appointments</p>
+      {/* 🔑 Header + Walk-in Button */}
+      <div className="flex justify-between items-center mb-4">
+        <p className="text-xl md:text-2xl font-semibold">All Appointments</p>
+        <button
+          onClick={() => setShowWalkInForm(prev => !prev)}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+        >
+          + Add Walk-in
+        </button>
+      </div>
+
+      {/* 🔑 Walk-in Form */}
+      {showWalkInForm && (
+        <div className="bg-white p-4 rounded-xl shadow mb-6">
+          <WalkInAppointmentForm onSuccess={fetchAppointments} />
+          <button
+            onClick={() => setShowWalkInForm(false)}
+            className="mt-2 bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* FILTER BAR */}
       <div className="flex gap-3 overflow-x-auto pb-3 mb-6">
@@ -231,7 +230,7 @@ const AllAppointments = () => {
         </select>
       </div>
 
-      {/* LIST */}
+      {/* LIST OF APPOINTMENTS */}
       {filteredAppointments.length === 0 ? (
         <p className="text-gray-500">No appointments found.</p>
       ) : (
@@ -264,8 +263,8 @@ const AllAppointments = () => {
                       appt.status === "COMPLETED"
                         ? "text-green-600"
                         : appt.status === "CANCELLED"
-                          ? "text-red-500"
-                          : "text-blue-500"
+                        ? "text-red-500"
+                        : "text-blue-500"
                     }
                   >
                     {appt.status}
