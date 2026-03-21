@@ -16,18 +16,50 @@ export const bookAppointment = async (req, res) => {
     const userId = req.user._id;
 
     if (!doctorId || !date || !time) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Doctor, date, and time are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Doctor, date, and time are required",
+      });
     }
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor)
       return res.status(404).json({ success: false, message: "Doctor not found" });
 
+    // ✅ 1. CHECK IF SLOT ALREADY BOOKED
+    const existingSlot = await Appointment.findOne({
+      doctor: doctorId,
+      date,
+      time,
+      status: { $in: ["PENDING_ADMIN", "APPROVED_ADMIN", "IN_PROGRESS"] },
+    });
+
+    if (existingSlot) {
+      return res.status(400).json({
+        success: false,
+        message: "This time slot is already booked",
+      });
+    }
+
+    // ✅ 2. PREVENT SAME USER DOUBLE BOOK
+    const existingUser = await Appointment.findOne({
+      doctor: doctorId,
+      patient: userId,
+      date,
+      time,
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "You already booked this slot",
+      });
+    }
+
+    // ✅ 3. CREATE APPOINTMENT
     const appointment = await Appointment.create({
-      patient: userId, // patient is the logged-in user
-      bookedBy: userId, // booked by themselves
+      patient: userId,
+      bookedBy: userId,
       doctor: doctorId,
       date,
       time,
@@ -38,17 +70,27 @@ export const bookAppointment = async (req, res) => {
       createdBy: userId,
     });
 
-    res
-      .status(201)
-      .json({ success: true, message: "Appointment submitted for admin approval", appointment });
+    // ✅ 4. RESERVE SLOT IMMEDIATELY
+    doctor.slots_book[date] = [
+      ...(doctor.slots_book[date] || []),
+      time,
+    ];
+    await doctor.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Appointment submitted for admin approval",
+      appointment,
+    });
   } catch (err) {
     console.error("BOOK APPOINTMENT ERROR:", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to book appointment", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to book appointment",
+      error: err.message,
+    });
   }
 };
-
 /* =====================================================
    PATIENT: BOOK APPOINTMENT FOR CHILD
 ===================================================== */
@@ -78,6 +120,21 @@ export const bookChildAppointment = async (req, res) => {
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+
+    // ✅ CHECK IF SLOT ALREADY BOOKED
+const existingSlot = await Appointment.findOne({
+  doctor: doctorId,
+  date,
+  time,
+  status: { $in: ["PENDING_ADMIN", "APPROVED_ADMIN", "IN_PROGRESS"] },
+});
+
+if (existingSlot) {
+  return res.status(400).json({
+    success: false,
+    message: "This time slot is already booked",
+  });
+}
 
     const appointment = new Appointment({
       patient: childId,
