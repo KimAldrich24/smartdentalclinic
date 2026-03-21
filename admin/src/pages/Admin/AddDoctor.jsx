@@ -17,6 +17,10 @@ const AddDoctor = () => {
   const [address2, setAddress2] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // ✅ ADDED
+  const [gender, setGender] = useState('');
+  const [dob, setDob] = useState('');
+
   const [passwordError, setPasswordError] = useState('');
   const [strength, setStrength] = useState('');
 
@@ -57,6 +61,22 @@ const AddDoctor = () => {
       return;
     }
 
+    // ✅ ADDED VALIDATION
+    if (!gender) {
+      toast.error('Please select gender');
+      return;
+    }
+
+    if (!dob) {
+      toast.error('Please select birthday');
+      return;
+    }
+
+    if (new Date(dob) > new Date()) {
+      toast.error('Birthday cannot be in the future');
+      return;
+    }
+
     // Validate experience
     if (experience === '' || experience < 0 || experience > 50) {
       toast.error('Experience must be between 0 and 50 years');
@@ -68,6 +88,11 @@ const AddDoctor = () => {
         name,
         email,
         password,
+
+        // ✅ ADDED
+        gender,
+        dob,
+
         experience: parseFloat(experience), // ensure number
         about,
         degree,
@@ -102,6 +127,11 @@ const AddDoctor = () => {
         setDegree('');
         setAddress1('');
         setAddress2('');
+
+        // ✅ ADDED RESET
+        setGender('');
+        setDob('');
+
         setStrength('');
       } else {
         toast.error(data.message || 'Failed to add doctor');
@@ -137,6 +167,27 @@ const AddDoctor = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
+          />
+
+          {/* ✅ ADDED GENDER */}
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            required
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+
+          {/* ✅ ADDED DOB */}
+          <input
+            type="date"
+            value={dob}
+            onChange={(e) => setDob(e.target.value)}
+            required
             className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
           />
 

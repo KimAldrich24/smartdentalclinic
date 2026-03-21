@@ -80,6 +80,16 @@ const doctorSchema = new mongoose.Schema(
       enum: ["doctor", "staff", "admin"],
       default: "doctor",
     },
+    gender: {
+      type: String,
+      enum: ['Male', 'Female'],
+      required: true,
+    },
+
+    dob: {
+      type: Date,
+      required: true,
+    },
 
     status: {
       type: String,
