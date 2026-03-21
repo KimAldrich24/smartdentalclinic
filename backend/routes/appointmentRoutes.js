@@ -20,6 +20,7 @@ import {
 } from "../controllers/appointmentController.js";
 import { deductEquipment } from '../controllers/equipmentController.js';
 import protect from "../middlewares/authMiddleware.js";
+import { authMiddleware } from "../middlewares/adminMiddleware.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import doctorAuthMiddleware from "../middlewares/doctorAuthMiddleware.js";
 
