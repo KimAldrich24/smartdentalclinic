@@ -5,10 +5,11 @@ import Doctor from "../models/doctorModel.js";
 import User from "../models/userModel.js";
 
 const roleModelMap = {
-  admin: Admin, //Admin
+  admin: Admin,
   staff: Staff,
   doctor: Doctor,
   patient: User,
+  guardian: User, // if guardians are stored in User collection
   user: User,
 };
 
