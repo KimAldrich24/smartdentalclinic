@@ -62,7 +62,7 @@ const appointmentSchema = new mongoose.Schema(
         "COMPLETED",
         "CANCELLED",
       ],
-      default: "APPROVED_ADMIN",
+      default: "PENDING_ADMIN",
     },
 
     /* ===========================
