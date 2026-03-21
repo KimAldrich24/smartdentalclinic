@@ -54,18 +54,32 @@ export const getRecentAppointments = async (req, res) => {
     const recent = await Appointment.find()
       .sort({ updatedAt: -1 })
       .limit(5)
-      .populate("patient", "name email")      // <--- patient instead of user
+      .populate("patient", "name email")
       .populate("doctor", "name specialization")
-      .populate("services", "name price")
-      .populate("bookedBy", "name email");    // <--- bookedBy instead of createdBy
+      .populate("bookedBy", "name email");
 
-    // Map fields to match frontend
-    const mappedRecent = recent.map(a => ({
-      ...a.toObject(),
-      user: a.patient,                // frontend expects 'user'
-      createdBy: a.bookedBy,          // frontend expects 'createdBy'
-      paymentStatus: a.paymentStatus === "paid_cash" ? "Paid" : a.paymentStatus,
-    }));
+    // Populate nested services manually
+    const mappedRecent = await Promise.all(
+      recent.map(async (a) => {
+        const populatedServices = await Promise.all(
+          a.services.map(async (s) => {
+            const serviceDoc = await Service.findById(s.service);
+            return {
+              name: serviceDoc?.name || "Unknown Service",
+              price: s.price || 0,
+            };
+          })
+        );
+
+        return {
+          ...a.toObject(),
+          user: a.patient,
+          createdBy: a.bookedBy,
+          services: populatedServices,
+          paymentStatus: a.paymentStatus === "paid_cash" ? "Paid" : a.paymentStatus,
+        };
+      })
+    );
 
     res.json({ appointments: mappedRecent });
   } catch (err) {
