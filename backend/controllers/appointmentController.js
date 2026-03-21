@@ -549,37 +549,46 @@ export const addWalkInAppointment = async (req, res) => {
   try {
     const { patientName, patientEmail, patientPhone, doctorId, date, time, service } = req.body;
 
-    // Generate random password for patient
-    const randomPassword = Math.random().toString(36).slice(-8);
-    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+    // --- 1. Check if patient already exists ---
+    let patient = await User.findOne({ email: patientEmail.trim().toLowerCase() });
 
-    // Create patient
-    const patient = await User.create({
-      name: patientName,
-      email: patientEmail,
-      phone: patientPhone,
-      password: hashedPassword,
-      role: "patient",
-      verified: true,
-    });
+    if (!patient) {
+      // Generate random password
+      const randomPassword = Math.random().toString(36).slice(-8);
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-    // Get doctor
+      // Create new patient
+      patient = await User.create({
+        name: patientName,
+        email: patientEmail.trim().toLowerCase(),
+        phone: patientPhone,
+        password: hashedPassword,
+        role: "patient",
+        verified: true,
+      });
+    }
+
+    // --- 2. Get doctor ---
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
-    // Create appointment
+    // --- 3. Create appointment ---
     const appointment = await Appointment.create({
       patient: patient._id,
-      doctor: doctorId,
-      bookedBy: null, // optional
+      doctor: doctor._id,
+      bookedBy: patient._id, // Since no admin/receptionist login, set patient as bookedBy
       date,
       time,
-      service,
-      status: "APPROVED_ADMIN", // must match enum
+      // Map service to services array if provided
+      services: service
+        ? [{ service: null, price: 0 }] // optional: set service ID & price if needed
+        : [],
+      status: "APPROVED_ADMIN", // Auto-approved walk-in
       type: "walk-in",
+      paymentStatus: "pending",
     });
 
-    // Add appointment to doctor's schedule
+    // --- 4. Add to doctor's appointments ---
     doctor.appointments.push(appointment._id);
     await doctor.save();
 
