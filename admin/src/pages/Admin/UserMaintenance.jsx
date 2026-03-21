@@ -123,7 +123,7 @@ const UserMaintenance = () => {
             <th className="p-2 border">Name</th>
             <th className="p-2 border">Email</th>
             <th className="p-2 border">Role</th>
-            <th className="p-2 border">Actions</th>
+            {/* <th className="p-2 border">Actions</th> */}
           </tr>
         </thead>
 

@@ -77,14 +77,30 @@ const DoctorSchedule = () => {
   };
 
   const handleSaveSchedule = async () => {
-    if (!selectedDate || timeSlots.length === 0) {
-      toast.error('Select a date and add slots');
-      return;
-    }
-    if (isPastDate(selectedDate)) {
-      toast.error('Cannot create schedule for past dates');
-      return;
-    }
+  if (!selectedDate || timeSlots.length === 0) {
+    toast.error('Select a date and add slots');
+    return;
+  }
+
+  const today = new Date();
+  const selected = new Date(selectedDate);
+  const maxDate = new Date();
+  maxDate.setMonth(maxDate.getMonth() + 1); // max 1 month ahead
+
+  // Reset time to ignore hours
+  today.setHours(0, 0, 0, 0);
+  selected.setHours(0, 0, 0, 0);
+  maxDate.setHours(0, 0, 0, 0);
+
+  if (selected < today) {
+    toast.error('Cannot create schedule for past dates');
+    return;
+  }
+
+  if (selected > maxDate) {
+    toast.error('Cannot create schedule more than 1 month ahead');
+    return;
+  }
 
     try {
       const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
@@ -170,12 +186,14 @@ const DoctorSchedule = () => {
 
       {/* Add/Edit Schedule */}
       <div className="space-y-4 mb-6">
+        {/* Select Date */}
         <div>
           <label className="block mb-1">Select Date</label>
           <input
             type="date"
             value={selectedDate}
-            min={new Date().toISOString().split('T')[0]}
+            min={new Date().toISOString().split('T')[0]} // today
+            max={new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]} // 1 month ahead
             onChange={(e) => setSelectedDate(e.target.value)}
             className="border px-3 py-2 rounded w-full"
           />
