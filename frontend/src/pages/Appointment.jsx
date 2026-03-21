@@ -152,9 +152,15 @@ const Appointment = () => {
         toast.error(res.data.message || "Booking failed");
       }
     } catch (err) {
-      console.error("Booking error:", err);
-      toast.error(err.response?.data?.message || "Booking failed");
-    } finally {
+  if (err.response) {
+    // Backend blocked it (duplicate slot)
+    toast.error(err.response.data.message);
+  } else {
+    toast.error("Something went wrong");
+  }
+
+  console.log("Booking blocked:", err.response?.data);
+} finally {
       setBooking(false);
     }
   };
