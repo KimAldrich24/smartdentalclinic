@@ -390,25 +390,29 @@ const MyProfile = () => {
             <button onClick={()=>setIsEdit(true)}
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg shadow-md">Edit</button>
 
-            {userData.role!=="guardian" && (
-              <button onClick={async ()=>{
-                if(!window.confirm("Do you want to become a guardian?")) return;
-                try{
-                  const {data}=await axios.put(`${backendUrl}/api/users/become-guardian`, {}, { headers:{Authorization:`Bearer ${token}`}});
-                  if(data.success){
-                    setUserData(prev=>({...prev, role:data.user.role, children:data.user.children || []}));
-                    setChildren(data.user.children || []);
-                    alert("You are now a guardian! You can add children now.");
-                  }
-                }catch(err){
-                  console.error(err);
-                  alert(err.response?.data?.message || "Failed to become guardian");
-                }
-              }}
-              className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg shadow-md">
-                Become Guardian
-              </button>
-            )}
+            {userData?.role !== "guardian" && (
+  <button onClick={async () => {
+    if (!window.confirm("Do you want to become a guardian?")) return;
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/users/become-guardian`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (data.success) {
+        setUserData(prev => ({ ...prev, role: data.user.role, children: data.user.children || [] }));
+        setChildren(data.user.children || []);
+        alert("You are now a guardian! You can add children now.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to become guardian");
+    }
+  }}
+  className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg shadow-md">
+    Become Guardian
+  </button>
+)}
           </>
         )}
       </div>
