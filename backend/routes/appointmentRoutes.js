@@ -106,18 +106,18 @@ router.put("/doctor/:id/complete", doctorAuthMiddleware, completeAppointment);
 router.post("/walk-in", addWalkInAppointment);
 
 // routes/appointmentRoutes.js
-router.get("/doctor/my-appointments", protect(["doctor"]), async (req, res) => {
-  try {
-    const appointments = await Appointment.find({ doctor: req.userId }) // req.userId = doctor ID
-      .populate("patient", "name email phone")
-      .populate("bookedBy", "name role")
-      .sort({ date: 1, time: 1 });
+// router.get("/doctor/my-appointments", protect(["doctor"]), async (req, res) => {
+//   try {
+//     const appointments = await Appointment.find({ doctor: req.userId }) // req.userId = doctor ID
+//       .populate("patient", "name email phone")
+//       .populate("bookedBy", "name role")
+//       .sort({ date: 1, time: 1 });
 
-    res.json({ success: true, appointments });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+//     res.json({ success: true, appointments });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// });
 
 // router.put('/doctor/:id/assign-services', authMiddleware, assignServices);
 
