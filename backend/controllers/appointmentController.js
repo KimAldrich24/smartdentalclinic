@@ -205,7 +205,7 @@ export const getAllAppointments = async (req, res) => {
       // Check if patient is in bookedBy.children
       if (appt.bookedBy && appt.bookedBy.children) {
         const child = appt.bookedBy.children.find(
-          appt.patient?._id?.toString()
+          (c) => c._id.toString() === appt.patient?._id?.toString()
         );
         if (child) {
           apptObj.childName = child.name;
