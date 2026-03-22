@@ -41,8 +41,8 @@ router.get("/prescriptions", getAllPrescriptions);
 // GET /api/admin/profile
 router.get("/profile", adminAuthMiddleware, async (req, res) => {
   try {
-    // Fetch the user based on token userId
-    const admin = await User.findById(req.userId).select("-password");
+    // ✅ use req.user.id
+    const admin = await User.findById(req.user.id).select("-password");
 
     if (!admin) {
       return res.status(404).json({ success: false, message: "Admin not found" });
