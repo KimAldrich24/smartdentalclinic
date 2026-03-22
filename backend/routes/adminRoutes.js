@@ -72,7 +72,7 @@ router.put("/profile", adminAuthMiddleware, async (req, res) => {
     const { name, phone } = req.body;
     
     const admin = await User.findByIdAndUpdate(
-      req.userId,
+      req.user.id, // ✅ use req.user.id
       { name, phone },
       { new: true }
     ).select("-password");
