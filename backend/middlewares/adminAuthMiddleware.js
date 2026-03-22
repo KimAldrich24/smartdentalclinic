@@ -1,11 +1,11 @@
 import jwt from "jsonwebtoken";
+import User from "../models/userModel.js"; // ✅ your admin is here
 
 const adminAuthMiddleware = async (req, res, next) => {
   try {
     console.log("🔐 adminAuthMiddleware - Checking authorization...");
-    
+
     const authHeader = req.headers.authorization;
-    
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       console.log("❌ No token provided");
       return res.status(401).json({ success: false, message: "No token provided" });
@@ -16,19 +16,16 @@ const adminAuthMiddleware = async (req, res, next) => {
 
     console.log("✅ Token decoded:", decoded);
 
-    // Check if admin or staff
-    if (!decoded.role || !["admin", "staff"].includes(decoded.role)) {
-      console.log("❌ Access denied - not admin/staff");
+    // Fetch admin/staff from User collection
+    const admin = await User.findById(decoded.id);
+    if (!admin || !["admin", "staff"].includes(admin.role)) {
+      console.log("❌ Access denied - not admin/staff or user not found");
       return res.status(403).json({ success: false, message: "Access denied - admin/staff only" });
     }
 
-    // Attach user info to request
-    req.user = {
-      id: decoded.id,
-      role: decoded.role,
-    };
-
-    console.log("✅ Admin auth passed, user:", req.user);
+    // Attach the full admin object to request
+    req.admin = admin;
+    console.log("✅ Admin auth passed, admin:", req.admin);
     next();
   } catch (err) {
     console.error("❌ adminAuthMiddleware error:", err.message);
