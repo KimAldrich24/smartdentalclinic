@@ -5,7 +5,7 @@ import Doctor from "../models/doctorModel.js";
 import User from "../models/userModel.js";
 
 const roleModelMap = {
-  admin: User,
+  admin: Admin,
   staff: Staff,
   doctor: Doctor,
   patient: User,
