@@ -193,6 +193,7 @@ export const getAllAppointments = async (req, res) => {
   try {
     let appointments = await Appointment.find()
       .populate("doctor", "name speciality image")
+      .populate("patient", "name email") // ✅ ADD THIS
       .populate("bookedBy", "name email children") // include children array
       .populate("services.service", "name price duration")
       .sort({ date: 1, time: 1 });
@@ -204,7 +205,7 @@ export const getAllAppointments = async (req, res) => {
       // Check if patient is in bookedBy.children
       if (appt.bookedBy && appt.bookedBy.children) {
         const child = appt.bookedBy.children.find(
-          (c) => c._id.toString() === appt.patient.toString()
+          appt.patient?._id?.toString()
         );
         if (child) {
           apptObj.childName = child.name;
