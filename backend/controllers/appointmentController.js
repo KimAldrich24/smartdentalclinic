@@ -487,29 +487,33 @@ export const adminCompleteAppointment = async (req, res) => {
 export const getPatientCompletedAppointments = async (req, res) => {
   try {
     const { patientId } = req.params;
+
     console.log("Fetching completed appointments for:", patientId);
 
-    const parent = await User.findById(patientId).select("children");
-    const childIds = parent?.children?.map(c => c._id) || [];
+    const parent = await User.findById(patientId);
+
+    if (!parent) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // ✅ FIX: extract only IDs
+    const childIds = (parent.children || []).map(c => c._id);
+
     const idsToCheck = [patientId, ...childIds];
 
     const appointments = await Appointment.find({
-      $or: [
-        { patient: { $in: idsToCheck } },
-        { bookedBy: { $in: idsToCheck } } // include who booked
-      ],
-      status: { $regex: /completed/i } // match any case: Completed, COMPLETED, completed
+      patient: { $in: idsToCheck }, // ✅ SIMPLIFIED
+      status: "COMPLETED"           // ✅ STRICT MATCH
     })
       .populate("doctor", "name email speciality")
-      .populate("patient", "name")
-      .populate("services.service", "name price duration")
+      .populate("patient", "name email")
       .sort({ date: -1, time: -1 });
 
     console.log("Appointments found:", appointments.length);
 
     res.json({ success: true, appointments });
   } catch (err) {
-    console.error(err);
+    console.error("❌ ERROR getPatientCompletedAppointments:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
