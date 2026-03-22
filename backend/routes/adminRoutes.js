@@ -42,7 +42,7 @@ router.get("/prescriptions", getAllPrescriptions);
 router.get("/profile", adminAuthMiddleware, async (req, res) => {
   try {
     // ✅ use req.user.id
-    const admin = await User.findById(req.user.id).select("-password");
+    const admin = req.admin;
 
     if (!admin) {
       return res.status(404).json({ success: false, message: "Admin not found" });
@@ -72,7 +72,7 @@ router.put("/profile", adminAuthMiddleware, async (req, res) => {
     const { name, phone } = req.body;
     
     const admin = await User.findByIdAndUpdate(
-      req.user.id, // ✅ use req.user.id
+      req.admin._id, // ✅ use req.user.id
       { name, phone },
       { new: true }
     ).select("-password");
