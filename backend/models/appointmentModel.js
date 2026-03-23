@@ -16,14 +16,19 @@ const appointmentSchema = new mongoose.Schema(
     },
 
     // Who booked the appointment (could be guardian)
-    bookedBy: {
+    type: {
+  type: String,
+  enum: ["online", "walk-in"],
+  default: "online",
+},
+
+bookedBy: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "User",
   required: function () {
-    return this.type !== "walk-in"; // ✅ only required for online bookings
+    return this.type !== "walk-in"; // ✅ now works
   },
 },
-
     /* ===========================
        SERVICES (Assigned by Doctor)
        Multiple services supported
@@ -33,11 +38,11 @@ const appointmentSchema = new mongoose.Schema(
         service: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Service",
-          required: true,
+          required: false,
         },
         price: {
           type: Number,
-          required: true,
+          required: false,
         },
       },
     ],
