@@ -6,6 +6,10 @@ import verifyToken from "../middlewares/verifyToken.js"; // make sure you have t
 
 const router = express.Router();
 
+// // PUT /api/equipment/deduct
+router.put("/deduct", verifyToken, deductEquipmentBatch);
+
+
 /* ===============================
    GET ALL EQUIPMENT
    Populates supplier info
@@ -167,7 +171,5 @@ router.put("/:id/quantity", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// // PUT /api/equipment/deduct
-router.put("/deduct", verifyToken, deductEquipmentBatch);
 
 export default router;
