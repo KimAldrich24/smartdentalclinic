@@ -161,27 +161,45 @@ const DoctorDashboard = () => {
       return { serviceId: id, price: finalPrice ?? (svc?.price ?? 0) };
     });
 
-    // Send request to doctorAssignServices endpoint
-    const res = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
+    // 1️⃣ Update appointment services
+    const resAppt = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${dToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        services: servicesPayload,
-        usedEquipment: usedEquipment || {} // ✅ match backend
-      })
+      body: JSON.stringify({ services: servicesPayload })
     });
 
-    const data = await res.json();
+    const dataAppt = await resAppt.json();
 
-    if (!data.success) return toast.error(data.message || "Failed to update appointment");
+    if (!dataAppt.success) return toast.error(dataAppt.message || "Failed to update appointment");
 
-    toast.success("Appointment updated & equipment deducted");
+    // 2️⃣ Deduct equipment separately
+    if (usedEquipment && Object.keys(usedEquipment).length > 0) {
+      const resEquip = await fetch(`${backendUrl}/api/equipment/deduct`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${dToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ equipmentUsed: usedEquipment })
+      });
 
-    // Refresh appointments
+      const dataEquip = await resEquip.json();
+      if (!dataEquip.success) {
+        console.warn("Equipment deduction failed", dataEquip.message);
+        toast.warning("Appointment updated but failed to deduct equipment");
+      } else {
+        toast.success("Appointment updated & equipment deducted");
+      }
+    } else {
+      toast.success("Appointment updated");
+    }
+
+    // Refresh appointments & equipment
     fetchAppointments();
+    fetchEquipment();
 
   } catch (err) {
     console.error(err);

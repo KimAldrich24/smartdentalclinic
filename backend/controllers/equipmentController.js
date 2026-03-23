@@ -235,6 +235,7 @@ export const updateQuantity = async (req, res) => {
   }
 };
 
+// controllers/equipmentController.js
 export const deductEquipmentBatch = async (req, res) => {
   try {
     const { equipmentUsed } = req.body; // { equipmentId: quantityUsed }
@@ -243,19 +244,18 @@ export const deductEquipmentBatch = async (req, res) => {
       return res.status(400).json({ success: false, message: "No equipment provided" });
     }
 
-    const updates = await Promise.all(
-      Object.entries(equipmentUsed).map(async ([id, used]) => {
-        const eq = await Equipment.findById(id);
-        if (!eq) return null;
+    const updates = [];
 
-        // only deduct consumables
-        eq.quantity = Math.max(eq.quantity - Number(used), 0);
-        await eq.save();
-        return eq;
-      })
-    );
+    for (const [id, qty] of Object.entries(equipmentUsed)) {
+      const eq = await Equipment.findById(id);
+      if (!eq) continue;
 
-    res.json({ success: true, equipment: updates.filter(Boolean) });
+      eq.quantity = Math.max(eq.quantity - Number(qty), 0); // deduct anything
+      await eq.save();
+      updates.push(eq);
+    }
+
+    res.json({ success: true, message: "Equipment deducted successfully", equipment: updates });
 
   } catch (err) {
     console.error(err);
