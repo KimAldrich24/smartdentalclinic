@@ -114,14 +114,14 @@ const MyAppointments = () => {
               {/* Action Buttons */}
               <div className="flex flex-col gap-3 mt-4 md:mt-0">
                 {/* Pay by GCash Button */}
-                {appt.paymentStatus === 'pending' && (
+                {/* {appt.paymentStatus === 'pending' && (
                   <button
                     onClick={() => navigate(`/payment/gcash/${appt._id}`)}
                     className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-sm"
                   >
                     Pay by GCash
                   </button>
-                )}
+                )} */}
 
                 {/* Cancel Button */}
                 {appt.status === "booked" && (
