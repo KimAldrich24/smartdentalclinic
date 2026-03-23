@@ -228,22 +228,27 @@ export const getAllAppointments = async (req, res) => {
 ===================================================== */
 export const approveAppointment = async (req, res) => {
   try {
-    const { id } = req.params; // 🔑 match frontend param
+    const { id } = req.params;
+    const appointment = await Appointment.findById(id).populate("patient", "name phone type");
 
-    // Find appointment
-    const appointment = await Appointment.findById(id);
     if (!appointment) {
       return res.status(404).json({ success: false, message: "Appointment not found" });
     }
 
-    // Update status for admin approval
+    // ✅ Update status
     appointment.status = "APPROVED_ADMIN";
     await appointment.save();
+
+    // ✅ Send SMS ONLY if appointment is online
+    if (appointment.type === "online" && appointment.patient?.phone) {
+      const message = `Hello ${appointment.patient.name}, your online appointment on ${appointment.date} at ${appointment.time} has been approved by admin.`;
+      await sendSMS(appointment.patient.phone, message);
+    }
 
     // Add credit if appointment has totalPrice
     if (appointment.totalPrice) {
       await Credit.create({
-        user: appointment.patient, // patient is correct field
+        user: appointment.patient._id,
         amount: appointment.totalPrice,
         description: `Credit for appointment ${appointment._id}`,
       });
