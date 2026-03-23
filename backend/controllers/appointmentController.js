@@ -568,8 +568,12 @@ export const getPrescriptions = async (req, res) => {
 const addCreditFromAppointment = async (appointment) => {
   if (!appointment.patient) return;
 
-  const creditAmount = appointment.totalPrice || 0; // or some calculation
-  let credit = await Credit.findOne({ user: appointment.patient });
+  // Determine the actual user ID
+  const userId = appointment.patient._id || appointment.patient; // works for child sub-doc or direct user
+
+  const creditAmount = appointment.totalPrice || 0;
+
+  let credit = await Credit.findOne({ user: userId });
 
   if (credit) {
     credit.amount += creditAmount;
@@ -580,7 +584,7 @@ const addCreditFromAppointment = async (appointment) => {
     });
   } else {
     credit = new Credit({
-      user: appointment.patient, // ✅ use appointment.patient here
+      user: userId,
       amount: creditAmount,
       history: [
         {
@@ -594,7 +598,6 @@ const addCreditFromAppointment = async (appointment) => {
 
   await credit.save();
 };
-
 /* =====================================================
    ADMIN: MARK APPOINTMENT AS PAID
 ===================================================== */
