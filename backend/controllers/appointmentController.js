@@ -238,12 +238,13 @@ export const approveAppointment = async (req, res) => {
         .json({ success: false, message: "Appointment not found" });
     }
 
-    // Update status
-    appointment.status = "APPROVED"; // or "PENDING_DOCTOR" depending on your workflow
+    // ✅ Update status for admin approval
+    appointment.status = "APPROVED_ADMIN";
     await appointment.save();
 
+    // ✅ Add credit if appointment has a totalPrice
     if (appointment.totalPrice) {
-      const creditUserId = appointment.user; // ✅ fetch the user from appointment
+      const creditUserId = appointment.patient; // correct field
       await Credit.create({
         user: creditUserId,
         amount: appointment.totalPrice,
@@ -251,7 +252,7 @@ export const approveAppointment = async (req, res) => {
       });
     }
 
-    res.json({ success: true, appointment });
+    res.json({ success: true, message: "Appointment approved by admin", appointment });
   } catch (err) {
     console.error("Approve appointment error:", err);
     res.status(500).json({
