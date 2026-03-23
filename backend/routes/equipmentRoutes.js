@@ -168,6 +168,6 @@ router.put("/:id/quantity", adminAuthMiddleware, async (req, res) => {
 });
 
 // // PUT /api/equipment/deduct
-router.put("/deduct", verifyToken, deductEquipmentBatch);
+router.put("/deduct", deductEquipmentBatch);
 
 export default router;
