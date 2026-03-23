@@ -228,25 +228,22 @@ export const getAllAppointments = async (req, res) => {
 ===================================================== */
 export const approveAppointment = async (req, res) => {
   try {
-    const { appointmentId } = req.params;
+    const { id } = req.params; // 🔑 match frontend param
 
-    // Find the appointment
-    const appointment = await Appointment.findById(appointmentId);
+    // Find appointment
+    const appointment = await Appointment.findById(id);
     if (!appointment) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Appointment not found" });
+      return res.status(404).json({ success: false, message: "Appointment not found" });
     }
 
-    // ✅ Update status for admin approval
+    // Update status for admin approval
     appointment.status = "APPROVED_ADMIN";
     await appointment.save();
 
-    // ✅ Add credit if appointment has a totalPrice
+    // Add credit if appointment has totalPrice
     if (appointment.totalPrice) {
-      const creditUserId = appointment.patient; // correct field
       await Credit.create({
-        user: creditUserId,
+        user: appointment.patient, // patient is correct field
         amount: appointment.totalPrice,
         description: `Credit for appointment ${appointment._id}`,
       });
@@ -255,11 +252,7 @@ export const approveAppointment = async (req, res) => {
     res.json({ success: true, message: "Appointment approved by admin", appointment });
   } catch (err) {
     console.error("Approve appointment error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: err.message,
-    });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -316,23 +309,17 @@ export const getDoctorAppointments = async (req, res) => {
 ===================================================== */
 export const doctorAssignServices = async (req, res) => {
   try {
+    const { id } = req.params; // match frontend
     const { services, usedEquipment } = req.body;
-    // services = [{ serviceId, price }]
-    // usedEquipment = { equipmentId: quantityUsed }
 
-    const appointment = await Appointment.findById(req.params.id);
-    if (!appointment)
-      return res.status(404).json({ success: false, message: "Appointment not found" });
+    const appointment = await Appointment.findById(id);
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
 
-    if (appointment.status !== "APPROVED_ADMIN")
-      return res.status(400).json({
-        success: false,
-        message: "Can only assign services after admin approval",
-      });
+    if (appointment.status !== "APPROVED_ADMIN") {
+      return res.status(400).json({ success: false, message: "Can only assign services after admin approval" });
+    }
 
-    // ============================
-    // 1. Assign Services
-    // ============================
+    // Assign services
     const formattedServices = [];
     for (const s of services) {
       const service = await Service.findById(s.serviceId);
@@ -347,20 +334,13 @@ export const doctorAssignServices = async (req, res) => {
     appointment.status = "IN_PROGRESS";
     await appointment.save();
 
-    // ============================
-    // 2. Deduct Used Equipment
-    // ============================
+    // Deduct equipment
     let equipmentDeduction = [];
-
     if (usedEquipment && typeof usedEquipment === "object") {
       for (const [eqId, qty] of Object.entries(usedEquipment)) {
         const equipment = await Equipment.findById(eqId);
         if (!equipment) {
-          equipmentDeduction.push({
-            equipmentId: eqId,
-            success: false,
-            message: "Equipment not found",
-          });
+          equipmentDeduction.push({ equipmentId: eqId, success: false, message: "Equipment not found" });
           continue;
         }
 
@@ -388,7 +368,7 @@ export const doctorAssignServices = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Services assigned and equipment updated",
+      message: "Services assigned and appointment in progress",
       appointment,
       equipmentDeduction,
     });
