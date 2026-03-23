@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
-import User from "../models/userModel.js"; // ✅ your admin is here
+import User from "../models/userModel.js";
+import Doctor from "../models/doctorModel.js";
 
 const adminAuthMiddleware = async (req, res, next) => {
   try {
@@ -16,14 +17,23 @@ const adminAuthMiddleware = async (req, res, next) => {
 
     console.log("✅ Token decoded:", decoded);
 
-    // Fetch admin/staff from User collection
-    const admin = await User.findById(decoded.id);
+    // Check for admin/staff first
+    let admin = await User.findById(decoded.id);
+
+    // If not admin/staff, try doctor (optional, you can skip if doctors never access admin routes)
+    if (!admin) {
+      const doctor = await Doctor.findById(decoded.id);
+      if (doctor) {
+        console.log("❌ Access denied - doctors cannot access admin routes");
+        return res.status(403).json({ success: false, message: "Access denied - admin/staff only" });
+      }
+    }
+
     if (!admin || !["admin", "staff"].includes(admin.role)) {
       console.log("❌ Access denied - not admin/staff or user not found");
       return res.status(403).json({ success: false, message: "Access denied - admin/staff only" });
     }
 
-    // Attach the full admin object to request
     req.admin = admin;
     console.log("✅ Admin auth passed, admin:", req.admin);
     next();

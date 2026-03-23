@@ -238,7 +238,7 @@ export const updateQuantity = async (req, res) => {
 // controllers/equipmentController.js
 export const deductEquipmentBatch = async (req, res) => {
   try {
-    const { equipmentUsed } = req.body; // { equipmentId: quantityUsed }
+    const { equipmentUsed } = req.body;
 
     if (!equipmentUsed || Object.keys(equipmentUsed).length === 0) {
       return res.status(400).json({ success: false, message: "No equipment provided" });
@@ -250,13 +250,15 @@ export const deductEquipmentBatch = async (req, res) => {
       const eq = await Equipment.findById(id);
       if (!eq) continue;
 
-      eq.quantity = Math.max(eq.quantity - Number(qty), 0); // deduct anything
+      // Only allow deduction for consumables
+      if (eq.type !== "consumable") continue;
+
+      eq.quantity = Math.max(eq.quantity - Number(qty), 0);
       await eq.save();
       updates.push(eq);
     }
 
     res.json({ success: true, message: "Equipment deducted successfully", equipment: updates });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to deduct equipment" });
