@@ -153,44 +153,39 @@ const DoctorDashboard = () => {
 
   const handleUpdateAppointment = async (apptId, selectedServiceIds, finalPrice, usedEquipment) => {
   try {
+    if (!dToken) return toast.error("Not authenticated");
+
     // Prepare services payload
     const servicesPayload = selectedServiceIds.map(id => {
       const svc = services.find(s => s._id === id);
-      return { serviceId: id, price: finalPrice || (svc?.price ?? 0) };
+      return { serviceId: id, price: finalPrice ?? (svc?.price ?? 0) };
     });
 
-    // Update appointment services
-    const res1 = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
+    // Send request to doctorAssignServices endpoint
+    const res = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${dToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ services: servicesPayload, equipmentUsed: usedEquipment || {} })
+      body: JSON.stringify({
+        services: servicesPayload,
+        usedEquipment: usedEquipment || {} // ✅ match backend
+      })
     });
 
-    const data1 = await res1.json();
-    if (!data1.success) return toast.error(data1.message || 'Failed to update appointment');
+    const data = await res.json();
 
-    // Deduct equipment quantities automatically
-    const res2 = await fetch(`${backendUrl}/api/equipment/deduct`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${dToken}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ equipmentUsed: usedEquipment }) // FIXED HERE
-    });
+    if (!data.success) return toast.error(data.message || "Failed to update appointment");
 
-    const data2 = await res2.json();
-    if (data2.success) toast.success('Appointment updated & equipment deducted');
-    else toast.warning('Appointment updated but failed to deduct equipment');
+    toast.success("Appointment updated & equipment deducted");
 
+    // Refresh appointments
     fetchAppointments();
 
   } catch (err) {
     console.error(err);
-    toast.error('Error updating appointment or equipment');
+    toast.error("Error updating appointment or deducting equipment");
   }
 };
 
