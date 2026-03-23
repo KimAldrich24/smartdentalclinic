@@ -229,7 +229,9 @@ export const getAllAppointments = async (req, res) => {
 export const approveAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await Appointment.findById(id).populate("patient", "name phone type");
+
+    const appointment = await Appointment.findById(id)
+      .populate("patient", "name phone");
 
     if (!appointment) {
       return res.status(404).json({ success: false, message: "Appointment not found" });
@@ -239,13 +241,17 @@ export const approveAppointment = async (req, res) => {
     appointment.status = "APPROVED_ADMIN";
     await appointment.save();
 
-    // ✅ Send SMS ONLY if appointment is online
-    if (appointment.type === "online" && appointment.patient?.phone) {
-      const message = `Hello ${appointment.patient.name}, your online appointment on ${appointment.date} at ${appointment.time} has been approved by admin.`;
-      await sendSMS(appointment.patient.phone, message);
+    // ✅ SAFE SMS (will never break your system)
+    try {
+      if ((!appointment.type || appointment.type === "online") && appointment.patient?.phone) {
+        const message = `Hello ${appointment.patient.name}, your appointment on ${appointment.date} at ${appointment.time} has been approved by admin.`;
+        await sendSMS(appointment.patient.phone, message);
+      }
+    } catch (smsErr) {
+      console.log("⚠️ SMS failed but approval is safe:", smsErr.message);
     }
 
-    // Add credit if appointment has totalPrice
+    // Add credit if needed
     if (appointment.totalPrice) {
       await Credit.create({
         user: appointment.patient._id,
@@ -254,10 +260,19 @@ export const approveAppointment = async (req, res) => {
       });
     }
 
-    res.json({ success: true, message: "Appointment approved by admin", appointment });
+    res.json({
+      success: true,
+      message: "Appointment approved by admin",
+      appointment,
+    });
+
   } catch (err) {
     console.error("Approve appointment error:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
