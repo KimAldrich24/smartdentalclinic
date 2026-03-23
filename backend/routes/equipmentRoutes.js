@@ -167,7 +167,7 @@ router.put("/:id/quantity", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// PUT /api/equipment/deduct
-router.put("/deduct", verifyToken, deductEquipmentBatch);
+// // PUT /api/equipment/deduct
+// router.put("/deduct", verifyToken, deductEquipmentBatch);
 
 export default router;
