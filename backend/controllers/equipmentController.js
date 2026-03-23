@@ -250,15 +250,14 @@ export const deductEquipmentBatch = async (req, res) => {
       const eq = await Equipment.findById(id);
       if (!eq) continue;
 
-      // Only allow deduction for consumables
-      if (eq.type !== "consumable") continue;
-
+      // Deduct anything
       eq.quantity = Math.max(eq.quantity - Number(qty), 0);
       await eq.save();
       updates.push(eq);
     }
 
     res.json({ success: true, message: "Equipment deducted successfully", equipment: updates });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to deduct equipment" });
