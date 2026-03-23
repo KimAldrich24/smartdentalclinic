@@ -17,10 +17,12 @@ const appointmentSchema = new mongoose.Schema(
 
     // Who booked the appointment (could be guardian)
     bookedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  required: function () {
+    return this.type !== "walk-in"; // ✅ only required for online bookings
+  },
+},
 
     /* ===========================
        SERVICES (Assigned by Doctor)
