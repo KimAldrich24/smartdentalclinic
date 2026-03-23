@@ -309,17 +309,20 @@ export const getDoctorAppointments = async (req, res) => {
 ===================================================== */
 export const doctorAssignServices = async (req, res) => {
   try {
-    const { id } = req.params; // match frontend
-    const { services, usedEquipment } = req.body;
+    const { services, usedEquipment } = req.body; // services = [{ serviceId, price }], usedEquipment = { equipmentId: qty }
 
-    const appointment = await Appointment.findById(id);
-    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+    // 1️⃣ Find appointment
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment)
+      return res.status(404).json({ success: false, message: "Appointment not found" });
 
-    if (appointment.status !== "APPROVED_ADMIN") {
-      return res.status(400).json({ success: false, message: "Can only assign services after admin approval" });
-    }
+    if (appointment.status !== "APPROVED_ADMIN")
+      return res.status(400).json({
+        success: false,
+        message: "Can only assign services after admin approval",
+      });
 
-    // Assign services
+    // 2️⃣ Assign Services
     const formattedServices = [];
     for (const s of services) {
       const service = await Service.findById(s.serviceId);
@@ -329,13 +332,10 @@ export const doctorAssignServices = async (req, res) => {
         price: s.price ?? service.price,
       });
     }
-
     appointment.services = formattedServices;
-    appointment.status = "IN_PROGRESS";
-    await appointment.save();
 
-    // Deduct equipment
-    let equipmentDeduction = [];
+    // 3️⃣ Deduct Equipment directly here
+    const equipmentDeduction = [];
     if (usedEquipment && typeof usedEquipment === "object") {
       for (const [eqId, qty] of Object.entries(usedEquipment)) {
         const equipment = await Equipment.findById(eqId);
@@ -366,9 +366,14 @@ export const doctorAssignServices = async (req, res) => {
       }
     }
 
+    // 4️⃣ Update appointment status
+    appointment.status = "IN_PROGRESS";
+    await appointment.save();
+
+    // 5️⃣ Respond with updated appointment and deduction info
     res.json({
       success: true,
-      message: "Services assigned and appointment in progress",
+      message: "Services assigned and equipment updated",
       appointment,
       equipmentDeduction,
     });
