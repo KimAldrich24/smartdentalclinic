@@ -533,3 +533,42 @@ export const getChildren = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch children", error: err.message });
   }
 };
+
+export const checkEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Email is required" 
+      });
+    }
+
+    const result = {
+      email: { exists: false, message: "Email is available" },
+    };
+
+    // Check email
+    if (email) {
+      const emailInUser = await User.findOne({ email });
+      const emailInDoctor = await Doctor.findOne({ email });
+
+      if (emailInUser || emailInDoctor) {
+        result.email = { exists: true, message: "Email is already taken" };
+      }
+    }
+
+    const hasConflict = result.email.exists;
+
+    return res.status(200).json({
+      success: true,
+      available: !hasConflict,
+      result,
+    });
+
+  } catch (error) {
+    console.error("Check Availability Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

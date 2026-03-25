@@ -46,6 +46,9 @@ const Login = () => {
     todayDate.getDate()
   );
   const maxDob = eighteenYearsAgo.toISOString().split("T")[0]; // YYYY-MM-DD
+  // Check email or user name availability errors
+  const [fieldErrors, setFieldErrors] = useState({ email: "" });
+
 
   // Load saved registration data from session storage on component mount
   useEffect(() => {
@@ -117,6 +120,14 @@ const Login = () => {
     setLoading(true);
 
     try {
+      const emailResult = await checkEmail(formData.email);
+
+      if (emailResult.exists) {
+        setError(emailResult.message || "Email is already registered");
+        setLoading(false);
+        return;
+      }
+
       // Save form data in session storage
       sessionStorage.setItem("registrationData", JSON.stringify(formData));
 
@@ -196,6 +207,29 @@ const Login = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    const email = formData.email.trim();
+    const password = formData.password.trim();
+
+    // Validate email and password presence
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -208,6 +242,34 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  const checkEmail = async (email) => {
+    try {
+      // DEPLOYEMENT
+      // const res = await axios.post(`${API_URL}/auth/checkEmail`, { email: emailValue }, {
+      //   headers: { "Content-Type": "application/json" }
+      // });
+
+      // TESTING
+      const res = await axios.post(`http://localhost:4000/api/users/check-email`, { email: email }, {
+        headers: { "Content-Type": "application/json" }
+      });
+      return res?.data?.result?.email || { exists: false };
+    } catch (err) {
+      return { exists: false, message: "Error checking email." };
+    }
+  };
+
+    const handleBlurCheck = async (e) => {
+      const { value } = e.target;
+      if (!value) return;
+      const result = await checkEmail(value);
+      if (result?.exists) {
+        setFieldErrors((prev) => ({ ...prev, email: result.message }));
+      } else {
+        setFieldErrors((prev) => ({ ...prev, email: "" }));
+      }
+    };
 
   return (
     <div className="min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4">
@@ -231,7 +293,7 @@ const Login = () => {
         {mode === "signup" && !phoneOtpSent && (
           <form onSubmit={handleSendPhoneOtp} className="space-y-3">
             <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="email" name="email" placeholder="Email Address" onBlur={handleBlurCheck} value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <input type="tel" name="phone" placeholder="09XXXXXXXXX" value={formData.phone} onChange={handleChange} minLength="11" maxLength="11" required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <p className="text-sm text-red-700 mt-1">
               Note: all provider is now working.
@@ -305,12 +367,36 @@ const Login = () => {
         {/* LOGIN FORM */}
         {mode === "login" && (
           <form onSubmit={handleLogin} className="space-y-4">
-            <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              minLength={5}
+              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="username"
+            />
             <div className="relative">
-              <input type={showPassword ? "text" : "password"} name="password" placeholder="Password" value={formData.password} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={6}
+                className="w-full border rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoComplete="current-password"
+              />
               <span onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 cursor-pointer">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</span>
             </div>
-            <button type="submit" disabled={loading} className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            <button
+              type="submit"
+              disabled={loading || !formData.email.trim() || !formData.password.trim()}
+              className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {loading ? "Signing In..." : "Sign In"}
             </button>
 

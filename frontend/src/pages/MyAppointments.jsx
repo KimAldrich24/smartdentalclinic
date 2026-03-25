@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
+import { ClipLoader } from "react-spinners";
 
 const MyAppointments = () => {
   const { token } = useContext(AuthContext);
@@ -60,7 +61,9 @@ const MyAppointments = () => {
       </p>
 
       {appointments.length === 0 ? (
-        <p className="text-gray-500 text-center">No appointments yet.</p>
+        <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]">
+          <ClipLoader color="#36d7b7" loading={true} size={50} />
+        </div>
       ) : (
         <div className="grid gap-6">
           {appointments.map((appt) => (

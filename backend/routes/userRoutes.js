@@ -13,7 +13,8 @@ import {
   rejectUser,
   // ✅ New child functions
   addChild,
-  getChildren
+  getChildren,
+  checkEmail
 } from "../controllers/userController.js";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import protect from "../middlewares/authMiddleware.js";
@@ -28,6 +29,7 @@ router.post("/send-otp", sendOtp);
 router.post("/send-email-otp", sendEmailOtp);
 router.post("/verify-and-register", verifyAndRegister);
 router.post("/login", loginUser);
+router.post("/check-email", checkEmail);
 
 // =======================
 // Authenticated routes (all users)

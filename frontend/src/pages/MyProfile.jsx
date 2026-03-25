@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
+import { toast } from 'react-toastify';
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
+import { ClipLoader } from "react-spinners";
 
 const MyProfile = () => {
   const { token } = useContext(AuthContext);
@@ -85,6 +87,7 @@ const MyProfile = () => {
         }
       } catch (err) {
         console.error(err);
+        toast.error(err.response?.data?.message || "Failed to load appointments");
       }
     };
 
@@ -174,7 +177,7 @@ const MyProfile = () => {
       setUserData(data.user);
       setChildren(data.user.children || []);
       setIsEdit(false);
-      alert("Profile saved!");
+      toast.success("Profile updated successfully!");
     }
 
   } catch (err) {
@@ -189,7 +192,17 @@ const MyProfile = () => {
   // =====================
   // Add a child
   const addChild = async () => {
-  if (!childForm.name || !childForm.dob) return alert("Enter name and DOB");
+  const parentDob = new Date(userData.dob);
+  const childDob = new Date(childForm.dob);
+
+  const diffMs = childDob - parentDob;
+  const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+
+  if (!childForm.name || !childForm.dob) return toast.error("Enter name and DOB");
+  if (diffMs < oneYearMs) {
+    return toast.error("Child's DOB must be at least a year after your DOB.");
+  }
+  if (childForm.dob < userData.dob ) return toast.error("Child's DOB cannot be before your DOB");
 
   setChildSaving(true);
 
@@ -203,13 +216,13 @@ const MyProfile = () => {
     if (data.success) {
       setChildren(data.children || []);
       setChildForm({ name: "", dob: "" });
-      alert("Child added successfully!");
+      toast.success("Child added successfully!");
     } else {
-      alert(data.message || "Failed to add child");
+      toast.error(data.message || "Failed to add child");
     }
   } catch (err) {
     console.error(err);
-    alert(err.response?.data?.message || "Error adding child");
+    toast.error(err.response?.data?.message || "Error adding child");
   } finally {
     setChildSaving(false);
   }
@@ -217,7 +230,8 @@ const MyProfile = () => {
   // =====================
   // Loading/Error states
   // =====================
-  if (loading) return <p className="text-center mt-10 text-gray-500">Loading profile...</p>;
+  if (loading) return <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]"><ClipLoader color="#36d7b7" loading={true} size={50} /></div>;
+
   if (error) return <p className="text-center mt-10 text-red-500">{error}</p>;
   if (!userData) return <p className="text-center mt-10 text-red-500">No user profile found.</p>;
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { ClipLoader } from "react-spinners";
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
@@ -31,7 +32,9 @@ const Doctors = () => {
 
   if (loading)
     return (
-      <p className="text-center mt-10 text-gray-500">Loading doctors...</p>
+      <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]">
+        <ClipLoader color="#36d7b7" loading={true} size={50} />
+      </div>
     );
 
   return (

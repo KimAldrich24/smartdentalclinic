@@ -19,6 +19,8 @@ import Settings from "./pages/Settings";
 import PatientGCashPayment from './pages/PatientGCashPayment';
 import Reviews from "./pages/Reviews";       // To show reviews on Home
 import AddReview from "./pages/AddReview";   // To let patients submit reviews
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   return (
@@ -47,6 +49,7 @@ const App = () => {
         </Routes>
 
         <Footer />
+        <ToastContainer />
       </div>
     </div>
   );

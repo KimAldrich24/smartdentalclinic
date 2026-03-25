@@ -12,6 +12,7 @@ import {
   Shield,
   Clock
 } from "lucide-react";
+import { ClipLoader } from "react-spinners";
 
 const StaffDashboard = () => {
   const { staff, sToken, logoutStaff, backendUrl } = useContext(StaffContext);
@@ -206,7 +207,7 @@ const StaffDashboard = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {loading && <p className="text-center">Loading...</p>}
+          {loading &&<div className="flex justify-center items-center my-auto mx-auto h-[50dvh]"><ClipLoader color="#36d7b7" loading={true} size={50} /></div>}
 
           {/* Appointments */}
           {activeModule === "appointments" && !loading && (

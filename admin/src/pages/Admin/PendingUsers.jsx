@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
+import { ClipLoader } from "react-spinners";
 
 const PendingUsers = () => {
   const { backendUrl, aToken } = useContext(AdminContext);
@@ -78,8 +79,10 @@ const PendingUsers = () => {
     <div className="p-6 bg-white rounded-2xl shadow-lg max-w-4xl mx-auto">
       <h2 className="text-2xl font-semibold mb-4">Pending Users</h2>
       {loading ? (
-        <p>Loading...</p>
-      ) : pendingUsers.length === 0 ? (
+        <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]">
+          <ClipLoader color="#36d7b7" loading={true} size={50} />
+        </div>
+      ) : pendingUsers.length === 0 ? ( 
         <p>No pending users</p>
       ) : (
         <table className="w-full border-collapse">
