@@ -246,14 +246,14 @@ const Login = () => {
   const checkEmail = async (email) => {
     try {
       // DEPLOYEMENT
-      // const res = await axios.post(`${API_URL}/auth/checkEmail`, { email: emailValue }, {
-      //   headers: { "Content-Type": "application/json" }
-      // });
-
-      // TESTING
-      const res = await axios.post(`http://localhost:4000/api/users/check-email`, { email: email }, {
+      const res = await axios.post(`${API_URL}/api/users/check-email`, { email: email }, {
         headers: { "Content-Type": "application/json" }
       });
+
+      // TESTING
+      // const res = await axios.post(`http://localhost:4000/api/users/check-email`, { email: email }, {
+      //   headers: { "Content-Type": "application/json" }
+      // });
       return res?.data?.result?.email || { exists: false };
     } catch (err) {
       return { exists: false, message: "Error checking email." };
