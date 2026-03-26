@@ -4,11 +4,11 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { AuthContext } from "../context/AuthContext";
 import { ClipLoader } from "react-spinners";
+import { backendUrl } from "../config";
 
 const Appointment = () => {
   const { docId } = useParams();
   const navigate = useNavigate();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const { token, user } = useContext(AuthContext);
 
   const [docInfo, setDocInfo] = useState(null);

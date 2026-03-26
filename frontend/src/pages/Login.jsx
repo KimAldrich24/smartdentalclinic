@@ -3,7 +3,9 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
-import { API_URL } from "../config";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { backendUrl } from "../config";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -45,7 +47,7 @@ const Login = () => {
     todayDate.getMonth(),
     todayDate.getDate()
   );
-  const maxDob = eighteenYearsAgo.toISOString().split("T")[0]; // YYYY-MM-DD
+
   // Check email or user name availability errors
   const [fieldErrors, setFieldErrors] = useState({ email: "" });
 
@@ -132,7 +134,7 @@ const Login = () => {
       sessionStorage.setItem("registrationData", JSON.stringify(formData));
 
       // Send OTP request to backend
-      const res = await axios.post(`${API_URL}/api/users/send-otp`, { phone: formData.phone });
+      const res = await axios.post(`${backendUrl}/api/users/send-otp`, { phone: formData.phone });
       console.log("[DEBUG] send-otp:", res.data);
 
       if (res.data.success) {
@@ -169,7 +171,7 @@ const Login = () => {
 
       console.log("[DEBUG] Sending registration data:", dataToSend);
 
-      const res = await axios.post(`${API_URL}/api/users/verify-and-register`, {
+      const res = await axios.post(`${backendUrl}/api/users/verify-and-register`, {
         name: dataToSend.name,
         email: dataToSend.email,
         password: dataToSend.password,
@@ -245,15 +247,10 @@ const Login = () => {
 
   const checkEmail = async (email) => {
     try {
-      // DEPLOYEMENT
-      const res = await axios.post(`${API_URL}/api/users/check-email`, { email: email }, {
-        headers: { "Content-Type": "application/json" }
+      const res = await axios.post(`${backendUrl}/api/users/check-email`, { email: email }, {
+          headers: { "Content-Type": "application/json" }
       });
 
-      // TESTING
-      // const res = await axios.post(`http://localhost:4000/api/users/check-email`, { email: email }, {
-      //   headers: { "Content-Type": "application/json" }
-      // });
       return res?.data?.result?.email || { exists: false };
     } catch (err) {
       return { exists: false, message: "Error checking email." };
@@ -265,7 +262,7 @@ const Login = () => {
       if (!value) return;
       const result = await checkEmail(value);
       if (result?.exists) {
-        setFieldErrors((prev) => ({ ...prev, email: result.message }));
+        toast.error(result.message || "Email is already registered");
       } else {
         setFieldErrors((prev) => ({ ...prev, email: "" }));
       }
@@ -301,26 +298,21 @@ const Login = () => {
 
             {/* DOB */}
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
-              <input
-                type="date"
-                name="dob"
-                value={formData.dob}
-                max={maxDob}
-                onChange={(e) => {
-                  setFormData({ ...formData, dob: e.target.value });
-                  const birthDate = new Date(e.target.value);
-                  const todayDate = new Date();
-                  let age = todayDate.getFullYear() - birthDate.getFullYear();
-                  const monthDiff = todayDate.getMonth() - birthDate.getMonth();
-                  const dayDiff = todayDate.getDate() - birthDate.getDate();
-                  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
-                  setAgeWarning(age < 18 ? "You must be at least 18 years old to create an account." : "");
+              <DatePicker
+                selected={formData.dob ? new Date(formData.dob) : null}
+                onChange={(date) => {
+                  const formatted = date ? date.toISOString().split("T")[0] : "";
+                  setFormData({ ...formData, dob: formatted });
                 }}
-                required
+                maxDate={eighteenYearsAgo}
+                minDate={new Date("1900-01-01")}
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                placeholderText="Select date of birth"
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                wrapperClassName="w-full"
               />
-              {ageWarning && <p className="text-red-600 text-sm mt-1">{ageWarning}</p>}
             </div>
 
             {/* Password */}

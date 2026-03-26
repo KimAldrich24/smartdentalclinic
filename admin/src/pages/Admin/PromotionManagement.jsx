@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const PromotionManagement = () => {
   const [promotions, setPromotions] = useState([]);
@@ -15,9 +17,8 @@ const PromotionManagement = () => {
   });
   const [editingId, setEditingId] = useState(null);
 
-  const backendBase = import.meta.env.VITE_BACKEND_URL;
-  const promotionsUrl = backendBase + "/api/promotions";
-  const servicesUrl = backendBase + "/api/services";
+  const promotionsUrl = backendUrl + "/api/promotions";
+  const servicesUrl = backendUrl + "/api/services";
 
   const fetchPromotions = async () => {
     try {
@@ -69,12 +70,25 @@ const PromotionManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this promotion?")) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this promotion?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
     try {
       await axios.delete(`${promotionsUrl}/${id}`);
       fetchPromotions();
     } catch (err) {
-      console.error("Error deleting promotion:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message,
+      });
     }
   };
 

@@ -19,6 +19,7 @@ import {
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import protect from "../middlewares/authMiddleware.js";
 import { getUserRecords } from "../controllers/patientRecordController.js";
+import { changePassword } from "../controllers/userController.js";
 
 const router = express.Router();
 
@@ -30,6 +31,7 @@ router.post("/send-email-otp", sendEmailOtp);
 router.post("/verify-and-register", verifyAndRegister);
 router.post("/login", loginUser);
 router.post("/check-email", checkEmail);
+router.put("/change-password", protect(), changePassword);
 
 // =======================
 // Authenticated routes (all users)

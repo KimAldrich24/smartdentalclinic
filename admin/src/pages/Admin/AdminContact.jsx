@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const AdminContact = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   const [contact, setContact] = useState({
     phone: [""],
@@ -61,14 +63,14 @@ const AdminContact = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!contact.email || !emailRegex.test(contact.email)) {
-      alert("❌ Please enter a valid email address.");
+      Swal.fire("Invalid Email", "Please enter a valid email address.", "error");
       return false;
     }
 
     for (let num of contact.phone) {
       if (num.trim() === "") continue;
       if (!/^09\d{9}$/.test(num)) {
-        alert("❌ Each phone number must start with '09' and be exactly 11 digits.");
+        Swal.fire("Invalid Phone Number", "Each phone number must start with '09' and be exactly 11 digits.", "error");
         return false;
       }
     }
@@ -89,11 +91,11 @@ const AdminContact = () => {
         },
         { headers: { Authorization: `Bearer ${aToken}` } }
       );
-      alert("✅ Contact info updated successfully!");
+      Swal.fire("Success", "Contact info updated successfully!", "success");
       setIsEditing(false);
     } catch (error) {
       console.error("Error saving contact info:", error);
-      alert("❌ Failed to update contact info. Please try again.");
+      Swal.fire("Error", "Failed to update contact info. Please try again.", "error");
     } finally {
       setLoading(false);
     }

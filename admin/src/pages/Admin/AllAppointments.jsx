@@ -3,9 +3,17 @@ import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 import WalkInAppointmentForm from "../../components/WalkInAppointmentForm"; // 🔑 import your form
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
+import { socket } from "../../socket";
 
-const AllAppointments = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const AllAppointments = () => {
+    // Join admin room for real-time updates
+    useEffect(() => {
+      if (!socket) return;
+      socket.emit("joinAdminRoom");
+    }, []);
+  const { aToken } = useContext(AdminContext);
 
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState(null);
@@ -59,7 +67,17 @@ const AllAppointments = () => {
 
   // ✅ Mark appointment as completed (admin)
   const markAsDone = async (appt) => {
-    if (!window.confirm("Mark appointment as completed?")) return;
+
+    const result = await Swal.fire({
+      icon: "question",
+      title: "Mark as Completed?",
+      text: "Are you sure you want to mark this appointment as completed?",
+      showCancelButton: true,
+      confirmButtonText: "Yes, mark as completed",
+      cancelButtonText: "No, keep it",
+    });
+
+    if(!result.isConfirmed) return;
 
     try {
       const { data } = await axios.put(
@@ -69,7 +87,7 @@ const AllAppointments = () => {
       );
 
       if (data.success) {
-        toast.success("Appointment marked as completed ✅");
+        toast.success("Appointment marked as completed");
         fetchAppointments();
       } else {
         toast.error(data.message);
@@ -81,7 +99,17 @@ const AllAppointments = () => {
 
   // ✅ Mark payment as paid
   const markAsPaid = async (appt) => {
-    if (!window.confirm("Mark payment as Paid?")) return;
+
+    const result = await Swal.fire({
+      icon: "question",
+      title: "Mark Payment as Paid?",
+      text: "Are you sure you want to mark this payment as paid?",
+      showCancelButton: true,
+      confirmButtonText: "Yes, mark as paid",
+      cancelButtonText: "No, keep it",
+    });
+
+    if(!result.isConfirmed) return;
 
     try {
       const { data } = await axios.put(
@@ -103,7 +131,16 @@ const AllAppointments = () => {
 
   // ✅ Approve appointment (Admin)
   const approveAppointment = async (appt) => {
-    if (!window.confirm("Approve this appointment?")) return;
+    const result = await Swal.fire({
+      icon: "question",
+      title: "Approve this appointment?",
+      text: "Are you sure you want to approve this appointment?",
+      showCancelButton: true,
+      confirmButtonText: "Yes, approve it",
+      cancelButtonText: "No, keep it pending",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const { data } = await axios.put(
@@ -151,6 +188,26 @@ const AllAppointments = () => {
       return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
     });
 
+
+    useEffect(() => {
+      if (!socket) return;
+
+      // ✅ ONE event handles all appointment state changes
+      socket.on("appointmentUpdated", () => {
+        fetchAppointments();
+      });
+
+      socket.on("newAppointment", () => {
+        fetchAppointments();
+        toast.info("New appointment received");
+      });
+
+      return () => {
+        socket.off("appointmentUpdated");
+        socket.off("newAppointment");
+      };
+    }, [socket]);
+
   if (!aToken)
     return <p className="p-4 text-red-500">Admin login required.</p>;
 
@@ -173,7 +230,7 @@ const AllAppointments = () => {
       {/* 🔑 Walk-in Form */}
       {showWalkInForm && (
         <div className="bg-white p-4 rounded-xl shadow mb-6">
-          <WalkInAppointmentForm onSuccess={fetchAppointments} />
+          <WalkInAppointmentForm onSuccess={fetchAppointments} aToken={aToken} />
           <button
             onClick={() => setShowWalkInForm(false)}
             className="mt-2 bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
@@ -257,7 +314,7 @@ const AllAppointments = () => {
                   <b>Patient:</b> {appt.childName || appt.patient?.name || "N/A"}{" "}
                   {appt.childName && `(Child of ${appt.bookedBy?.name})`}
                 </p>
-                <p><b>Booked By:</b> {appt.bookedBy?.name || "Self"}</p>
+                <p><b>Booked By:</b> {appt.bookedBy?.name || "Walk In"}</p>
                 <p><b>Date:</b> {appt.date} | {appt.time}</p>
                 <p>
                   <b>Status:</b>{" "}

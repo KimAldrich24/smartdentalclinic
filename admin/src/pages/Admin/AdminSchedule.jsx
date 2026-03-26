@@ -1,9 +1,12 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
+import { backendUrl } from "../../config";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const AdminSchedule = () => {
-  const { doctors, backendUrl, aToken } = useContext(AdminContext);
+  const { doctors, aToken } = useContext(AdminContext);
 
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [date, setDate] = useState("");
@@ -211,12 +214,20 @@ const AdminSchedule = () => {
         ))}
       </select>
 
-      <input
+      <DatePicker
+        selected={date ? new Date(date) : null}
+        onChange={(date) => setDate(date.toISOString().split("T")[0])}
+        className="border p-2 rounded w-full"
+        placeholderText="Select Date"
+        wrapperClassName="w-full"
+      />
+
+      {/* <input
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
         className="border p-2 rounded w-full"
-      />
+      /> */}
 
       <div className="flex gap-2">
         <input

@@ -2,10 +2,10 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { jsPDF } from "jspdf";
 import { AuthContext } from "../context/AuthContext.jsx";
+import { backendUrl } from "../config";
 
 const PatientPrescriptions = () => {
   const { token, user } = useContext(AuthContext);
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);

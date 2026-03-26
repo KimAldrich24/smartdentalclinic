@@ -1,5 +1,5 @@
 import Appointment from "../models/appointmentModel.js";
-import User from "../models/User.js";
+import User from "../models/userModel.js";
 import Service from "../models/serviceModel.js";
 import Credit from "../models/creditModel.js";
 
@@ -8,8 +8,9 @@ export const getDashboardStats = async (req, res) => {
   try {
     // Total appointments & patients
     const totalAppointments = await Appointment.countDocuments();
-    const totalPatients = await User.countDocuments({ role: "patient" });
-
+    const totalPatients = await User.countDocuments({ 
+      role: { $nin: ["admin", "doctor", "staff"] }
+    });
     // Monthly appointments (use createdAt)
     const monthlyAppointments = await Appointment.aggregate([
       {

@@ -1,9 +1,13 @@
 import React, { useEffect, useState, useCallback, useMemo, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import Swal from "sweetalert2";
 
 const AdminPrescriptions = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   // State
   const [patientsList, setPatientsList] = useState([]);
@@ -147,7 +151,7 @@ const AdminPrescriptions = () => {
   const handleAddPrescription = async (e) => {
     e.preventDefault();
     if (!patientId || !appointmentId) {
-      alert("Select patient and appointment first");
+      Swal.fire("Error", "Select patient and appointment first", "error");
       return;
     }
 
@@ -159,7 +163,7 @@ const AdminPrescriptions = () => {
       );
 
       if (res.data?.success || res.data?.prescription) {
-        alert("Prescription saved!");
+        Swal.fire("Success", "Prescription saved!", "success");
         setMedicines([{ name: "", dosage: "", instructions: "" }]);
         setNotes("");
         setPatientId("");
@@ -167,11 +171,11 @@ const AdminPrescriptions = () => {
         setAppointments([]);
         fetchPrescriptions(page);
       } else {
-        alert(res.data?.message || "Failed to save prescription");
+        Swal.fire("Error", res.data?.message || "Failed to save prescription", "error");
       }
     } catch (err) {
       console.error(err.response?.data || err.message);
-      alert(err.response?.data?.message || err.message || "Failed to save prescription");
+      Swal.fire("Error", err.response?.data?.message || err.message || "Failed to save prescription", "error");
     }
   };
 
@@ -205,18 +209,21 @@ const AdminPrescriptions = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border p-2 rounded w-full md:w-1/3"
         />
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          className="border p-2 rounded w-full md:w-1/5"
+
+        <DatePicker
+          selected={fromDate}
+          onChange={(date) => setFromDate(date)}
+          className="border p-2 rounded w-full"
+          wrapperClassName="w-full md:w-1/5"
         />
-        <input
-          type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-          className="border p-2 rounded w-full md:w-1/5"
+
+        <DatePicker
+          selected={toDate}
+          onChange={(date) => setToDate(date)}
+          className="border p-2 rounded w-full"
+          wrapperClassName="w-full md:w-1/5"
         />
+
         <button
           onClick={() => fetchPrescriptions(1)}
           className="bg-blue-500 text-white px-4 py-2 rounded"

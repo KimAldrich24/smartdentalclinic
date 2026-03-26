@@ -2,9 +2,12 @@ import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { AdminContext } from "../../context/AdminContext.jsx";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const ServicesMaintenance = () => {
-  const { backendUrl, aToken } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
+
   const [services, setServices] = useState([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -40,14 +43,22 @@ const ServicesMaintenance = () => {
     );
 
     if (duplicate) {
-      toast.error("Service with this name already exists");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Service with this name already exists",
+      });
       return;
     }
 
     if (price === "" || Number(price) < 0 || Number(price) > 1000000) {
-  toast.error("Price must be a number between 0 and 1,000,000");
-  return;
-}
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Price must be a number between 0 and 1,000,000",
+      });
+      return;
+    }
 
     try {
       const payload = { name, description, duration, price: Number(price) };
@@ -63,7 +74,11 @@ const ServicesMaintenance = () => {
         });
 
       if (res.data.success) {
-        toast.success(res.data.message);
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: res.data.message,
+        });
         setName("");
         setDescription("");
         setDuration("");
@@ -72,7 +87,11 @@ const ServicesMaintenance = () => {
         fetchServices();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || error.message,
+      });
     }
   };
 
@@ -87,17 +106,34 @@ const ServicesMaintenance = () => {
 
   // Delete a service
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this service?")) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this service?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
     try {
       const res = await axios.delete(`${backendUrl}/api/services/${id}`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
       if (res.data.success) {
-        toast.success(res.data.message);
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: res.data.message,
+        });
         fetchServices();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || error.message,
+      });
     }
   };
 

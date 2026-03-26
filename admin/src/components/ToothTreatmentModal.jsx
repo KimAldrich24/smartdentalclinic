@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 
 const ToothTreatmentModal = ({ 
   isOpen, 
@@ -16,7 +17,7 @@ const ToothTreatmentModal = ({
 
   const handleSave = async () => {
     if (!notes.trim()) {
-      alert('Please enter treatment notes');
+      Swal.fire("Error", "Please enter treatment notes.", "error");
       return;
     }
 

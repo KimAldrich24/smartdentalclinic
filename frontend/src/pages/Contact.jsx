@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
+import { backendUrl } from "../config";
 
 const Contact = () => {
   const [contact, setContact] = useState({
@@ -13,7 +14,6 @@ const Contact = () => {
   });
 
   const navigate = useNavigate();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   // ✅ Fetch contact info from backend
   useEffect(() => {
@@ -32,7 +32,7 @@ const Contact = () => {
       }
     };
     fetchContact();
-  }, [backendUrl]);
+  }, []);
 
   // ✅ Convert comma-separated phone numbers into an array
   const phoneNumbers =

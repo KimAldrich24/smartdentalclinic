@@ -1,14 +1,13 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { backendUrl } from "../config";
 
 export const AppContext = createContext();
 
 const AppContextProvider = ({ children }) => {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   // Fetch all doctors from backend
   const fetchDoctors = async () => {

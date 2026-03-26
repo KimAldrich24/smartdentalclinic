@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AdminContext } from "../../context/AdminContext.jsx";
 import { toast } from "react-toastify";
-
+import Swal from "sweetalert2";
 const DoctorsList = () => {
   const { doctors, getAllDoctors, removeDoctor } = useContext(AdminContext);
 
@@ -12,10 +12,16 @@ const DoctorsList = () => {
   }, []);
 
   const handleRemove = async (id) => {
-    const confirm = window.confirm(
-      "Are you sure you want to remove this doctor?"
-    );
-    if (!confirm) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to remove this doctor?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, remove it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       await removeDoctor(id);

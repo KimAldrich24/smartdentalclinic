@@ -14,9 +14,11 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const Dashboard = () => {
-  const { aToken, setAToken, backendUrl } = useContext(AdminContext);
+  const { aToken, setAToken } = useContext(AdminContext);
   const navigate = useNavigate();
 
   const [stats, setStats] = useState(null);
@@ -38,7 +40,7 @@ const Dashboard = () => {
         setStats(res.data);
       } catch (err) {
         if (err.response?.status === 401 || err.response?.status === 403) {
-          alert("Session expired. Please log in again.");
+          Swal.fire("Error", "Session expired. Please log in again.", "error");
           setAToken("");
           navigate("/admin-login");
         }
@@ -57,7 +59,7 @@ const Dashboard = () => {
         setRecentAppointments(res.data.appointments || []); // ensure appointments array
       } catch (err) {
         if (err.response?.status === 401 || err.response?.status === 403) {
-          alert("Session expired. Please log in again.");
+          Swal.fire("Error", "Session expired. Please log in again.", "error");
           setAToken("");
           navigate("/admin-login");
         }
@@ -73,13 +75,14 @@ const Dashboard = () => {
         setCredits(res.data); // expected: [{ user: {name, id}, amount, history }]
       } catch (err) {
         console.error("❌ Error fetching credits:", err.response?.data || err.message);
+        Swal.fire("Error", "Failed to fetch credits", "error");
       }
     };
 
     fetchStats();
     fetchRecent();
     fetchCredits();
-  }, [aToken, backendUrl, navigate, setAToken]);
+  }, [aToken, navigate, setAToken]);
 
   if (!stats) return <p className="p-4">Loading dashboard...</p>;
 

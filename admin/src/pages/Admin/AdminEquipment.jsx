@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const AdminEquipment = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   const [equipment, setEquipment] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -183,17 +185,26 @@ const AdminEquipment = () => {
      DELETE EQUIPMENT
   ============================== */
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this equipment?")) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this equipment?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
 
-    try {
-      await axios.delete(`${backendUrl}/api/equipment/${id}`, {
-        headers: { Authorization: `Bearer ${aToken}` },
-      });
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/equipment/${id}`, {
+          headers: { Authorization: `Bearer ${aToken}` },
+        });
 
       fetchEquipment();
-    } catch (err) {
-      console.error(err);
-      setError("Failed to delete equipment.");
+      } catch (err) {
+        console.error(err);
+        setError("Failed to delete equipment.");
+      }
     }
   };
 

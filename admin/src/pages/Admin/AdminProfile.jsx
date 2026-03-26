@@ -6,10 +6,10 @@ import {
 import { toast } from "react-toastify";
 import axios from "axios";
 import { ClipLoader } from "react-spinners";
+import { backendUrl } from "../../config";
 
 const AdminProfile = () => {
   const { aToken } = useContext(AdminContext) || {};
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [admin, setAdmin] = useState(null);
   const [isEdit, setIsEdit] = useState(false);

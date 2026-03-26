@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Upload, CreditCard } from 'lucide-react';
+import { backendUrl } from "../config";
 
 const PatientGCashPayment = () => {
   const { appointmentId } = useParams();
   const navigate = useNavigate();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [referenceNumber, setReferenceNumber] = useState('');
   const [amount, setAmount] = useState('');

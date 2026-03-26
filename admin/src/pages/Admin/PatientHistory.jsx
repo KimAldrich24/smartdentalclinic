@@ -3,6 +3,7 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
 
 const PatientHistory = () => {
   const { user, token } = useContext(AuthContext);
@@ -26,8 +27,8 @@ const PatientHistory = () => {
       try {
         // Choose route based on admin or patient
         const url = aToken
-          ? `${import.meta.env.VITE_BACKEND_URL}/api/appointments/admin/completed/${patientId}`
-          : `${import.meta.env.VITE_BACKEND_URL}/api/appointments/completed/${patientId}`;
+          ? `${backendUrl}/api/appointments/admin/completed/${patientId}`
+          : `${backendUrl}/api/appointments/completed/${patientId}`;
 
         const res = await axios.get(url, {
           headers: { Authorization: `Bearer ${authToken}` },

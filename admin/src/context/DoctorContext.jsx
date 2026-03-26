@@ -1,11 +1,11 @@
 // src/context/DoctorContext.jsx
 import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
+import { backendUrl } from "../config";
 
 export const DoctorContext = createContext();
 
 const DoctorContextProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
   const [doctor, setDoctor] = useState(null);
   const [dToken, setDToken] = useState(localStorage.getItem("dToken") || "");
@@ -17,33 +17,27 @@ const DoctorContextProvider = ({ children }) => {
     headers: { Authorization: dToken ? `Bearer ${dToken}` : "" },
   });
 
-  // Auto-fetch doctor profile if logged in
-  useEffect(() => {
-    const fetchDoctorProfile = async () => {
-      if (!dToken) {
-        setLoading(false);
-        return;
-      }
 
-      try {
-        const { data } = await axiosInstance.get("/api/doctors/me");
+// In DoctorContext.js — fetch doctor profile on token load
+const fetchDoctorProfile = async (token) => {
+  try {
+    const res = await fetch(`${backendUrl}/api/doctors/me`, {
+      headers: { Authorization: `Bearer ${token.trim()}` },
+    });
+    const data = await res.json();
+    if (data.success) setDoctor(data.doctor);
+    else {
+      setDToken(null);
+      localStorage.removeItem('dToken');
+    }
+  } catch (err) {
+    console.error('Failed to fetch doctor profile:', err);
+  }
+};
 
-        if (data.success && data.doctor) {
-          setDoctor(data.doctor);
-        } else {
-          // Invalid token, logout
-          logoutDoctor();
-        }
-      } catch (error) {
-        console.error("Error fetching doctor profile:", error.response?.data || error);
-        logoutDoctor();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDoctorProfile();
-  }, [dToken]);
+useEffect(() => {
+  if (dToken) fetchDoctorProfile(dToken);
+}, [dToken]);
 
   // Doctor login
   const loginDoctor = async (email, password) => {

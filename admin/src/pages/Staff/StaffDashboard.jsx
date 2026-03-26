@@ -13,6 +13,7 @@ import {
   Clock
 } from "lucide-react";
 import { ClipLoader } from "react-spinners";
+import Swal from "sweetalert2";
 
 const StaffDashboard = () => {
   const { staff, sToken, logoutStaff, backendUrl } = useContext(StaffContext);
@@ -69,10 +70,11 @@ const StaffDashboard = () => {
         if (activeModule === "patients") setPatients(data.patients || []);
         if (activeModule === "treatments") setTreatments(data.treatments || []);
       } else {
-        console.warn("Fetch failed:", data.message);
+        Swal.fire("Error", data.message || "Failed to fetch data", "error");
       }
     } catch (err) {
       console.error("Error fetching staff data:", err);
+      Swal.fire("Error", "Error fetching staff data", "error");
     } finally {
       setLoading(false);
     }
@@ -93,13 +95,14 @@ const StaffDashboard = () => {
       }
     } catch (err) {
       console.error("Error fetching patient history:", err);
+      Swal.fire("Error", "Error fetching patient history", "error");
     }
   };
 
   // ================= CHANGE PASSWORD =================
   const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("Passwords do not match");
+      Swal.fire("Error", "Passwords do not match", "error");
       return;
     }
 
@@ -114,13 +117,14 @@ const StaffDashboard = () => {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Password changed");
+        Swal.fire("Success", "Password changed", "success");
         setActiveModule("appointments");
       } else {
-        alert(data.message);
+        Swal.fire("Error", data.message || "Failed to change password", "error");
       }
     } catch (err) {
       console.error("Password change error:", err);
+      Swal.fire("Error", "Error changing password", "error");
     }
   };
 

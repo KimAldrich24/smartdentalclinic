@@ -2,9 +2,11 @@
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const AdminSuppliers = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,18 +127,27 @@ const AdminSuppliers = () => {
   const handleDelete = async (id) => {
     if (!aToken) return;
 
-    if (!window.confirm("Delete this supplier?")) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this supplier?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
 
-    try {
-      await axios.delete(`${backendUrl}/api/suppliers/${id}`, {
-        headers: { Authorization: `Bearer ${aToken}` },
-      });
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/suppliers/${id}`, {
+          headers: { Authorization: `Bearer ${aToken}` },
+        });
 
       fetchSuppliers();
 
     } catch (err) {
       console.error(err.response || err.message);
-      setError("Failed to delete supplier.");
+        setError("Failed to delete supplier.");
+      }
     }
   };
 

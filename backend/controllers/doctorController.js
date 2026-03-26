@@ -329,52 +329,50 @@ export const removeDoctorService = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-// Add/Update schedule (available slots for a date) - UPDATED VERSION
+// doctorController.js — addDoctorSchedule
 export const addDoctorSchedule = async (req, res) => {
   try {
     const { date, slots } = req.body;
-    const doctorId = req.doctor.id;
-
-    // ✅ Check if date is in the past
-    const scheduleDate = new Date(date);
-    const today = new Date();
-    scheduleDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-
-    if (scheduleDate < today) {
-      return res.json({
-        success: false,
-        message: 'Cannot create schedule for past dates'
-      });
-    }
+    const doctorId = req.doctor._id;
 
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+
+    // ✅ Normalize slots — handle both strings and objects
+    const normalizedSlots = slots.map((slot) =>
+      typeof slot === "string"
+        ? { time: slot, status: "available" }
+        : slot
+    );
 
     // Check if schedule for this date already exists
-    const existingScheduleIndex = doctor.schedule.findIndex(s => s.date === date);
+    const existingIndex = doctor.schedule.findIndex((s) => s.date === date);
 
-    if (existingScheduleIndex !== -1) {
-      doctor.schedule[existingScheduleIndex].slots = slots;
+    if (existingIndex !== -1) {
+      // Update existing
+      doctor.schedule[existingIndex].slots = normalizedSlots;
     } else {
-      doctor.schedule.push({ date, slots });
+      // Add new
+      doctor.schedule.push({ date, slots: normalizedSlots });
     }
 
     await doctor.save();
-
-    // ✅ Return only active (non-expired) schedules
-    const activeSchedule = doctor.schedule.filter(sch => {
-      const schDate = new Date(sch.date);
-      schDate.setHours(0, 0, 0, 0);
-      return schDate >= today;
-    });
-
-    console.log("✅ Schedule added for date:", date);
-    res.json({ success: true, message: 'Schedule updated successfully', schedule: activeSchedule });
+    res.json({ success: true, message: "Schedule saved!" });
   } catch (err) {
-    console.error("❌ Error adding schedule:", err);
+    console.error("addDoctorSchedule error:", err);
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getDoctorSchedule = async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.doctorId);
+    if (!doctor) return res.json({ success: false, message: 'Doctor not found' });
+
+    res.json({ success: true, schedule: doctor.schedule || [] });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Failed to fetch schedule' });
   }
 };
 
@@ -447,32 +445,26 @@ export const editDoctorSchedule = async (req, res) => {
 
 export const deleteDoctorSchedule = async (req, res) => {
   try {
-    const doctorId = req.doctor._id; // from auth middleware
-    const { scheduleId } = req.params;
+    const doctorId = req.doctor._id;
+    const { date } = req.params; // ✅ was scheduleId, frontend sends date
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) {
       return res.status(404).json({ success: false, message: "Doctor not found" });
     }
 
-    // ✅ FILTER OUT the schedule instead of schedule.remove()
     const originalLength = doctor.schedule.length;
-    doctor.schedule = doctor.schedule.filter(
-      (s) => s._id.toString() !== scheduleId
-    );
+
+    // ✅ filter by date string, not _id
+    doctor.schedule = doctor.schedule.filter((s) => s.date !== date);
 
     if (doctor.schedule.length === originalLength) {
-      return res.status(404).json({ success: false, message: "Schedule not found" });
+      return res.status(404).json({ success: false, message: "Schedule not found for that date" });
     }
 
     await doctor.save();
 
-    // ✅ RETURN UPDATED SCHEDULE (frontend expects this)
-    res.json({
-      success: true,
-      message: "Schedule deleted successfully",
-      schedule: doctor.schedule,
-    });
+    res.json({ success: true, message: "Schedule deleted successfully" });
   } catch (err) {
     console.error("Delete Schedule Error:", err);
     res.status(500).json({ success: false, message: "Server error" });

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const Patients = () => {
   const [patients, setPatients] = useState([]);
@@ -12,9 +14,6 @@ const Patients = () => {
     gender: "Not Selected",
   });
 
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
   const fetchPatients = async () => {
   try {
     const res = await axios.get(`${backendUrl}/api/patients`);
@@ -22,7 +21,11 @@ const Patients = () => {
     const onlyPatients = res.data.filter(user => user.role === "patient");
     setPatients(onlyPatients);
   } catch (err) {
-    console.error(err.message);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: err.message,
+    });
   }
 };
 
@@ -60,17 +63,34 @@ const Patients = () => {
       });
       fetchPatients();
     } catch (err) {
-      console.error(err.message);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message,
+      });
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this patient?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
     try {
       await axios.delete(`${backendUrl}/api/patients/${id}`);
       fetchPatients();
     } catch (err) {
-      console.error(err.message);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message,
+      });
     }
   };
 

@@ -2,9 +2,10 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 import {ClipLoader} from "react-spinners";
+import { backendUrl } from "../../config";
 
 const AdminJobApplications = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 

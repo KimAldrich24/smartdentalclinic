@@ -3,26 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { DoctorContext } from "../../context/DoctorContext";
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
-import { Calendar, LogOut, Plus, Clock } from 'lucide-react';
+import { Calendar, LogOut, Plus, Clock, Trash2 } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { backendUrl } from '../../config';
+import { socket } from '../../socket';
 
 const DoctorDashboard = () => {
 
   const navigate = useNavigate();
   const { doctor, dToken, logoutDoctor } = useContext(DoctorContext);
-  const { backendUrl } = useContext(AdminContext);
 
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
 
   const [services, setServices] = useState([]);
   const [equipment, setEquipment] = useState([]);
+  const [schedule, setSchedule] = useState([]);
 
   const [selectedDate, setSelectedDate] = useState('');
   const [timeSlots, setTimeSlots] = useState([]);
   const [newSlot, setNewSlot] = useState('');
-
-  const [mySchedules, setMySchedules] = useState([]);
-  const [loadingSchedules, setLoadingSchedules] = useState(true);
 
 
 
@@ -49,11 +49,11 @@ const DoctorDashboard = () => {
       const data = await res.json();
 
       if (data.success) setAppointments(data.appointments);
-      else toast.error(data.message || 'Failed to fetch appointments');
+      else Swal.fire("Error", data.message || 'Failed to fetch appointments', "error");
 
     } catch (err) {
       console.error(err);
-      toast.error('Failed to load appointments');
+      Swal.fire("Error", 'Failed to load appointments', "error");
     }
     finally {
       setLoadingAppointments(false);
@@ -76,11 +76,11 @@ const DoctorDashboard = () => {
       const data = await res.json();
 
       if (data.success) setServices(data.services);
-      else toast.error(data.message || 'Failed to fetch services');
+      else Swal.fire("Error", data.message || 'Failed to fetch services', "error");
 
     } catch (err) {
       console.error(err);
-      toast.error('Error fetching services');
+      Swal.fire("Error", 'Error fetching services', "error");
     }
 
   };
@@ -103,116 +103,145 @@ const DoctorDashboard = () => {
 
     } catch (err) {
       console.error(err);
+      Swal.fire("Error", 'Error fetching equipment', "error");
     }
 
   };
 
 
 
-  const fetchMySchedules = async () => {
+  const fetchSchedule = async () => {
+    if (!dToken) return;
 
     try {
-
-      setLoadingSchedules(true);
-
-      const res = await fetch(`${backendUrl}/api/doctor/schedule-request/doctor`, {
-        headers: { Authorization: `Bearer ${dToken} ` }
+      const res = await fetch(`${backendUrl}/api/doctors/schedule`, {
+        headers: { Authorization: `Bearer ${dToken}` },
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('Unexpected response:', text);
+        Swal.fire({ icon: "error", title: "Error", text: "Invalid response from server" });
+        return;
+      }
 
-      if (data.success) setMySchedules(data.requests);
-      else toast.error(data.message || 'Failed to fetch schedules');
-
+      if (data.success) {
+        const normalizedSchedule = (data.schedule || []).map((s) => ({
+          date: s.date,
+          slots: s.slots.map((slot) =>
+            typeof slot === 'string' ? { time: slot, status: 'available' } : slot
+          ),
+        }));
+        setSchedule(normalizedSchedule);
+      } else {
+        Swal.fire({ icon: "error", title: "Error", text: data.message || 'Failed to fetch schedule' });
+      }
     } catch (err) {
-      console.error(err);
-      toast.error('Error fetching schedules');
+      console.error('Error fetching schedule:', err);
+      Swal.fire({ icon: "error", title: "Error", text: "Failed to load schedule" });
     }
-    finally {
-      setLoadingSchedules(false);
-    }
-
   };
-
-
 
   useEffect(() => {
 
     if (dToken) {
-
       fetchAppointments();
       fetchServices();
       fetchEquipment();
-      fetchMySchedules();
-
+      fetchSchedule();
     }
 
   }, [dToken]);
 
+  useEffect(() => {
+    if (!doctor?._id || !socket) return;
+
+    socket.emit("joinDoctorRoom", doctor._id);
+
+    socket.on("newAppointment", () => {
+      fetchAppointments();
+      toast.success("New appointment received!");
+    });
+
+    socket.on("appointmentUpdated", () => {
+      fetchAppointments();
+    });
+
+    socket.on("equipmentUpdated", fetchEquipment);
+    socket.on("scheduleUpdated", fetchSchedule);
+
+    return () => {
+      socket.off("newAppointment");
+      socket.off("appointmentUpdated");
+      socket.off("equipmentUpdated");
+      socket.off("scheduleUpdated");
+    };
+  }, [doctor?._id]);
+
 
 
   const handleUpdateAppointment = async (apptId, selectedServiceIds, finalPrice, usedEquipment) => {
-  try {
-    if (!dToken) return toast.error("Not authenticated");
+    try {
+      if (!dToken) return toast.error("Not authenticated");
 
-    // Prepare services payload
-    const servicesPayload = selectedServiceIds.map(id => {
-      const svc = services.find(s => s._id === id);
-      return { serviceId: id, price: finalPrice ?? (svc?.price ?? 0) };
-    });
+      const servicesPayload = selectedServiceIds.map(id => {
+        const svc = services.find(s => s._id === id);
+        return { serviceId: id, price: finalPrice ?? (svc?.price ?? 0) };
+      });
 
-    // 1️⃣ Update appointment services
-    const resAppt = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${dToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ services: servicesPayload })
-    });
-
-    const dataAppt = await resAppt.json();
-
-    if (!dataAppt.success) return toast.error(dataAppt.message || "Failed to update appointment");
-
-    // 2️⃣ Deduct equipment separately
-    if (usedEquipment && Object.keys(usedEquipment).length > 0) {
-      const resEquip = await fetch(`${backendUrl}/api/equipment/deduct`, {
+      const resAppt = await fetch(`${backendUrl}/api/appointments/doctor/${apptId}/assign-services`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${dToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ equipmentUsed: usedEquipment })
+        body: JSON.stringify({ services: servicesPayload })
       });
 
-      const dataEquip = await resEquip.json();
-      if (!dataEquip.success) {
-        console.warn("Equipment deduction failed", dataEquip.message);
-        toast.warning("Appointment updated but failed to deduct equipment");
+      const dataAppt = await resAppt.json();
+
+      if (!dataAppt.success) return toast.error(dataAppt.message || "Failed to update appointment");
+
+      if (usedEquipment && Object.keys(usedEquipment).length > 0) {
+        const resEquip = await fetch(`${backendUrl}/api/equipment/deduct`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${dToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ equipmentUsed: usedEquipment })
+        });
+
+        const dataEquip = await resEquip.json();
+        if (!dataEquip.success) {
+          console.warn("Equipment deduction failed", dataEquip.message);
+          toast.warning("Appointment updated but failed to deduct equipment");
+        } else {
+          toast.success("Appointment updated & equipment deducted");
+        }
       } else {
-        toast.success("Appointment updated & equipment deducted");
+        toast.success("Appointment updated");
       }
-    } else {
-      toast.success("Appointment updated");
+
+      fetchAppointments();
+      fetchEquipment();
+
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Error updating appointment or deducting equipment", "error");
     }
-
-    // Refresh appointments & equipment
-    fetchAppointments();
-    fetchEquipment();
-
-  } catch (err) {
-    console.error(err);
-    toast.error("Error updating appointment or deducting equipment");
-  }
-};
+  };
 
 
 
   const handleAddSlot = () => {
 
-    if (!newSlot) return toast.error("Select a time first");
-    if (timeSlots.includes(newSlot)) return toast.error("Time slot already added");
+    if (!newSlot) return Swal.fire("Error", "Select a time first", "error");
+    if (timeSlots.includes(newSlot)) return Swal.fire("Error", "Time slot already added", "error");
 
     setTimeSlots([...timeSlots, newSlot]);
     setNewSlot('');
@@ -230,44 +259,39 @@ const DoctorDashboard = () => {
   const handlePushSchedule = async () => {
 
     if (!selectedDate || timeSlots.length === 0)
-      return toast.error("Select date and slots");
+      return Swal.fire("Error", "Select date and slots", "error");
 
     try {
 
       const res = await fetch(`${backendUrl}/api/doctor/schedule-request`, {
-
         method: 'POST',
-
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${dToken}`
         },
-
-        body: JSON.stringify({
-          date: selectedDate,
-          slots: timeSlots
-        })
-
+        body: JSON.stringify({ date: selectedDate, slots: timeSlots })
       });
 
       const data = await res.json();
 
       if (data.success) {
-
         toast.success("Schedule pushed to admin!");
         setSelectedDate('');
         setTimeSlots([]);
-        fetchMySchedules();
-
+        fetchSchedule();
       }
-      else toast.error(data.message || "Failed to push schedule");
+      else Swal.fire("Error", data.message || "Failed to push schedule", "error");
 
     } catch (err) {
       console.error(err);
-      toast.error("Error pushing schedule");
+      Swal.fire("Error", "Error pushing schedule", "error");
     }
 
   };
+
+
+
+
 
 
 
@@ -495,81 +519,39 @@ const DoctorDashboard = () => {
 
 
 
-      {/* MY PUSHED SCHEDULES */}
+      {/* MY PUSHED SCHEDULES — ✅ Fixed: uses schedule state, handleEditSchedule & handleDeleteSchedule defined */}
 
       <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6 mb-8">
 
         <h2 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-2">
-
           <Calendar size={20} />
           My Pushed Schedules
-
         </h2>
 
-
-        {loadingSchedules ?
+        {schedule.length === 0 ? (
 
           <p className="text-center text-gray-500 py-10">
-            Loading schedules...
+            No schedules yet.
           </p>
 
-          :
+        ) : (
 
-          mySchedules.length === 0 ?
-
-            <p className="text-center text-gray-500 py-10">
-              No schedules yet.
-            </p>
-
-            :
-
-            <div className="space-y-3">
-
-              {mySchedules.map(schedule => (
-                <div
-                  key={schedule._id}
-                  className="border rounded-xl p-3 flex flex-col md:flex-row md:justify-between gap-2"
-                >
-
-                  <div>
-
-                    <p className="font-semibold">
-                      📅 Date: {schedule.date}
-                    </p>
-
-                    <p className="flex flex-wrap gap-2 items-center">
-
-                      🕐 Slots:
-
-                      {schedule.slots.map((slot, i) => (
-                        <span
-                          key={i}
-                          className="bg-gray-100 px-2 py-1 rounded"
-                        >
-
-                          {slot}
-
-                        </span>
-                      ))}
-
-                    </p>
-
-                  </div>
-
-                  <div className="text-sm text-gray-500">
-
-                    <p>
-                      Requested at: {new Date(schedule.createdAt).toLocaleString()}
-                    </p>
-
-                  </div>
-
+          <div className="space-y-3">
+            {schedule.map((s) => (
+              <div key={s.date} className="border p-3 rounded">
+                <p className="font-semibold">{new Date(s.date).toLocaleDateString()}</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {s.slots.map((slot, i) => (
+                    <span key={i} className="bg-gray-100 px-2 py-1 rounded text-sm">
+                      {slot.time} ({slot.status})
+                    </span>
+                  ))}
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
 
-            </div>
-
-        }
+        )}
 
       </div>
 
@@ -645,7 +627,7 @@ const AppointmentCard = ({ appointment, services, equipment, onUpdate }) => {
           <div className="flex flex-wrap items-center gap-2 mb-3">
 
             <span className="font-semibold text-gray-800">
-              {appointment.patient?.name || "Unknown Patient"} {/* who the appointment is for */}
+              {appointment.patient?.name || "Unknown Patient"}
             </span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium
 ${appointment.status === 'COMPLETED'
@@ -666,7 +648,7 @@ ${appointment.status === 'COMPLETED'
             <p>📧 {appointment.patient?.email || "-"}</p>
             <p>📞 {appointment.patient?.phone || "No phone"}</p>
             <p>
-              Booked By: {appointment.bookedBy?.name || "Self"} {/* guardian or self */}
+              Booked By: {appointment.bookedBy?.name || "Walk In"}
             </p>
             <p>📅 {appointment.date}</p>
             <p>🕐 {appointment.time}</p>
@@ -721,7 +703,7 @@ ${selectedServices.includes(svc._id)
                       <input
                         type="number"
                         min="0"
-                        max={eq.quantity} // prevent entering more than available
+                        max={eq.quantity}
                         placeholder="Used"
                         className="border px-2 py-1 rounded w-24"
                         onChange={(e) => {

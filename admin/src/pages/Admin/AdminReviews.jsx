@@ -2,26 +2,24 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
+import { backendUrl } from "../../config";
 
 const AdminReviews = () => {
-  const { aToken, backendUrl } = useContext(AdminContext); // get URL & token from context
+  const { aToken } = useContext(AdminContext); // get token from context
   const [reviews, setReviews] = useState([]);
 
+
   useEffect(() => {
-    fetchReviews();
-    // eslint-disable-next-line
-  }, []);
+    if (aToken) fetchReviews();
+  }, [aToken]);
 
   // Fetch all reviews for admin
   const fetchReviews = async () => {
+      console.log("aToken value:", aToken); // ← ADD THIS
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${aToken}`, // ✅ correct header
-        },
-      };
-
-      const { data } = await axios.get(backendUrl + "/api/reviews/admin", config);
+      const { data } = await axios.get(`${backendUrl}/api/reviews/admin`, {
+        headers: { Authorization: `Bearer ${aToken}` },
+      });
 
       if (data.success) {
         setReviews(data.reviews);
@@ -32,28 +30,28 @@ const AdminReviews = () => {
   };
 
   // Approve a pending review
-  const approveReview = async (id) => {
-    try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${aToken}`,
-        },
-      };
+const approveReview = async (id) => {
+  try {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${aToken}`,
+      },
+    };
 
-      const { data } = await axios.put(
-        backendUrl + "/api/reviews/approve/" + id,
-        {},
-        config
-      );
+    const { data } = await axios.put(
+      `${backendUrl}/api/reviews/approve/${id}`,
+      {},
+      config 
+    );
 
-      if (data.success) {
-        toast.success("Review approved!");
-        fetchReviews(); // refresh list
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message);
+    if (data.success) {
+      toast.success("Review approved!");
+      fetchReviews(); // refresh list
     }
-  };
+  } catch (err) {
+    toast.error(err.response?.data?.message || err.message);
+  }
+};
 
   // Delete a review
   const deleteReview = async (id) => {
@@ -65,7 +63,7 @@ const AdminReviews = () => {
       };
 
       const { data } = await axios.delete(
-        backendUrl + "/api/reviews/" + id,
+        `${backendUrl}/api/reviews/${id}`,
         config
       );
 

@@ -5,6 +5,7 @@ import { DoctorContext } from "../context/DoctorContext";
 import { StaffContext } from "../context/StaffContext";
 import { toast } from "react-toastify";
 import { Eye, EyeOff, Shield } from "lucide-react";
+import { backendUrl } from "../config";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -15,7 +16,7 @@ const Login = () => {
   const [adminSecret, setAdminSecret] = useState("");
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
 
-  const { setAToken, getAllDoctors, backendUrl } = useContext(AdminContext);
+  const { setAToken, getAllDoctors} = useContext(AdminContext);
   const { loginDoctor } = useContext(DoctorContext);
   const { loginStaff } = useContext(StaffContext);
   const navigate = useNavigate();

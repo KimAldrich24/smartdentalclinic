@@ -2,9 +2,10 @@ import React, { useEffect, useState, useContext } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 import { ClipLoader } from "react-spinners";
+import { backendUrl } from "../../config";
 
 const PendingUsers = () => {
-  const { backendUrl, aToken } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 

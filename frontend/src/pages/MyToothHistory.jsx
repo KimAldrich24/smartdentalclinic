@@ -3,6 +3,7 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import ToothChart from '../components/ToothChart';
 import ToothTreatmentModal from '../components/ToothTreatmentModal';
+import { backendUrl } from "../config";
 
 const MyToothHistory = () => {
   const { user, token } = useContext(AuthContext);
@@ -21,7 +22,7 @@ const MyToothHistory = () => {
       try {
         // Update this URL to match your backend route
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/tooth-treatments/patient/${user._id}`,
+          `${backendUrl}/api/tooth-treatments/patient/${user._id}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }

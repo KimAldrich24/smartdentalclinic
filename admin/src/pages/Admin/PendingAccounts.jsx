@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useContext } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
+import { backendUrl } from "../../config";
 
 const PendingAccounts = () => {
-  const { backendUrl, aToken } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
   const [pendingUsers, setPendingUsers] = useState([]);
 
   // Fetch pending users
