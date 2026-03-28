@@ -6,41 +6,35 @@ import { AdminContext } from "../../context/AdminContext";
 import { backendUrl } from "../../config";
 
 const PatientHistory = () => {
-  const { user, token } = useContext(AuthContext);
+  const { admin, token } = useContext(AuthContext);
   const { aToken } = useContext(AdminContext);
   const { id } = useParams();
 
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Decide which ID and token to use
-  const patientId = id || user?._id;
+  const patientId = id || admin?._id;
   const authToken = aToken || token;
 
   useEffect(() => {
     const fetchRecords = async () => {
-      if (!patientId) {
+      if (!patientId || !authToken) {
         setLoading(false);
         return;
       }
 
       try {
-        // Choose route based on admin or patient
         const url = aToken
-          ? `${backendUrl}/api/appointments/admin/completed/${patientId}`
+          ? `${backendUrl}/api/admin/appointments/admin/completed/${patientId}`
           : `${backendUrl}/api/appointments/completed/${patientId}`;
 
         const res = await axios.get(url, {
           headers: { Authorization: `Bearer ${authToken}` },
         });
 
-        // Admin and patient route returns `records`
         setRecords(res.data.records || res.data.appointments || []);
       } catch (err) {
-        console.error(
-          "Error fetching patient appointments:",
-          err.response?.data || err.message
-        );
+        console.error("Error fetching records:", err.response?.data || err.message);
         setRecords([]);
       } finally {
         setLoading(false);

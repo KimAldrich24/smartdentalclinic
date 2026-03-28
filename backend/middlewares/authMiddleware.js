@@ -43,7 +43,7 @@ export default function protect(allowedRoles = []) {
 
       req.user = user;
 
-      if (allowedRoles.length && !allowedRoles.includes(user.role)) {
+      if (allowedRoles.length && !allowedRoles.includes(user.role?.toLowerCase())) {
         return res.status(403).json({ message: "Forbidden: Role not allowed" });
       }
 

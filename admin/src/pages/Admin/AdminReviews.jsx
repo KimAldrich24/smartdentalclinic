@@ -15,7 +15,6 @@ const AdminReviews = () => {
 
   // Fetch all reviews for admin
   const fetchReviews = async () => {
-      console.log("aToken value:", aToken); // ← ADD THIS
     try {
       const { data } = await axios.get(`${backendUrl}/api/reviews/admin`, {
         headers: { Authorization: `Bearer ${aToken}` },
@@ -84,7 +83,7 @@ const approveReview = async (id) => {
 
       {reviews.map((r) => (
         <div key={r._id} className="border p-3 mb-2 rounded">
-          <p><b>{r.user?.name}</b></p>
+          <p><b>{r.user?.name || r.userName}</b></p>
           <p>⭐ {r.rating}</p>
           <p>{r.comment}</p>
 
