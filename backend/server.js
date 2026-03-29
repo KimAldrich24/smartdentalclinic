@@ -1,3 +1,6 @@
+import dns from 'node:dns/promises';
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
@@ -37,6 +40,10 @@ import doctorScheduleRequestRoutes from "./routes/doctorScheduleRequestRoutes.js
 import reviewRouter from "./routes/reviewRoutes.js"
 
 import { startScheduleCleanup } from './utils/scheduleCleanup.js'
+
+
+
+
 
 // =======================
 // APP INIT
