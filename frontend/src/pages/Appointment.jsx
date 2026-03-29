@@ -191,7 +191,12 @@ const Appointment = () => {
         : `${backendUrl}/api/appointments/book`;
 
       const payload = { doctorId: docId, date: selectedDate, time: selectedTime };
-      if (isChildBooking) payload.childId = selectedChild;
+
+      if (isChildBooking) {
+        payload.childId = selectedChild;
+        const child = children.find((c) => c._id === selectedChild);
+        if (child) payload.childName = child.name; 
+      }
 
       const res = await axios.post(endpoint, payload, {
         headers: { Authorization: `Bearer ${token}` },

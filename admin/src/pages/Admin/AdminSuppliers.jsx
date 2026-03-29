@@ -68,6 +68,13 @@ const AdminSuppliers = () => {
     e.preventDefault();
     if (!aToken) return;
 
+    if (formData.phone) {
+      if (!/^09\d{9}$/.test(formData.phone)) {
+        Swal.fire("Invalid Phone", "Phone number must start with 09 and be exactly 11 digits.", "error");
+        return;
+      }
+    }
+
     try {
       if (editingId) {
         await axios.put(
@@ -151,6 +158,11 @@ const AdminSuppliers = () => {
     }
   };
 
+  const handlePhoneChange = (e) => {
+  const value = e.target.value.replace(/\D/g, "").slice(0, 11);
+  setFormData({ ...formData, phone: value });
+};
+
   /* =========================
      UI
   ========================= */
@@ -197,13 +209,13 @@ const AdminSuppliers = () => {
             className="border px-2 py-1"
           />
 
-          <input
-            name="phone"
-            placeholder="Phone"
-            value={formData.phone}
-            onChange={handleChange}
-            className="border px-2 py-1"
-          />
+<input
+  name="phone"
+  placeholder="Phone"
+  value={formData.phone}
+  onChange={handleChange}
+  className="border px-2 py-1"
+/>
 
           <input
             name="address"

@@ -360,15 +360,22 @@ import { socket } from "../../socket";
                   </button>
                 )}
 
-                {/* ✅ Mark Payment Paid */}
-                {appt.status === "COMPLETED" && appt.paymentStatus !== "Paid" && (
+                {appt.status === "COMPLETED" && ( appt.paymentStatus === "paid_cash" || appt.paymentStatus === "Paid" || appt.paymentStatus === "paid" || appt.paymentStatus === "paid_online" ? (
+                  <button
+                    onClick={() => toast.info("This appointment is already paid.")}
+                    className="bg-green-600 text-white font-bold px-4 py-2 rounded-lg w-full cursor-default"
+                  >
+                    Paid
+                  </button>
+                ) : (
                   <button
                     onClick={() => markAsPaid(appt)}
                     className="bg-blue-500 text-white px-4 py-2 rounded-lg w-full"
                   >
                     Mark Payment Paid
                   </button>
-                )}
+                )
+              )}
 
                 {/* <button
                   onClick={() => deleteAppointment(appt._id)}

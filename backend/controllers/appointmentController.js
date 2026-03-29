@@ -60,10 +60,10 @@ export const bookAppointment = async (req, res) => {
 ===================================================== */
 export const bookChildAppointment = async (req, res) => {
   try {
-    const { doctorId, date, time, childId } = req.body;
+    const { doctorId, date, time, childId, childName } = req.body;
     const guardianId = req.user._id;
 
-    if (!doctorId || !date || !time || !childId) {
+    if (!doctorId || !date || !time || !childId || !childName) {
       return res
         .status(400)
         .json({ success: false, message: "Doctor, date, time, and child are required" });
@@ -100,20 +100,30 @@ if (existingSlot) {
   });
 }
 
-    const appointment = new Appointment({
-      patient: childId,
-      bookedBy: guardianId,
-      doctor: doctorId,
-      date,
-      time,
-      status: "PENDING_ADMIN",
-      services: [],
-      totalPrice: 0,
-      paymentStatus: "pending",
-      createdBy: guardianId,
-    });
+  const appointment = new Appointment({
+    patient: guardianId,
+    childName: childName,
+    bookedBy: guardianId,
+    doctor: doctorId,
+    date,
+    time,
+    status: "PENDING_ADMIN",
+    services: [],
+    totalPrice: 0,
+    paymentStatus: "pending",
+    createdBy: guardianId,
+  });
+
+  console.log("Saving appointment:", {
+    patient: appointment.patient,
+    childName: appointment.childName,
+    bookedBy: appointment.bookedBy,
+  });
+
 
     await appointment.save();
+
+    
 
     // Real-time socket events
     const io = req.app.get('io');

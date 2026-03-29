@@ -627,7 +627,7 @@ const AppointmentCard = ({ appointment, services, equipment, onUpdate }) => {
           <div className="flex flex-wrap items-center gap-2 mb-3">
 
             <span className="font-semibold text-gray-800">
-              {appointment.patient?.name || "Unknown Patient"}
+              {appointment.childName || appointment.patient?.name || "Unknown Patient"}
             </span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium
 ${appointment.status === 'COMPLETED'
