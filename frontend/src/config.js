@@ -3,3 +3,7 @@ export const USE_LOCAL_BACKEND = true; // Set to true for local development, fal
 export const backendUrl = USE_LOCAL_BACKEND
   ? "http://localhost:4000"
   : "https://smartclinic-backend-1.onrender.com";
+
+export const adminUrl = USE_LOCAL_BACKEND
+  ? "http://localhost:5174/"
+  : "https://admin.smartdental.site";

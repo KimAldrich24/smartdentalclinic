@@ -6,6 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { backendUrl } from "../config";
+import { adminUrl } from "../config";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -393,7 +394,7 @@ const Login = () => {
             </button>
 
             {/* ✅ FIXED ADMIN LOGIN LINK */}
-            <button type="button" onClick={() => window.open("https://admin.smartdental.site", "_blank")} className="w-full mt-2 bg-gray-100 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-200 transition-all text-sm">
+            <button type="button" onClick={() => window.open(adminUrl, "_blank")} className="w-full mt-2 bg-gray-100 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-200 transition-all text-sm">
               Admin Login
             </button>
           </form>
