@@ -3,10 +3,11 @@ import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const UserMaintenance = () => {
   const { aToken, doctors, getAllDoctors } = useContext(AdminContext);
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
 
   const [patients, setPatients] = useState([]);
@@ -38,9 +39,22 @@ const UserMaintenance = () => {
   // 🔥 DELETE USER
   // =========================
   const deleteUser = async (id, role) => {
+
+    const result = await Swal.fire({
+      title: `Delete ${role}?`,
+      text: `Are you sure you want to delete this ${role}? This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true, 
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!"
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       if (role === "doctor") {
-        console.log("Doctor delete not implemented yet");
+        Swal.fire("Info", "Doctor delete not implemented yet", "info");
         return;
       }
 
@@ -50,7 +64,8 @@ const UserMaintenance = () => {
 
       setPatients((prev) => prev.filter((user) => user._id !== id));
     } catch (err) {
-      console.error("Error deleting user:", err);
+      console.error("Error deleting user:", err.response?.data || err.message);
+      Swal.fire("Error", err.response?.data?.message || "Failed to delete user", "error");
     }
   };
 
@@ -99,7 +114,7 @@ const UserMaintenance = () => {
       <h2 className="text-xl font-bold mb-4">User Maintenance</h2>
 
       {/* 🔹 Add Doctor & Receptionist Buttons (Emoji version) */}
-      <div className="flex justify-end gap-4 mb-4">
+      <div className="flex justify-end gap-4 mb-4"> 
         <button
           onClick={() => navigate("/add-doctor")}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
@@ -123,7 +138,7 @@ const UserMaintenance = () => {
             <th className="p-2 border">Name</th>
             <th className="p-2 border">Email</th>
             <th className="p-2 border">Role</th>
-            {/* <th className="p-2 border">Actions</th> */}
+            <th className="p-2 border">Actions</th>
           </tr>
         </thead>
 

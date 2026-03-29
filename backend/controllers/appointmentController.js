@@ -16,80 +16,43 @@ export const bookAppointment = async (req, res) => {
     const { doctorId, date, time } = req.body;
     const userId = req.user._id;
 
-    if (!doctorId || !date || !time) {
-      return res.status(400).json({
-        success: false,
-        message: "Doctor, date, and time are required",
-      });
-    }
+    if (!doctorId || !date || !time)
+      return res.status(400).json({ success: false, message: "Doctor, date, and time are required" });
 
     const doctor = await Doctor.findById(doctorId);
-    if (!doctor)
-      return res.status(404).json({ success: false, message: "Doctor not found" });
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
 
-    // ✅ 1. CHECK IF SLOT ALREADY BOOKED
     const existingSlot = await Appointment.findOne({
-      doctor: doctorId,
-      date,
-      time,
+      doctor: doctorId, date, time,
       status: { $in: ["PENDING_ADMIN", "APPROVED_ADMIN", "IN_PROGRESS"] },
     });
+    if (existingSlot)
+      return res.status(400).json({ success: false, message: "This time slot is already booked" });
 
-    if (existingSlot) {
-      return res.status(400).json({
-        success: false,
-        message: "This time slot is already booked",
-      });
-    }
+    const existingUser = await Appointment.findOne({ doctor: doctorId, patient: userId, date, time });
+    if (existingUser)
+      return res.status(400).json({ success: false, message: "You already booked this slot" });
 
-    // ✅ 2. PREVENT SAME USER DOUBLE BOOK
-    const existingUser = await Appointment.findOne({
-      doctor: doctorId,
-      patient: userId,
-      date,
-      time,
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "You already booked this slot",
-      });
-    }
-
-    // ✅ 3. CREATE APPOINTMENT
     const appointment = await Appointment.create({
-      patient: userId,
-      bookedBy: userId,
-      doctor: doctorId,
-      date,
-      time,
-      status: "PENDING_ADMIN",
-      services: [],
-      totalPrice: 0,
-      paymentStatus: "pending",
-      createdBy: userId,
+      patient: userId, bookedBy: userId, doctor: doctorId,
+      date, time, status: "PENDING_ADMIN",
+      services: [], totalPrice: 0, paymentStatus: "pending", createdBy: userId,
     });
 
-    // ✅ 4. RESERVE SLOT IMMEDIATELY
-    doctor.slots_book[date] = [
-      ...(doctor.slots_book[date] || []),
-      time,
-    ];
+    doctor.slots_book[date] = [...(doctor.slots_book[date] || []), time];
     await doctor.save();
 
-    res.status(201).json({
-      success: true,
-      message: "Appointment submitted for admin approval",
-      appointment,
-    });
+    // ✅ get io AFTER saving, emit ONCE
+    const io = req.app.get('io');
+    io.to(doctorId.toString()).emit('newAppointment', appointment);
+    io.to(userId.toString()).emit('appointmentUpdated', appointment);
+    io.to('admins').emit('newAppointment', appointment);
+    io.to('admins').emit('appointmentUpdated', appointment);
+
+    res.status(201).json({ success: true, message: "Appointment submitted for admin approval", appointment });
   } catch (err) {
     console.error("BOOK APPOINTMENT ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to book appointment",
-      error: err.message,
-    });
+    res.status(500).json({ success: false, message: "Failed to book appointment", error: err.message });
   }
 };
 /* =====================================================
@@ -97,10 +60,10 @@ export const bookAppointment = async (req, res) => {
 ===================================================== */
 export const bookChildAppointment = async (req, res) => {
   try {
-    const { doctorId, date, time, childId } = req.body;
+    const { doctorId, date, time, childId, childName } = req.body;
     const guardianId = req.user._id;
 
-    if (!doctorId || !date || !time || !childId) {
+    if (!doctorId || !date || !time || !childId || !childName) {
       return res
         .status(400)
         .json({ success: false, message: "Doctor, date, time, and child are required" });
@@ -137,20 +100,38 @@ if (existingSlot) {
   });
 }
 
-    const appointment = new Appointment({
-      patient: childId,
-      bookedBy: guardianId,
-      doctor: doctorId,
-      date,
-      time,
-      status: "PENDING_ADMIN",
-      services: [],
-      totalPrice: 0,
-      paymentStatus: "pending",
-      createdBy: guardianId,
-    });
+  const appointment = new Appointment({
+    patient: guardianId,
+    childName: childName,
+    bookedBy: guardianId,
+    doctor: doctorId,
+    date,
+    time,
+    status: "PENDING_ADMIN",
+    services: [],
+    totalPrice: 0,
+    paymentStatus: "pending",
+    createdBy: guardianId,
+  });
+
+  console.log("Saving appointment:", {
+    patient: appointment.patient,
+    childName: appointment.childName,
+    bookedBy: appointment.bookedBy,
+  });
+
 
     await appointment.save();
+
+    
+
+    // Real-time socket events
+    const io = req.app.get('io');
+    io.to(doctorId.toString()).emit('newAppointment', appointment);
+    io.to(childId.toString()).emit('appointmentUpdated', appointment);
+    io.to(guardianId.toString()).emit('appointmentUpdated', appointment);
+    io.to('admins').emit('newAppointment', appointment);
+    io.to('admins').emit('appointmentUpdated',  appointment);
 
     res
       .status(201)
@@ -229,52 +210,58 @@ export const getAllAppointments = async (req, res) => {
 export const approveAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const appointment = await Appointment.findById(id)
-      .populate("patient", "name phone");
-
-    if (!appointment) {
+    const appointment = await Appointment.findById(id).populate("patient", "name phone");
+    if (!appointment)
       return res.status(404).json({ success: false, message: "Appointment not found" });
-    }
 
-    // ✅ Update status
     appointment.status = "APPROVED_ADMIN";
     await appointment.save();
 
-    // ✅ SAFE SMS (will never break your system)
+    const io = req.app.get('io');
+    // ✅ emit to all 3 parties with same event name
+    io.to(appointment.doctor.toString()).emit('appointmentUpdated', appointment);
+    // Safely emit to patient if exists
+    const patientId = appointment.patient && appointment.patient._id ? appointment.patient._id : appointment.patient;
+    if (patientId) {
+      io.to(patientId.toString()).emit('appointmentUpdated', appointment);
+    }
+    if (appointment.bookedBy)
+      io.to(appointment.bookedBy.toString()).emit('appointmentUpdated', appointment);
+    io.to('admins').emit('appointmentUpdated', appointment); // emit to all admins
+
     try {
-      if ((!appointment.type || appointment.type === "online") && appointment.patient?.phone) {
-        const message = `Hello ${appointment.patient.name}, your appointment on ${appointment.date} at ${appointment.time} has been approved by admin.`;
+      // Only send SMS if patient is populated and has a phone
+      if (
+        (!appointment.type || appointment.type === "online") &&
+        appointment.patient &&
+        typeof appointment.patient === "object" &&
+        appointment.patient.phone
+      ) {
+        const message = `Hello ${appointment.patient.name}, your appointment on ${appointment.date} at ${appointment.time} has been approved.`;
         await sendSMS(appointment.patient.phone, message);
       }
     } catch (smsErr) {
-      console.log("⚠️ SMS failed but approval is safe:", smsErr.message);
+      console.log("⚠️ SMS failed:", smsErr.message);
     }
 
-    // Add credit if needed
     if (appointment.totalPrice) {
-      await Credit.create({
-        user: appointment.patient._id,
-        amount: appointment.totalPrice,
-        description: `Credit for appointment ${appointment._id}`,
-      });
+      // Use patientId for credit
+      if (patientId) {
+        await Credit.create({
+          user: patientId,
+          amount: appointment.totalPrice,
+          description: `Credit for appointment ${appointment._id}`,
+        });
+      }
     }
 
-    res.json({
-      success: true,
-      message: "Appointment approved by admin",
-      appointment,
-    });
-
+    res.json({ success: true, message: "Appointment approved", appointment });
   } catch (err) {
     console.error("Approve appointment error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: err.message,
-    });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
+
 
 // Optional: Reject appointment
 export const rejectAppointment = async (req, res) => {
@@ -329,100 +316,79 @@ export const getDoctorAppointments = async (req, res) => {
 ===================================================== */
 export const doctorAssignServices = async (req, res) => {
   try {
-    const { services, usedEquipment } = req.body; // services = [{ serviceId, price }], usedEquipment = { equipmentId: qty }
+    const { services, usedEquipment } = req.body;
 
-    // 1️⃣ Find appointment
     const appointment = await Appointment.findById(req.params.id);
     if (!appointment)
       return res.status(404).json({ success: false, message: "Appointment not found" });
 
     if (appointment.status !== "APPROVED_ADMIN")
-      return res.status(400).json({
-        success: false,
-        message: "Can only assign services after admin approval",
-      });
+      return res.status(400).json({ success: false, message: "Can only assign services after admin approval" });
 
-    // 2️⃣ Assign Services
     const formattedServices = [];
     for (const s of services) {
       const service = await Service.findById(s.serviceId);
       if (!service) continue;
-      formattedServices.push({
-        service: service._id,
-        price: s.price ?? service.price,
-      });
+      formattedServices.push({ service: service._id, price: s.price ?? service.price });
     }
     appointment.services = formattedServices;
 
-    // 3️⃣ Deduct Equipment directly here
     const equipmentDeduction = [];
     if (usedEquipment && typeof usedEquipment === "object") {
       for (const [eqId, qty] of Object.entries(usedEquipment)) {
         const equipment = await Equipment.findById(eqId);
         if (!equipment) {
-          equipmentDeduction.push({ equipmentId: eqId, success: false, message: "Equipment not found" });
+          equipmentDeduction.push({ equipmentId: eqId, success: false, message: "Not found" });
           continue;
         }
-
         const usedQty = Number(qty) || 0;
         if (equipment.quantity < usedQty) {
-          equipmentDeduction.push({
-            equipmentId: eqId,
-            success: false,
-            message: `Not enough quantity. Available: ${equipment.quantity}, requested: ${usedQty}`,
-          });
+          equipmentDeduction.push({ equipmentId: eqId, success: false, message: `Not enough. Available: ${equipment.quantity}` });
           continue;
         }
-
         equipment.quantity -= usedQty;
         await equipment.save();
-
-        equipmentDeduction.push({
-          equipmentId: eqId,
-          success: true,
-          deducted: usedQty,
-          remaining: equipment.quantity,
-        });
+        equipmentDeduction.push({ equipmentId: eqId, success: true, deducted: usedQty, remaining: equipment.quantity });
       }
     }
 
-    // 4️⃣ Update appointment status
     appointment.status = "IN_PROGRESS";
     await appointment.save();
 
-    // 5️⃣ Respond with updated appointment and deduction info
-    res.json({
-      success: true,
-      message: "Services assigned and equipment updated",
-      appointment,
-      equipmentDeduction,
-    });
+    const io = req.app.get('io');
+    io.to(appointment.doctor.toString()).emit('appointmentUpdated', appointment);
+    io.to(appointment.patient.toString()).emit('appointmentUpdated', appointment);
+    io.to('admins').emit('appointmentUpdated', appointment);
+    io.emit('equipmentUpdated'); // ✅ refresh equipment everywhere
+
+    res.json({ success: true, message: "Services assigned", appointment, equipmentDeduction });
   } catch (err) {
     console.error("doctorAssignServices ERROR:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 /* =====================================================
    DOCTOR: COMPLETE APPOINTMENT
 ===================================================== */
 export const completeAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
-    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+    if (!appointment)
+      return res.status(404).json({ success: false, message: "Appointment not found" });
 
     appointment.status = "COMPLETED";
     await appointment.save();
 
-    await PatientRecord.create({
-      user: appointment.patient,  // <-- changed from appointment.user
-      doctor: appointment.doctor,
-      services: appointment.services,
-      date: appointment.date,
-      notes: "Treatment completed",
-    });
+    const io = req.app.get('io');
+    io.to(appointment.doctor.toString()).emit('appointmentUpdated', appointment);
+    io.to(appointment.patient.toString()).emit('appointmentUpdated', appointment);
+    io.to('admins').emit('appointmentUpdated', appointment); // ✅ admin too
 
-    await addCreditFromAppointment(appointment); // pass appointment object
+    await PatientRecord.create({
+      user: appointment.patient, doctor: appointment.doctor,
+      services: appointment.services, date: appointment.date, notes: "Treatment completed",
+    });
+    await addCreditFromAppointment(appointment);
 
     res.json({ success: true, message: "Appointment completed" });
   } catch (err) {
@@ -436,10 +402,17 @@ export const completeAppointment = async (req, res) => {
 export const cancelAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
-    if (!appointment || appointment.status !== "PENDING_ADMIN") return res.status(400).json({ success: false, message: "Cannot cancel appointment" });
+    if (!appointment || appointment.status !== "PENDING_ADMIN")
+      return res.status(400).json({ success: false, message: "Cannot cancel appointment" });
 
     appointment.status = "CANCELLED";
     await appointment.save();
+
+    const io = req.app.get('io');
+    io.to(appointment.doctor.toString()).emit('appointmentUpdated', appointment);
+    io.to(appointment.patient.toString()).emit('appointmentUpdated', appointment);
+    io.emit('appointmentUpdated', appointment);
+
     res.json({ success: true, message: "Appointment cancelled" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -461,23 +434,26 @@ export const deleteAppointment = async (req, res) => {
 export const adminCompleteAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
-    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
-    if (appointment.status !== "IN_PROGRESS") return res.status(400).json({ success: false, message: "Appointment not in progress" });
+    if (!appointment)
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    if (appointment.status !== "IN_PROGRESS")
+      return res.status(400).json({ success: false, message: "Appointment not in progress" });
 
     appointment.status = "COMPLETED";
     appointment.paymentStatus = "Paid";
     await appointment.save();
 
-    await PatientRecord.create({
-      user: appointment.patient, // <-- changed from appointment.user
-      doctor: appointment.doctor,
-      appointment: appointment._id,
-      services: appointment.services,
-      date: appointment.date,
-      notes: "Treatment completed",
-    });
+    const io = req.app.get('io');
+    io.to(appointment.doctor.toString()).emit('appointmentUpdated', appointment);
+    io.to(appointment.patient.toString()).emit('appointmentUpdated', appointment);
+    io.to('admins').emit('appointmentUpdated', appointment); // ✅ admin too
 
-    await addCreditFromAppointment(appointment); // pass appointment object
+    await PatientRecord.create({
+      user: appointment.patient, doctor: appointment.doctor,
+      appointment: appointment._id, services: appointment.services,
+      date: appointment.date, notes: "Treatment completed",
+    });
+    await addCreditFromAppointment(appointment);
 
     res.json({ success: true, message: "Appointment marked completed", appointment });
   } catch (err) {

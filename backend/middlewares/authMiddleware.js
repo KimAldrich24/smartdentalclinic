@@ -5,7 +5,7 @@ import Doctor from "../models/doctorModel.js";
 import User from "../models/userModel.js";
 
 const roleModelMap = {
-  admin: Admin,
+  admin: User,
   staff: Staff,
   doctor: Doctor,
   patient: User,
@@ -43,7 +43,7 @@ export default function protect(allowedRoles = []) {
 
       req.user = user;
 
-      if (allowedRoles.length && !allowedRoles.includes(user.role)) {
+      if (allowedRoles.length && !allowedRoles.includes(user.role?.toLowerCase())) {
         return res.status(403).json({ message: "Forbidden: Role not allowed" });
       }
 

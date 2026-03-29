@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useContext } from "react";
+import { toast } from 'react-toastify';
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
+import { ClipLoader } from "react-spinners";
+import Swal from "sweetalert2";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { backendUrl } from "../config";
 
 const MyProfile = () => {
   const { token } = useContext(AuthContext);
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
   const [userData, setUserData] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
@@ -66,7 +71,7 @@ const MyProfile = () => {
     };
 
     fetchProfile();
-  }, [token, backendUrl]);
+  }, [token]);
 
   // =====================
   // Fetch completed appointments
@@ -85,6 +90,7 @@ const MyProfile = () => {
         }
       } catch (err) {
         console.error(err);
+        toast.error(err.response?.data?.message || "Failed to load appointments");
       }
     };
 
@@ -174,7 +180,7 @@ const MyProfile = () => {
       setUserData(data.user);
       setChildren(data.user.children || []);
       setIsEdit(false);
-      alert("Profile saved!");
+      toast.success("Profile updated successfully!");
     }
 
   } catch (err) {
@@ -189,35 +195,52 @@ const MyProfile = () => {
   // =====================
   // Add a child
   const addChild = async () => {
-  if (!childForm.name || !childForm.dob) return alert("Enter name and DOB");
-
-  setChildSaving(true);
-
-  try {
-    const { data } = await axios.post(
-      `${backendUrl}/api/users/children`, // ✅ POST endpoint
-      childForm,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (data.success) {
-      setChildren(data.children || []);
-      setChildForm({ name: "", dob: "" });
-      alert("Child added successfully!");
-    } else {
-      alert(data.message || "Failed to add child");
+    
+    if (!childForm.name || !childForm.dob) {
+      return toast.error("Enter name and DOB");
     }
-  } catch (err) {
-    console.error(err);
-    alert(err.response?.data?.message || "Error adding child");
-  } finally {
-    setChildSaving(false);
-  }
-};
+    const parentDob = new Date(userData.dob);
+    const childDob = new Date(childForm.dob);
+
+    const diffMs = childDob - parentDob;
+    const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+
+    if (diffMs < oneYearMs) {
+      return toast.error("Child's DOB must be at least a year after your DOB.");
+    }
+
+    if (childDob < parentDob) {
+      return toast.error("Child's DOB cannot be before your DOB");
+    }
+
+    setChildSaving(true);
+
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/users/children`,
+        childForm,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (data.success) {
+        setChildren(data.children || []);
+        setChildForm({ name: "", dob: "" });
+        toast.success("Child added successfully!");
+      } else {
+        toast.error(data.message || "Failed to add child");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Error adding child");
+    } finally {
+      setChildSaving(false);
+    }
+  };
   // =====================
   // Loading/Error states
   // =====================
-  if (loading) return <p className="text-center mt-10 text-gray-500">Loading profile...</p>;
+  if (loading) return <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]"><ClipLoader color="#36d7b7" loading={true} size={50} /></div>;
+
   if (error) return <p className="text-center mt-10 text-red-500">{error}</p>;
   if (!userData) return <p className="text-center mt-10 text-red-500">No user profile found.</p>;
 
@@ -271,9 +294,25 @@ const MyProfile = () => {
           <div>
             <p className="font-medium text-gray-600">Date of Birth:</p>
             {isEdit ? (
-              <input type="date" value={userData.dob || ""} 
-                onChange={e => setUserData(prev => ({ ...prev, dob: e.target.value }))}
-                className="border px-4 py-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400" />
+              <div className="relative">
+                <DatePicker
+                  selected={userData.dob ? new Date(userData.dob) : null}
+                  onChange={(date) => 
+                    setUserData(prev => ({ ...prev, dob: date.toISOString().split("T")[0] }))
+                  }
+                  dateFormat="yyyy-MM-dd"
+                  maxDate={(() => {
+                    const today = new Date();
+                    today.setFullYear(today.getFullYear() - 18);
+                    return today;
+                  })()}
+                  showYearDropdown
+                  scrollableYearDropdown
+                  placeholderText="Select date of birth (must be at least 18 years old)"
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  wrapperClassName="w-full"
+                />
+              </div>
             ) : (
               <p className="text-gray-500">{userData.dob ? new Date(userData.dob).toLocaleDateString() : "Not set"}</p>
             )}
@@ -301,9 +340,35 @@ const MyProfile = () => {
             <input type="text" placeholder="Child's Name" value={childForm.name} 
               onChange={e => setChildForm(prev => ({ ...prev, name: e.target.value }))}
               className="border px-3 py-2 rounded-lg w-full" />
-            <input type="date" value={childForm.dob} 
-              onChange={e => setChildForm(prev => ({ ...prev, dob: e.target.value }))}
-              className="border px-3 py-2 rounded-lg w-full" />
+              <div className="relative">
+              <DatePicker
+                selected={childForm.dob ? new Date(childForm.dob) : null}
+                onChange={(date) =>
+                  setChildForm(prev => ({ ...prev, dob: date.toISOString().split("T")[0] }))
+                }
+                dateFormat="yyyy-MM-dd"
+                minDate={userData?.dob ? (() => {
+                  const min = new Date(userData.dob);
+                  min.setFullYear(min.getFullYear() + 10);
+                  return min;
+                })() : null}
+                maxDate={userData?.dob ? (() => {
+                  const max = new Date(userData.dob);
+                  max.setFullYear(max.getFullYear() + 15);
+                  const today = new Date();
+                  return max < today ? max : today;
+                })() : new Date()}
+                showYearDropdown
+                scrollableYearDropdown
+                placeholderText="Select child's date of birth (a few years after your DOB)"
+                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                wrapperClassName="w-full"
+                disabled={!userData?.dob}
+              />
+              {!userData?.dob && (
+                <p className="text-red-500 text-sm mt-1">Set your own date of birth first before adding a child.</p>
+              )}
+            </div>
             <button onClick={addChild} 
               className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md">
               {childSaving ? "Saving..." : "Add Child"}
@@ -390,29 +455,60 @@ const MyProfile = () => {
             <button onClick={()=>setIsEdit(true)}
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg shadow-md">Edit</button>
 
-            {userData?.role !== "guardian" && (
-  <button onClick={async () => {
-    if (!window.confirm("Do you want to become a guardian?")) return;
-    try {
-      const { data } = await axios.put(
-        `${backendUrl}/api/users/become-guardian`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (data.success) {
-        setUserData(prev => ({ ...prev, role: data.user.role, children: data.user.children || [] }));
-        setChildren(data.user.children || []);
-        alert("You are now a guardian! You can add children now.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || "Failed to become guardian");
-    }
-  }}
-  className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg shadow-md">
-    Become Guardian
-  </button>
-)}
+              {userData?.role !== "guardian" && (
+                <button onClick={async () => {
+                  const result = await Swal.fire({
+                    title: "Become a Guardian?",
+                    text: "Do you want to become a guardian?",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#a855f7",
+                    cancelButtonColor: "#6b7280",
+                    confirmButtonText: "Yes, proceed",
+                    cancelButtonText: "Cancel",
+                  });
+
+                  if (!result.isConfirmed) return;
+
+                  try {
+                    const { data } = await axios.put(
+                      `${backendUrl}/api/users/become-guardian`,
+                      {},
+                      { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    if (data.success) {
+                      const profileRes = await axios.get(`${backendUrl}/api/users/me`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+
+                      if (profileRes.data.success) {
+                        const user = profileRes.data.user;
+                        setUserData(prev => ({ ...prev, role: user.role, children: user.children || [] }));
+                        setChildren(user.children || []);
+                      }
+
+                      Swal.fire({
+                        title: "You're now a Guardian!",
+                        text: "You can now add children to your account.",
+                        icon: "success",
+                        confirmButtonColor: "#a855f7",
+                      });
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    Swal.fire({
+                      title: "Failed!",
+                      text: err.response?.data?.message || "Failed to become guardian",
+                      icon: "error",
+                      confirmButtonColor: "#ef4444",
+                    });
+                  }
+                }}
+                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg shadow-md">
+                  Become Guardian
+                </button>
+              )}
+
           </>
         )}
       </div>

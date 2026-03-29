@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { AuthContext } from "../context/AuthContext";
+import { ClipLoader } from "react-spinners";
+import { backendUrl } from "../config";
 
 const Appointment = () => {
   const { docId } = useParams();
   const navigate = useNavigate();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const { token, user } = useContext(AuthContext);
 
   const [docInfo, setDocInfo] = useState(null);
@@ -19,6 +20,7 @@ const Appointment = () => {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [services, setServices] = useState([]);
+  const [userAppointments, setUserAppointments] = useState([]);
 
   // ================= FETCH DOCTOR =================
   const fetchDoctor = async () => {
@@ -92,12 +94,28 @@ const Appointment = () => {
     }
   };
 
+  // ================= FETCH USER APPOINTMENTS =================
+  const fetchUserAppointments = async () => {
+    if (!token) return;
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/appointments/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (data.success && Array.isArray(data.appointments)) {
+        setUserAppointments(data.appointments);
+      }
+    } catch (err) {
+      console.error("Error fetching user appointments:", err);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       await fetchDoctor();
       await fetchChildren();
       await fetchServices();
+      await fetchUserAppointments();
       setLoading(false);
     };
     loadData();
@@ -142,6 +160,27 @@ const Appointment = () => {
       return;
     }
 
+    const bookedTimes = Array.isArray(docInfo?.slots_book?.[selectedDate])
+      ? docInfo.slots_book[selectedDate]
+      : [];
+    if (bookedTimes.includes(selectedTime)) {
+      toast.error("This slot is already booked. Please choose another time.");
+      return;
+    }
+
+    const alreadyBooked = userAppointments.some(
+      (appt) =>
+        String(appt.doctorId) === String(docId) &&
+        appt.date === selectedDate &&
+        appt.time === selectedTime &&
+        appt.status !== "cancelled"
+    );
+    
+    if (alreadyBooked) {
+      toast.error("You already have an appointment with this doctor at the selected date and time.");
+      return;
+    }
+
     const isChildBooking = children.length > 0 && selectedChild;
 
     try {
@@ -152,7 +191,12 @@ const Appointment = () => {
         : `${backendUrl}/api/appointments/book`;
 
       const payload = { doctorId: docId, date: selectedDate, time: selectedTime };
-      if (isChildBooking) payload.childId = selectedChild;
+
+      if (isChildBooking) {
+        payload.childId = selectedChild;
+        const child = children.find((c) => c._id === selectedChild);
+        if (child) payload.childName = child.name; 
+      }
 
       const res = await axios.post(endpoint, payload, {
         headers: { Authorization: `Bearer ${token}` },
@@ -167,25 +211,35 @@ const Appointment = () => {
         newSlotsBook[selectedDate].push(selectedTime);
         setDocInfo((prev) => ({ ...prev, slots_book: newSlotsBook }));
 
+        setUserAppointments((prev) => [
+          ...prev,
+          {
+            doctorId: docId,
+            date: selectedDate,
+            time: selectedTime,
+            status: "pending",
+          },
+        ]);
+
         setSelectedTime("");
         navigate("/my-appointments");
       } else {
         toast.error(res.data.message || "Booking failed");
       }
-    } catch (err) {
-      if (err.response) {
-        toast.error(err.response.data.message || "Booking failed");
-      } else {
-        toast.error("Something went wrong");
-      }
-      console.log("Booking blocked:", err.response?.data);
-    } finally {
+    }catch (err) {
+    if (err.response) {
+      console.log("Backend error:", err.response.data);
+      toast.error(err.response.data.message || "Booking failed");
+    } else {
+      toast.error("Something went wrong");
+    }
+  } finally {
       setBooking(false);
     }
   };
 
   // ================= RENDER =================
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (loading) return <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]"><ClipLoader color="#36d7b7" loading={true} size={50} /></div>;
   if (!docInfo) return <p className="text-center mt-10 text-red-500">Doctor not found</p>;
 
   const hasAvailableSlots = doctorSchedule.some((d) => {
@@ -295,15 +349,34 @@ const Appointment = () => {
               <div className="grid grid-cols-3 gap-2">
                 {getAvailableSlots().map((slot, i) => {
                   const time = typeof slot === "string" ? slot : slot.time;
+
+                  // Highlight slots the user has already booked
+                  const isUserBooked = userAppointments.some(
+                    (appt) =>
+                      String(appt.doctorId) === String(docId) &&
+                      appt.date === selectedDate &&
+                      appt.time === time &&
+                      appt.status !== "cancelled"
+                  );
+
                   return (
                     <button
                       key={i}
-                      onClick={() => setSelectedTime(time)}
-                      className={`p-2 rounded-lg border ${
-                        selectedTime === time ? "bg-blue-600 text-white" : "bg-gray-100"
+                      onClick={() => !isUserBooked && setSelectedTime(time)}
+                      disabled={isUserBooked}
+                      title={isUserBooked ? "You already booked this slot" : ""}
+                      className={`p-2 rounded-lg border text-sm ${
+                        isUserBooked
+                          ? "bg-yellow-100 text-yellow-700 border-yellow-400 cursor-not-allowed"
+                          : selectedTime === time
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 hover:bg-gray-200"
                       }`}
                     >
                       {time}
+                      {isUserBooked && (
+                        <span className="block text-xs font-medium">Your booking</span>
+                      )}
                     </button>
                   );
                 })}

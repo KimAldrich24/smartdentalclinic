@@ -2,9 +2,11 @@ import React, { useState, useEffect, useContext } from 'react';
 import { toast } from 'react-toastify';
 import { CheckCircle, XCircle, Eye } from 'lucide-react';
 import { AdminContext } from '../../context/AdminContext';
+import { ClipLoader } from "react-spinners";
+import { backendUrl } from "../../config";
 
 const AdminPaymentProofs = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
   const [proofs, setProofs] = useState([]);
   const [filter, setFilter] = useState('pending');
   const [loading, setLoading] = useState(false);
@@ -106,7 +108,9 @@ const AdminPaymentProofs = () => {
       </div>
 
       {loading ? (
-        <p className="text-center text-gray-500">Loading...</p>
+        <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]">
+          <ClipLoader color="#36d7b7" loading={true} size={50} />
+        </div>
       ) : proofs.length === 0 ? (
         <p className="text-center text-gray-500">No payment proofs found</p>
       ) : (

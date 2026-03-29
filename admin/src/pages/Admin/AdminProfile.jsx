@@ -5,10 +5,11 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { ClipLoader } from "react-spinners";
+import { backendUrl } from "../../config";
 
 const AdminProfile = () => {
   const { aToken } = useContext(AdminContext) || {};
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [admin, setAdmin] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
@@ -164,11 +165,8 @@ const AdminProfile = () => {
 
   if (!admin) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
+      <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]">
+        <ClipLoader color="#36d7b7" loading={true} size={50} />
       </div>
     );
   }

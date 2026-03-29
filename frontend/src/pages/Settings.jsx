@@ -3,10 +3,11 @@ import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
+import Swal from "sweetalert2";
+import { backendUrl } from "../config";
 
 const Settings = () => {
-  const { token } = useContext(AuthContext);
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const { token, user } = useContext(AuthContext);
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -14,6 +15,7 @@ const Settings = () => {
 
   // Password change
   const [passwordData, setPasswordData] = useState({
+    email: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
@@ -42,9 +44,10 @@ const Settings = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post(
+      const res = await axios.put(
         `${backendUrl}/api/users/change-password`,
         {
+          email: user.email,
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
         },
@@ -54,17 +57,29 @@ const Settings = () => {
       );
 
       if (res.data.success) {
-        toast.success("Password changed successfully!");
+        Swal.fire({
+          icon: "success",
+          title: "Password Changed",
+          text: "Your password has been updated successfully!",
+        });
         setPasswordData({
           currentPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
       } else {
-        toast.error(res.data.message || "Failed to change password");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: res.data.message || "Failed to change password",
+        });
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to change password");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.response?.data?.message || "Failed to change password",
+      });
     } finally {
       setLoading(false);
     }
@@ -73,7 +88,11 @@ const Settings = () => {
   // Handle notification toggle
   const handleNotificationToggle = (key) => {
     setNotifications({ ...notifications, [key]: !notifications[key] });
-    toast.success("Notification preference updated");
+    Swal.fire({
+      icon: "success",
+      title: "Notification Updated",
+      text: "Notification preference updated successfully!",
+    });
   };
 
   return (
@@ -158,7 +177,12 @@ const Settings = () => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={
+                loading ||
+                !passwordData.currentPassword ||
+                !passwordData.newPassword ||
+                !passwordData.confirmPassword
+              }
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition disabled:opacity-50"
             >
               {loading ? "Updating..." : "Update Password"}

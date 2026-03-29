@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { backendUrl } from "../config";
 
-const WalkInAppointmentForm = () => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+const WalkInAppointmentForm = ({ onSuccess, aToken }) => {
 
   const [doctors, setDoctors] = useState([]);
   const [form, setForm] = useState({
@@ -20,8 +20,17 @@ const WalkInAppointmentForm = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const res = await axios.get(`${backendUrl}/api/doctors`);
-        const doctorList = res.data.doctors || res.data;
+          const res = await axios.get(`${backendUrl}/api/doctors`, {
+            headers: { Authorization: `Bearer ${aToken}` },
+          });
+        
+        // ✅ safely extract array regardless of response shape
+        const doctorList = Array.isArray(res.data.doctors)
+          ? res.data.doctors
+          : Array.isArray(res.data)
+          ? res.data
+          : [];
+
         setDoctors(doctorList);
 
         if (doctorList.length > 0) {
@@ -30,6 +39,7 @@ const WalkInAppointmentForm = () => {
       } catch (err) {
         console.error("Failed to fetch doctors:", err.message);
         toast.error("Failed to load doctors");
+        setDoctors([]); // ✅ ensure it stays an array on error
       }
     };
     fetchDoctors();

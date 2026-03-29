@@ -3,7 +3,10 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
-import { API_URL } from "../config";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { backendUrl } from "../config";
+import { adminUrl } from "../config";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -45,7 +48,10 @@ const Login = () => {
     todayDate.getMonth(),
     todayDate.getDate()
   );
-  const maxDob = eighteenYearsAgo.toISOString().split("T")[0]; // YYYY-MM-DD
+
+  // Check email or user name availability errors
+  const [fieldErrors, setFieldErrors] = useState({ email: "" });
+
 
   // Load saved registration data from session storage on component mount
   useEffect(() => {
@@ -117,11 +123,19 @@ const Login = () => {
     setLoading(true);
 
     try {
+      const emailResult = await checkEmail(formData.email);
+
+      if (emailResult.exists) {
+        setError(emailResult.message || "Email is already registered");
+        setLoading(false);
+        return;
+      }
+
       // Save form data in session storage
       sessionStorage.setItem("registrationData", JSON.stringify(formData));
 
       // Send OTP request to backend
-      const res = await axios.post(`${API_URL}/api/users/send-otp`, { phone: formData.phone });
+      const res = await axios.post(`${backendUrl}/api/users/send-otp`, { phone: formData.phone });
       console.log("[DEBUG] send-otp:", res.data);
 
       if (res.data.success) {
@@ -158,7 +172,7 @@ const Login = () => {
 
       console.log("[DEBUG] Sending registration data:", dataToSend);
 
-      const res = await axios.post(`${API_URL}/api/users/verify-and-register`, {
+      const res = await axios.post(`${backendUrl}/api/users/verify-and-register`, {
         name: dataToSend.name,
         email: dataToSend.email,
         password: dataToSend.password,
@@ -196,6 +210,29 @@ const Login = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    const email = formData.email.trim();
+    const password = formData.password.trim();
+
+    // Validate email and password presence
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -208,6 +245,29 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  const checkEmail = async (email) => {
+    try {
+      const res = await axios.post(`${backendUrl}/api/users/check-email`, { email: email }, {
+          headers: { "Content-Type": "application/json" }
+      });
+
+      return res?.data?.result?.email || { exists: false };
+    } catch (err) {
+      return { exists: false, message: "Error checking email." };
+    }
+  };
+
+    const handleBlurCheck = async (e) => {
+      const { value } = e.target;
+      if (!value) return;
+      const result = await checkEmail(value);
+      if (result?.exists) {
+        toast.error(result.message || "Email is already registered");
+      } else {
+        setFieldErrors((prev) => ({ ...prev, email: "" }));
+      }
+    };
 
   return (
     <div className="min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4">
@@ -231,7 +291,7 @@ const Login = () => {
         {mode === "signup" && !phoneOtpSent && (
           <form onSubmit={handleSendPhoneOtp} className="space-y-3">
             <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="email" name="email" placeholder="Email Address" onBlur={handleBlurCheck} value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <input type="tel" name="phone" placeholder="09XXXXXXXXX" value={formData.phone} onChange={handleChange} minLength="11" maxLength="11" required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <p className="text-sm text-red-700 mt-1">
               Note: all provider is now working.
@@ -239,26 +299,21 @@ const Login = () => {
 
             {/* DOB */}
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
-              <input
-                type="date"
-                name="dob"
-                value={formData.dob}
-                max={maxDob}
-                onChange={(e) => {
-                  setFormData({ ...formData, dob: e.target.value });
-                  const birthDate = new Date(e.target.value);
-                  const todayDate = new Date();
-                  let age = todayDate.getFullYear() - birthDate.getFullYear();
-                  const monthDiff = todayDate.getMonth() - birthDate.getMonth();
-                  const dayDiff = todayDate.getDate() - birthDate.getDate();
-                  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
-                  setAgeWarning(age < 18 ? "You must be at least 18 years old to create an account." : "");
+              <DatePicker
+                selected={formData.dob ? new Date(formData.dob) : null}
+                onChange={(date) => {
+                  const formatted = date ? date.toISOString().split("T")[0] : "";
+                  setFormData({ ...formData, dob: formatted });
                 }}
-                required
+                maxDate={eighteenYearsAgo}
+                minDate={new Date("1900-01-01")}
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                placeholderText="Select date of birth"
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                wrapperClassName="w-full"
               />
-              {ageWarning && <p className="text-red-600 text-sm mt-1">{ageWarning}</p>}
             </div>
 
             {/* Password */}
@@ -305,17 +360,41 @@ const Login = () => {
         {/* LOGIN FORM */}
         {mode === "login" && (
           <form onSubmit={handleLogin} className="space-y-4">
-            <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              minLength={5}
+              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="username"
+            />
             <div className="relative">
-              <input type={showPassword ? "text" : "password"} name="password" placeholder="Password" value={formData.password} onChange={handleChange} required className="w-full border rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={6}
+                className="w-full border rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoComplete="current-password"
+              />
               <span onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 cursor-pointer">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</span>
             </div>
-            <button type="submit" disabled={loading} className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            <button
+              type="submit"
+              disabled={loading || !formData.email.trim() || !formData.password.trim()}
+              className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {loading ? "Signing In..." : "Sign In"}
             </button>
 
             {/* ✅ FIXED ADMIN LOGIN LINK */}
-            <button type="button" onClick={() => window.open("https://admin.smartdental.site", "_blank")} className="w-full mt-2 bg-gray-100 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-200 transition-all text-sm">
+            <button type="button" onClick={() => window.open(adminUrl, "_blank")} className="w-full mt-2 bg-gray-100 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-200 transition-all text-sm">
               Admin Login
             </button>
           </form>

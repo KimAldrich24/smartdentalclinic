@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { backendUrl } from "../config";
 
 const JobApplication = () => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [form, setForm] = useState({
     name: "",
     email: "",

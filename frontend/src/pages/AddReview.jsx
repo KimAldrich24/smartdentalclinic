@@ -3,9 +3,10 @@ import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { Star } from "lucide-react";
+import { backendUrl } from "../config";
 
 const AddReview = ({ serviceId }) => {
-  const { token, backendUrl } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
 
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);

@@ -12,10 +12,10 @@ import protect from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 // patient
-router.post("/add", protect(["user", "patient"]), addReview);
+router.post("/add", protect(["user", "patient", "guardian"]), addReview);
 
 // 🔹 NEW: check if user already reviewed
-router.get("/my-review", protect(["user", "patient"]), getMyReview);
+router.get("/my-review", protect(["user", "patient", "guardian"]), getMyReview);
 
 // public
 router.get("/", getReviews);

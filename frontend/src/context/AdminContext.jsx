@@ -1,10 +1,10 @@
 import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
+import { backendUrl } from "../config";
 
 export const AdminContext = createContext();
 
 const AdminContextProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
   const [aToken, setAToken] = useState(localStorage.getItem("aToken") || null);
   const [userRole, setUserRole] = useState(null);
   const [doctors, setDoctors] = useState([]);
@@ -38,7 +38,7 @@ const AdminContextProvider = ({ children }) => {
   
 
   return (
-    <AdminContext.Provider value={{ aToken, setAToken, userRole, getAllDoctors, doctors, backendUrl }}>
+    <AdminContext.Provider value={{ aToken, setAToken, userRole, getAllDoctors, doctors }}>
       {children}
     </AdminContext.Provider>
   );

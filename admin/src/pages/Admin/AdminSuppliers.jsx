@@ -2,9 +2,11 @@
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const AdminSuppliers = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +68,13 @@ const AdminSuppliers = () => {
     e.preventDefault();
     if (!aToken) return;
 
+    if (formData.phone) {
+      if (!/^09\d{9}$/.test(formData.phone)) {
+        Swal.fire("Invalid Phone", "Phone number must start with 09 and be exactly 11 digits.", "error");
+        return;
+      }
+    }
+
     try {
       if (editingId) {
         await axios.put(
@@ -125,20 +134,34 @@ const AdminSuppliers = () => {
   const handleDelete = async (id) => {
     if (!aToken) return;
 
-    if (!window.confirm("Delete this supplier?")) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this supplier?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
 
-    try {
-      await axios.delete(`${backendUrl}/api/suppliers/${id}`, {
-        headers: { Authorization: `Bearer ${aToken}` },
-      });
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/suppliers/${id}`, {
+          headers: { Authorization: `Bearer ${aToken}` },
+        });
 
       fetchSuppliers();
 
     } catch (err) {
       console.error(err.response || err.message);
-      setError("Failed to delete supplier.");
+        setError("Failed to delete supplier.");
+      }
     }
   };
+
+  const handlePhoneChange = (e) => {
+  const value = e.target.value.replace(/\D/g, "").slice(0, 11);
+  setFormData({ ...formData, phone: value });
+};
 
   /* =========================
      UI
@@ -186,13 +209,13 @@ const AdminSuppliers = () => {
             className="border px-2 py-1"
           />
 
-          <input
-            name="phone"
-            placeholder="Phone"
-            value={formData.phone}
-            onChange={handleChange}
-            className="border px-2 py-1"
-          />
+<input
+  name="phone"
+  placeholder="Phone"
+  value={formData.phone}
+  onChange={handleChange}
+  className="border px-2 py-1"
+/>
 
           <input
             name="address"

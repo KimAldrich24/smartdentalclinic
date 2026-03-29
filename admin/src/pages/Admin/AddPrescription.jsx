@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const AddPrescription = ({ patientId }) => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   const [appointments, setAppointments] = useState([]);
   const [selectedAppointment, setSelectedAppointment] = useState("");
@@ -57,7 +59,7 @@ const AddPrescription = ({ patientId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedAppointment) {
-      alert("Select an appointment first");
+      Swal.fire("Error", "Select an appointment first", "error");
       return;
     }
 
@@ -69,13 +71,13 @@ const AddPrescription = ({ patientId }) => {
       );
 
       console.log("Prescription added:", res.data.prescription);
-      alert("Prescription added successfully!");
+      Swal.fire("Success", "Prescription added successfully!", "success");
       setMedicines([{ name: "", dosage: "", instructions: "" }]);
       setNotes("");
       setSelectedAppointment("");
     } catch (err) {
       console.error("Failed to add prescription:", err.response?.data || err.message);
-      alert("Failed to add prescription");
+      Swal.fire("Error", "Failed to add prescription", "error");
     }
   };
 

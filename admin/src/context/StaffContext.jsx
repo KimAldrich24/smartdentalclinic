@@ -1,9 +1,9 @@
 import { createContext, useState } from "react";
+import { backendUrl } from "../config";
 
 export const StaffContext = createContext();
 
 export const StaffContextProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
   const [sToken, setSToken] = useState(localStorage.getItem("sToken") || "");
   const [staff, setStaff] = useState(JSON.parse(localStorage.getItem("staff") || "null"));
 

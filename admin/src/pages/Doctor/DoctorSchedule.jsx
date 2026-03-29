@@ -3,6 +3,7 @@ import { DoctorContext } from '../../context/DoctorContext';
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
 import { Trash2, Plus, Calendar, Clock } from 'lucide-react';
+import Swal from "sweetalert2";
 
 const DoctorSchedule = () => {
   const { dToken } = useContext(DoctorContext);
@@ -39,7 +40,11 @@ const DoctorSchedule = () => {
       } else {
         const text = await res.text();
         console.error('Unexpected response:', text);
-        toast.error('Invalid response from server');
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Invalid response from server",
+        });
         return;
       }
 
@@ -52,11 +57,19 @@ const DoctorSchedule = () => {
         }));
         setSchedule(normalizedSchedule);
       } else {
-        toast.error(data.message || 'Failed to fetch schedule');
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: data.message || 'Failed to fetch schedule',
+        });
       }
     } catch (err) {
       console.error('Error fetching schedule:', err);
-      toast.error('Failed to load schedule');
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load schedule",
+      });
     }
   };
 
@@ -66,8 +79,16 @@ const DoctorSchedule = () => {
 
   // ---------------- Time Slots Handlers ----------------
   const handleAddSlot = () => {
-    if (!newSlot) return toast.error('Select a time first');
-    if (timeSlots.includes(newSlot)) return toast.error('Time slot already added');
+    if (!newSlot) return Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Select a time first",
+    });
+    if (timeSlots.includes(newSlot)) return Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Time slot already added",
+    });
     setTimeSlots([...timeSlots, newSlot]);
     setNewSlot('');
   };
@@ -162,7 +183,17 @@ const DoctorSchedule = () => {
 };
 
   const handleDeleteSchedule = async (date) => {
-    if (!window.confirm('Are you sure you want to delete this schedule?')) return;
+      const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this schedule?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+    
+    if (!result.isConfirmed) return;
+
     try {
       const res = await fetch(`${backendUrl}/api/doctors/schedule/${date}`, {
         method: 'DELETE',

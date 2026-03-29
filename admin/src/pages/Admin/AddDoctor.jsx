@@ -2,9 +2,10 @@ import React, { useContext, useState } from 'react';
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
+import { backendUrl } from "../../config";
 
 const AddDoctor = () => {
-  const { backendUrl, aToken } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

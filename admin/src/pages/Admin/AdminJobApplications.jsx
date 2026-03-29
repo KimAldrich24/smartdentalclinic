@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import {ClipLoader} from "react-spinners";
+import { backendUrl } from "../../config";
 
 const AdminJobApplications = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +27,7 @@ const AdminJobApplications = () => {
   }, [backendUrl, aToken]);
 
   if (loading) {
-    return <p className="text-center mt-8 text-gray-600">Loading applications...</p>;
+    return <div className="flex justify-center items-center my-auto mx-auto h-[50dvh]"><ClipLoader color="#36d7b7" loading={true} size={50} /></div>;
   }
 
   return (

@@ -15,6 +15,11 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
     },
 
+    childName: {
+      type: String,
+      default: null,
+    },  
+
     // Who booked the appointment (could be guardian)
     type: {
   type: String,

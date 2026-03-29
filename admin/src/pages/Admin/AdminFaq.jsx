@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
+import { backendUrl } from "../../config";
 
 const AdminFaq = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   const [faqs, setFaqs] = useState([]);
   const [question, setQuestion] = useState("");

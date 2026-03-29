@@ -1,10 +1,15 @@
+// Example: Add this to patient dashboard if you want real-time updates for patients
+// useEffect(() => {
+//   if (!user?._id || !socket) return;
+//   socket.emit("joinPatientRoom", user._id);
+// }, [user?._id]);
 import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 
 export const AdminContext = createContext();
+import { backendUrl } from "../config";
 
 const AdminContextProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
   const [aToken, setAToken] = useState(localStorage.getItem("aToken") || null);
   const [userRole, setUserRole] = useState(null);
   const [doctors, setDoctors] = useState([]);
@@ -105,6 +110,23 @@ const getAdminProfile = async () => {
   }
 };
 
+const removeDoctor = async (id) => {
+  try {
+    const res = await axios.delete(`${backendUrl}/api/admin/remove-doctor/${id}`, {
+      headers: { Authorization: `Bearer ${aToken}` },
+    });
+
+    if (res.data.success) {
+      await getAllDoctors(); // refresh list
+    } else {
+      throw new Error(res.data.message);
+    }
+  } catch (err) {
+    console.error("Remove doctor error:", err);
+    throw err; // re-throw so DoctorsList catch block gets the real error
+  }
+};
+
   // ✅ Trigger fetch when token and role are valid
   useEffect(() => {
     if (aToken && userRole === "admin") {
@@ -128,6 +150,7 @@ const getAdminProfile = async () => {
         doctors,
         staff,
         backendUrl,
+        removeDoctor,
       }}
     >
       {children}

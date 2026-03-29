@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
+import { ClipLoader } from "react-spinners";
 
 const TopDoctors = () => {
   const navigate = useNavigate()
@@ -10,7 +11,7 @@ const TopDoctors = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center my-16">
-        <p className="text-gray-500 text-lg">Loading doctors...</p>
+        <ClipLoader color="#36d7b7" loading={true} size={50} />
       </div>
     )
   }

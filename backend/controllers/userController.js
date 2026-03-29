@@ -445,16 +445,16 @@ export const getAllUsers = async (req, res) => {
 // ✅ Delete User
 export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findByIdAndDelete(req.params.id); // ✅ replaces user.remove()
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    await user.remove();
-    res.json({ message: "User deleted successfully" });
+    res.json({ success: true, message: "User deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Error deleting user", error });
+    console.error("Delete user error:", error);
+    res.status(500).json({ message: "Error deleting user", error: error.message });
   }
 };
 
@@ -531,5 +531,102 @@ export const getChildren = async (req, res) => {
   } catch (err) {
     console.error("[ERROR] getChildren:", err.message);
     res.status(500).json({ success: false, message: "Failed to fetch children", error: err.message });
+  }
+};
+
+export const checkEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Email is required" 
+      });
+    }
+
+    const result = {
+      email: { exists: false, message: "Email is available" },
+    };
+
+    // Check email
+    if (email) {
+      const emailInUser = await User.findOne({ email });
+      const emailInDoctor = await Doctor.findOne({ email });
+
+      if (emailInUser || emailInDoctor) {
+        result.email = { exists: true, message: "Email is already taken" };
+      }
+    }
+
+    const hasConflict = result.email.exists;
+
+    return res.status(200).json({
+      success: true,
+      available: !hasConflict,
+      result,
+    });
+
+  } catch (error) {
+    console.error("Check Availability Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword} = req.body;
+
+    const tokenEmail = req.user.email;
+
+    if (email !== tokenEmail) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized: Email mismatch",
+      });
+    }
+
+    console.log("[DEBUG] Changing password for:", email);
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+
+  } catch (error) {
+    console.error("[ERROR] changePassword:", error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

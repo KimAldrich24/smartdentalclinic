@@ -2,9 +2,11 @@ import React, { useState, useEffect, useContext } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 import { Plus, Edit2, Trash2, Eye, EyeOff } from "lucide-react";
+import { backendUrl } from "../../config";
+import Swal from "sweetalert2";
 
 const StaffManagement = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
 
   const [staffList, setStaffList] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -108,7 +110,16 @@ const StaffManagement = () => {
 
   /* ================= DELETE ================= */
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to deactivate this staff member?")) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to deactivate this staff member?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, deactivate it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const res = await fetch(`${backendUrl}/api/admin/staff/${id}`, {
@@ -118,13 +129,25 @@ const StaffManagement = () => {
 
       const data = await res.json();
       if (data.success) {
-        toast.success(data.message);
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: data.message,
+        });
         fetchStaffList();
       } else {
-        toast.error(data.message);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: data.message,
+        });
       }
     } catch {
-      toast.error("An error occurred");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "An error occurred",
+      });
     }
   };
 

@@ -3,9 +3,9 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Shield } from "lucide-react";
+import { backendUrl } from "../../config";
 
 const AdminRegister = () => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({

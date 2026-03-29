@@ -83,16 +83,23 @@ export const getAllReviewsAdmin = async (req, res) => {
       .populate({ path: "service", select: "name", options: { lean: true } })
       .sort({ createdAt: -1 });
 
-    const safeReviews = reviews.map((r) => ({
-      _id: r._id,
-      rating: r.rating,
-      comment: r.comment,
-      isApproved: r.isApproved,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-      user: r.user || { name: "Deleted User" },
-      service: r.service || { name: "N/A" },
-    }));
+    const safeReviews = reviews.map((r) => {
+      let userName = "Deleted User";
+      if (r.user && typeof r.user === "object" && r.user.name) {
+        userName = r.user.name;
+      }
+      return {
+        _id: r._id,
+        rating: r.rating,
+        comment: r.comment,
+        isApproved: r.isApproved,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        user: r.user || { name: "Deleted User" },
+        userName,
+        service: r.service || { name: "N/A" },
+      };
+    });
 
     res.json({ success: true, reviews: safeReviews });
   } catch (error) {

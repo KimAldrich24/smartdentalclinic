@@ -2,9 +2,10 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import { Star } from "lucide-react";
+import { backendUrl } from "../config";
+
 
 const Reviews = ({ refreshTrigger = 0 }) => {
-  const { backendUrl } = useContext(AuthContext);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true); // loading state
 
@@ -25,6 +26,7 @@ const Reviews = ({ refreshTrigger = 0 }) => {
       setLoading(false);
     }
   };
+  
 
   if (loading) return <p>Loading reviews...</p>;
 

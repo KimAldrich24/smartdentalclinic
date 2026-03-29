@@ -10,9 +10,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { backendUrl } from "../../config";
 
 const AdminSalesReport = () => {
-  const { aToken, backendUrl } = useContext(AdminContext);
+  const { aToken } = useContext(AdminContext);
   const [salesData, setSalesData] = useState([]);
   const [total, setTotal] = useState(0);
   const [dateRange, setDateRange] = useState({ start: "", end: "" });

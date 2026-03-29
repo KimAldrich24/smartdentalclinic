@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { backendUrl } from "../../config";
 
 const PatientsList = () => {
   const [patients, setPatients] = useState([]);
   const navigate = useNavigate();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
   useEffect(() => {
     const fetchPatients = async () => {

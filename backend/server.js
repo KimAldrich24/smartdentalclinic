@@ -1,6 +1,13 @@
+import dns from 'node:dns/promises';
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
+import http from 'http'
+import { Server } from 'socket.io'
+import fetch from 'node-fetch'
+
 import connectDB from './config/mongodb.js'
 import connectCloudinary from './config/cloudinary.js'
 
@@ -28,25 +35,83 @@ import equipmentRoutes from "./routes/equipmentRoutes.js"
 import staffRoutes from "./routes/staffRoutes.js"
 import adminStaffRoutes from "./routes/adminStaffRoutes.js"
 import paymentProofRoutes from './routes/paymentProofRoutes.js'
-import supplierRoutes from "./routes/supplierRoutes.js";
+import supplierRoutes from "./routes/supplierRoutes.js"
+import doctorScheduleRequestRoutes from "./routes/doctorScheduleRequestRoutes.js"
+import reviewRouter from "./routes/reviewRoutes.js"
+
 import { startScheduleCleanup } from './utils/scheduleCleanup.js'
-import doctorScheduleRequestRoutes from "./routes/doctorScheduleRequestRoutes.js";
-import reviewRouter from "./routes/reviewRoutes.js";
-// import creditRouter from "./routes/creditRoutes.js";
 
-// SMS
-import fetch from 'node-fetch'
 
-// App config
+
+
+
+// =======================
+// APP INIT
+// =======================
 const app = express()
 const port = process.env.PORT || 4000
 
-// DB & Cloudinary
+// =======================
+// SOCKET.IO SETUP
+// =======================
+const server = http.createServer(app)
+
+const io = new Server(server, {
+  cors: {
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'https://www.smartdental.site',
+      'https://smartdental.site',
+      'https://admin.smartdental.site',
+      'https://smartdentalclinic-1.onrender.com',
+      'https://smartdentalclinic-2.onrender.com'
+    ],
+    credentials: true
+  }
+})
+
+// 🔥 MAKE SOCKET AVAILABLE IN CONTROLLERS
+app.set('io', io)
+
+// =======================
+// SOCKET EVENTS
+// =======================
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id)
+
+  socket.on('joinDoctorRoom', (doctorId) => {
+    socket.join(doctorId)
+    console.log(`Doctor joined room: ${doctorId}`)
+  })
+
+  socket.on('joinPatientRoom', (patientId) => {
+    socket.join(patientId)
+    console.log(`Patient joined room: ${patientId}`)
+  })
+
+  socket.on('joinAdminRoom', () => {
+    socket.join('admins')
+    console.log('Admin joined room: admins')
+  })
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id)
+  })
+})
+
+// =======================
+// DB & CLOUDINARY
+// =======================
 connectDB()
 connectCloudinary()
 
-// Middlewares
+// =======================
+// MIDDLEWARES
+// =======================
 app.use(express.json())
+
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -69,17 +134,21 @@ app.use((req, res, next) => {
   next()
 })
 
-// Helper to mount routes safely
+// =======================
+// ROUTE HELPER
+// =======================
 const safeUse = (path, router, name) => {
   try {
     app.use(path, router)
-    console.log(`✅ Mounted ${name} at ${path}`)
+    console.log(`Mounted ${name} at ${path}`)
   } catch (err) {
-    console.error(`❌ Failed to mount ${name}:`, err.message)
+    console.error(`Failed to mount ${name}:`, err.message)
   }
 }
 
-// Routes
+// =======================
+// ROUTES
+// =======================
 safeUse('/api/admin', adminRoutes, 'adminRoutes')
 safeUse('/api/doctors', doctorRouter, 'doctorRoutes')
 safeUse('/api/services', serviceRoutes, 'serviceRoutes')
@@ -103,20 +172,25 @@ safeUse('/api/staff', staffRoutes, 'staffRoutes')
 safeUse('/api/admin/staff', adminStaffRoutes, 'adminStaffRoutes')
 safeUse('/api/payment-proofs', paymentProofRoutes, 'paymentProofRoutes')
 safeUse('/api/admin/schedule', doctorScheduleRoutes, 'doctorScheduleRoutes')
-safeUse("/api/doctor/schedule-request", doctorScheduleRequestRoutes);
-safeUse("/api/suppliers", supplierRoutes);
-safeUse("/api/reviews", reviewRouter);
-// safeUse("/api/credits", creditRouter);
+safeUse("/api/doctor/schedule-request", doctorScheduleRequestRoutes)
+safeUse("/api/suppliers", supplierRoutes)
+safeUse("/api/reviews", reviewRouter)
 
-// Static uploads only
+// =======================
+// STATIC FILES
+// =======================
 app.use('/uploads', express.static('uploads'))
 
-// Health check
+// =======================
+// HEALTH CHECK
+// =======================
 app.get('/api', (req, res) => {
   res.send('API WORKING')
 })
 
-// SMS route
+// =======================
+// SMS ROUTE
+// =======================
 app.post('/api/send-sms', async (req, res) => {
   const { phone, message } = req.body
 
@@ -143,10 +217,14 @@ app.post('/api/send-sms', async (req, res) => {
   }
 })
 
-// Cleanup job
+// =======================
+// CLEANUP JOB
+// =======================
 startScheduleCleanup()
 
-// Start server
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`)
+// =======================
+// START SERVER
+// =======================
+server.listen(port, () => {
+  console.log(`🚀 Server running with Socket.IO on port ${port}`)
 })
