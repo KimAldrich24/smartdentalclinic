@@ -44,7 +44,7 @@ const AdminContact = () => {
   // ✅ Handle phone number changes
   const handlePhoneChange = (index, value) => {
     const updated = [...contact.phone];
-    updated[index] = value;
+    updated[index] = value.replace(/\D/g, "").slice(0, 11);
     setContact((prev) => ({ ...prev, phone: updated }));
   };
 
@@ -150,11 +150,12 @@ const AdminContact = () => {
           {contact.phone.map((num, index) => (
             <div key={index} className="flex items-center gap-2 mb-2">
               <input
-                type="text"
+                type="tel"
                 value={num}
                 onChange={(e) => handlePhoneChange(index, e.target.value)}
                 placeholder="e.g. 09123456789"
                 disabled={!isEditing}
+                maxLength={11}
                 className={`flex-1 p-3 border rounded-lg ${
                   isEditing
                     ? "bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"

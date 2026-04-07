@@ -68,6 +68,14 @@ const AdminSuppliers = () => {
     e.preventDefault();
     if (!aToken) return;
 
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        Swal.fire("Invalid Email", "Please enter a valid email address.", "error");
+        return;
+      }
+    }
+
     if (formData.phone) {
       if (!/^09\d{9}$/.test(formData.phone)) {
         Swal.fire("Invalid Phone", "Phone number must start with 09 and be exactly 11 digits.", "error");
@@ -209,13 +217,15 @@ const AdminSuppliers = () => {
             className="border px-2 py-1"
           />
 
-<input
-  name="phone"
-  placeholder="Phone"
-  value={formData.phone}
-  onChange={handleChange}
-  className="border px-2 py-1"
-/>
+          <input
+            name="phone"
+            type="tel"
+            placeholder="Phone"
+            value={formData.phone}
+            onChange={handlePhoneChange}
+            className="border px-2 py-1"
+            maxLength={11}
+          />
 
           <input
             name="address"

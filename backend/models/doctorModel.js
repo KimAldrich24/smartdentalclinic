@@ -43,6 +43,16 @@ const doctorSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    phone: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: function (value) {
+          return !value || /^09\d{9}$/.test(value);
+        },
+        message: 'Phone number must start with 09 and be exactly 11 digits.',
+      },
+    },
     password: { type: String, required: true },
 
     degree: String,

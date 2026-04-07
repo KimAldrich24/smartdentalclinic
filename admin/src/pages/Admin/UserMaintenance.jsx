@@ -12,6 +12,8 @@ const UserMaintenance = () => {
 
   const [patients, setPatients] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // =========================
   // 🔥 FETCH PATIENTS
@@ -106,6 +108,20 @@ const UserMaintenance = () => {
     ...staff.map((s) => ({ ...s, role: "receptionist" })),
   ];
 
+  const filteredUsers = allUsers.filter((user) => {
+    const matchesRole =
+      roleFilter === "all" ? true : user.role === roleFilter;
+
+    const term = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      term === "" ||
+      user.name?.toLowerCase().includes(term) ||
+      user.email?.toLowerCase().includes(term) ||
+      user.role?.toLowerCase().includes(term);
+
+    return matchesRole && matchesSearch;
+  });
+
   // =========================
   // UI
   // =========================
@@ -114,22 +130,45 @@ const UserMaintenance = () => {
       <h2 className="text-xl font-bold mb-4">User Maintenance</h2>
 
       {/* 🔹 Add Doctor & Receptionist Buttons (Emoji version) */}
-      <div className="flex justify-end gap-4 mb-4"> 
-        <button
-          onClick={() => navigate("/add-doctor")}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-        >
-          <span>➕</span>
-          <span>Add Dentist</span>
-        </button>
+      <div className="flex flex-col lg:flex-row gap-4 justify-between mb-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name, email, or role"
+            className="border rounded-lg px-4 py-2 w-full sm:w-80"
+          />
 
-        <button
-          onClick={() => navigate("/staff-management")}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-        >
-          <span>👥</span>
-          <span>Receptionist</span>
-        </button>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="border rounded-lg px-4 py-2 bg-white"
+          >
+            <option value="all">All Roles</option>
+            <option value="patient">Patient</option>
+            <option value="doctor">Dentist</option>
+            <option value="receptionist">Receptionist</option>
+          </select>
+        </div>
+
+        <div className="flex justify-end gap-4">
+          <button
+            onClick={() => navigate("/add-doctor")}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            <span>➕</span>
+            <span>Add Dentist</span>
+          </button>
+
+          <button
+            onClick={() => navigate("/staff-management")}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+          >
+            <span>👥</span>
+            <span>Receptionist</span>
+          </button>
+        </div>
       </div>
 
       <table className="min-w-full border">
@@ -143,8 +182,8 @@ const UserMaintenance = () => {
         </thead>
 
         <tbody>
-          {allUsers.length > 0 ? (
-            allUsers.map((user) => (
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((user) => (
               <tr key={user._id}>
                 <td className="p-2 border">{user.name}</td>
                 <td className="p-2 border">{user.email}</td>

@@ -20,6 +20,7 @@ const AdminEquipment = () => {
     supplier: "",
     location: "",
     status: "Available",
+    hasExpiration: false,
     expirationDate: "",
     notes: "",
     capacity: "",
@@ -82,13 +83,31 @@ const AdminEquipment = () => {
      HANDLE INPUT
   ============================== */
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    let newValue = value;
+
+    if (type === "checkbox") {
+      newValue = checked;
+    }
 
     if (name === "capacity" || name === "quantity") {
-      setFormData({ ...formData, [name]: value === "" ? "" : Number(value) });
-    } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData({
+        ...formData,
+        [name]: newValue === "" ? "" : Number(newValue),
+      });
+      return;
     }
+
+    if (name === "hasExpiration" && newValue === false) {
+      setFormData({
+        ...formData,
+        hasExpiration: false,
+        expirationDate: "",
+      });
+      return;
+    }
+
+    setFormData({ ...formData, [name]: newValue });
   };
 
   /* ==============================
@@ -105,6 +124,12 @@ const AdminEquipment = () => {
   ============================== */
   const handleSubmit = async (e) => {
   e.preventDefault();
+
+  // ✅ require expiration date when enabled
+  if (formData.hasExpiration && !formData.expirationDate) {
+    setError("Please select an expiration date when expiration is enabled.");
+    return;
+  }
 
   // ✅ prevent past expiration
   if (formData.expirationDate && formData.expirationDate < today) {
@@ -131,7 +156,10 @@ const AdminEquipment = () => {
       capacity: Number(formData.capacity) || 0,
       quantity: Number(formData.quantity) || 0,
       supplier: formData.supplier || null,
-      expirationDate: formData.expirationDate || null,
+      expirationDate:
+        formData.hasExpiration && formData.expirationDate
+          ? formData.expirationDate
+          : null,
     };
 
     if (editingId) {
@@ -169,6 +197,7 @@ const AdminEquipment = () => {
       supplier: item.supplier?._id || "",
       location: item.location || "",
       status: item.status || "Available",
+      hasExpiration: !!item.expirationDate,
       expirationDate: item.expirationDate
         ? new Date(item.expirationDate).toISOString().split("T")[0]
         : "",
@@ -305,17 +334,33 @@ const AdminEquipment = () => {
             className="border px-2 py-1 w-24"
           />
 
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600">Expiration Date</label>
+          <div className="flex items-center gap-2">
             <input
-              type="date"
-              name="expirationDate"
-              value={formData.expirationDate}
+              id="hasExpiration"
+              type="checkbox"
+              name="hasExpiration"
+              checked={formData.hasExpiration}
               onChange={handleChange}
-              min={today} // prevents past dates
-              className="border px-2 py-1"
+              className="h-4 w-4"
             />
+            <label htmlFor="hasExpiration" className="text-xs text-gray-600">
+              Has Expiration
+            </label>
           </div>
+
+          {formData.hasExpiration && (
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600">Expiration Date</label>
+              <input
+                type="date"
+                name="expirationDate"
+                value={formData.expirationDate}
+                onChange={handleChange}
+                min={today} // prevents past dates
+                className="border px-2 py-1"
+              />
+            </div>
+          )}
 
           <input
             name="notes"

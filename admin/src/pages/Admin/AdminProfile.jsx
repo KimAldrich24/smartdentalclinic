@@ -72,7 +72,7 @@ const AdminProfile = () => {
       });
       setFormData({
         name: decoded.name || "Admin User",
-        phone: decoded.phone || "Not set",
+        phone: decoded.phone || "",
       });
     } catch (decodeErr) {
       console.error("Fallback failed:", decodeErr);
@@ -82,11 +82,20 @@ const AdminProfile = () => {
 
   // Handle profile input change
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: name === "phone" ? value.replace(/\D/g, "").slice(0, 11) : value,
+    });
   };
 
   // Save profile updates
   const handleSave = async () => {
+    if (formData.phone && !/^09\d{9}$/.test(formData.phone)) {
+      toast.error("Phone number must start with 09 and be exactly 11 digits.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await axios.put(
@@ -259,6 +268,7 @@ const AdminProfile = () => {
                   onChange={handleChange}
                   className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-400 outline-none"
                   placeholder="Enter phone number"
+                  maxLength={11}
                 />
               ) : (
                 <p className="text-gray-800 font-semibold">

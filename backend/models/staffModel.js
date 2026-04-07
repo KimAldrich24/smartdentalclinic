@@ -13,6 +13,7 @@ const staffSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please enter a valid email address'],
     },
     password: {
       type: String,
@@ -21,6 +22,12 @@ const staffSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
+      validate: {
+        validator: function (value) {
+          return /^09\d{9}$/.test(value);
+        },
+        message: 'Phone number must start with 09 and be exactly 11 digits.',
+      },
     },
     role: {
       type: String,

@@ -575,7 +575,14 @@ const AppointmentCard = ({ appointment, services, equipment, onUpdate }) => {
 
   const [usedEquipment, setUsedEquipment] = useState({});
 
-
+  // ✅ Auto-calculate price when services change
+  useEffect(() => {
+    const calculatedPrice = selectedServices.reduce((total, serviceId) => {
+      const service = services.find(s => s._id === serviceId);
+      return total + (service?.price || 0);
+    }, 0);
+    setFinalPrice(calculatedPrice);
+  }, [selectedServices, services]);
 
   const toggleService = (serviceId) => {
 
@@ -657,6 +664,13 @@ ${appointment.status === 'COMPLETED'
 
 
 
+          {/* TOTAL SERVICES AMOUNT */}
+          <div className="mt-3 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+            <p className="font-bold text-lg text-blue-700">
+              Total Services Amount: ₱{finalPrice.toLocaleString() || 0}
+            </p>
+          </div>
+
           {(appointment.status === 'APPROVED_ADMIN'
             || appointment.status === 'IN_PROGRESS') && (
 
@@ -720,31 +734,12 @@ ${selectedServices.includes(svc._id)
                   ))}
                 </div>
 
-
-
-                <div className="mt-2 flex items-center gap-2">
-
-                  <label className="font-semibold">
-                    Final Price:
-                  </label>
-
-                  <input
-                    type="number"
-                    className="border px-2 py-1 rounded w-32"
-                    value={finalPrice}
-                    onChange={e => setFinalPrice(Number(e.target.value))}
-                  />
-
-                  <button
-                    className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
-                    onClick={handleSave}
-                  >
-
-                    Save
-
-                  </button>
-
-                </div>
+                <button
+                  className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  onClick={handleSave}
+                >
+                  Save
+                </button>
 
               </div>
 

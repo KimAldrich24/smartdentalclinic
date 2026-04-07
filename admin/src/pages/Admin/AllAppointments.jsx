@@ -333,6 +333,11 @@ import { socket } from "../../socket";
                 <p className="mt-1">
                   <b>Total Price:</b> ₱{appt.totalPrice?.toLocaleString() || 0}
                 </p>
+                {appt.services && appt.services.length > 0 && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    <b>Services:</b> {appt.services.map(s => s.service?.name || s.service).join(", ")}
+                  </p>
+                )}
                 {appt.additionalPayment > 0 && (
                   <p>
                     <b>Additional Payment:</b> ₱{appt.additionalPayment.toLocaleString()}

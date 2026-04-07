@@ -48,6 +48,23 @@ const Patients = () => {
     e.preventDefault();
     if (!editingPatient) return alert("Select a patient to edit");
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      return Swal.fire({
+        icon: "error",
+        title: "Invalid Email",
+        text: "Please enter a valid email address.",
+      });
+    }
+
+    if (form.phone && !/^09\d{9}$/.test(form.phone)) {
+      return Swal.fire({
+        icon: "error",
+        title: "Invalid Phone",
+        text: "Contact number must start with 09 and be exactly 11 digits.",
+      });
+    }
+
     try {
       await axios.put(
         `${backendUrl}/api/patients/${editingPatient._id}`,
@@ -69,6 +86,19 @@ const Patients = () => {
         text: err.message,
       });
     }
+  };
+
+  const formatDob = (dobValue) => {
+    if (!dobValue) return "Not Set";
+
+    const date = new Date(dobValue);
+    if (Number.isNaN(date.getTime())) return dobValue;
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    });
   };
 
   const handleDelete = async (id) => {
@@ -122,9 +152,11 @@ const Patients = () => {
 
         <input
           placeholder="Phone"
+          type="tel"
           value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 11) })}
           className="border p-2 rounded"
+          maxLength={11}
         />
 
         <input
@@ -175,7 +207,7 @@ const Patients = () => {
                   <td className="border p-2">{p.name}</td>
                   <td className="border p-2">{p.email}</td>
                   <td className="border p-2">{p.phone || "Not Set"}</td>
-                  <td className="border p-2">{p.dob || "Not Set"}</td>
+                  <td className="border p-2">{formatDob(p.dob)}</td>
                   <td className="border p-2">
                     {p.gender || "Not Selected"}
                   </td>
@@ -220,7 +252,7 @@ const Patients = () => {
                 </p>
                 <p>
                   <span className="font-semibold">DOB:</span>{" "}
-                  {p.dob || "Not Set"}
+                  {formatDob(p.dob)}
                 </p>
                 <p>
                   <span className="font-semibold">Gender:</span>{" "}

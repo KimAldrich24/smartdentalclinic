@@ -20,6 +20,15 @@ adminStaffRouter.post('/', adminAuthMiddleware, async (req, res) => {
   try {
     const { name, email, password, phone, status } = req.body;
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.json({ success: false, message: 'Invalid email format' });
+    }
+
+    if (!/^09\d{9}$/.test(phone)) {
+      return res.json({ success: false, message: 'Phone number must start with 09 and be exactly 11 digits.' });
+    }
+
     const existingStaff = await Staff.findOne({ email });
     if (existingStaff) {
       return res.json({ success: false, message: 'Staff member already exists' });
@@ -58,6 +67,16 @@ adminStaffRouter.post('/', adminAuthMiddleware, async (req, res) => {
 adminStaffRouter.put('/:id', adminAuthMiddleware, async (req, res) => {
   try {
     const { name, email, phone, status, password } = req.body;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.json({ success: false, message: 'Invalid email format' });
+    }
+
+    if (phone && !/^09\d{9}$/.test(phone)) {
+      return res.json({ success: false, message: 'Phone number must start with 09 and be exactly 11 digits.' });
+    }
+
     const updateData = { name, email, phone, status };
 
     if (password) {

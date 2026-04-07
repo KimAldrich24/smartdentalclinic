@@ -11,6 +11,7 @@ const AdminRegister = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
@@ -19,11 +20,29 @@ const AdminRegister = () => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type } = e.target;
+    let newValue = value;
+
+    if (name === "phone") {
+      newValue = newValue.replace(/\D/g, "").slice(0, 11);
+    }
+
+    setFormData({ ...formData, [name]: newValue });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (formData.phone && !/^09\d{9}$/.test(formData.phone)) {
+      toast.error("Contact number must start with 09 and be exactly 11 digits.");
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords don't match");
@@ -41,6 +60,7 @@ const AdminRegister = () => {
       const res = await axios.post(`${backendUrl}/api/admin/register`, {
         name: formData.name,
         email: formData.email,
+        phone: formData.phone,
         password: formData.password,
         role: "admin",
       });
@@ -103,6 +123,21 @@ const AdminRegister = () => {
               required
               className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 outline-none"
               placeholder="admin@smartdental.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contact Number
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 outline-none"
+              placeholder="09XXXXXXXXX"
+              maxLength={11}
             />
           </div>
 

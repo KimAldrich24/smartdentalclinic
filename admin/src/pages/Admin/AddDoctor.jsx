@@ -9,6 +9,7 @@ const AddDoctor = () => {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [experience, setExperience] = useState('');
@@ -78,6 +79,17 @@ const AddDoctor = () => {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (phone && !/^09\d{9}$/.test(phone)) {
+      toast.error('Contact number must start with 09 and be exactly 11 digits.');
+      return;
+    }
+
     // Validate experience
     if (experience === '' || experience < 0 || experience > 50) {
       toast.error('Experience must be between 0 and 50 years');
@@ -88,6 +100,7 @@ const AddDoctor = () => {
       const doctorData = {
         name,
         email,
+        phone,
         password,
 
         // ✅ ADDED
@@ -121,6 +134,7 @@ const AddDoctor = () => {
         // Reset form
         setName('');
         setEmail('');
+        setPhone('');
         setPassword('');
         setConfirmPassword('');
         setExperience('');
@@ -169,6 +183,15 @@ const AddDoctor = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
+          />
+
+          <input
+            type="tel"
+            placeholder="Contact Number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400"
+            maxLength={11}
           />
 
           {/* ✅ ADDED GENDER */}

@@ -15,7 +15,8 @@ export const createSupplier = async (req, res) => {
     await supplier.save();
     res.json(supplier);
   } catch (error) {
-    res.status(500).json({ message: "Failed to create supplier" });
+    const message = error?.message || "Failed to create supplier";
+    res.status(400).json({ message });
   }
 };
 
@@ -24,11 +25,12 @@ export const updateSupplier = async (req, res) => {
     const supplier = await Supplier.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true }
+      { new: true, runValidators: true, context: "query" }
     );
     res.json(supplier);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update supplier" });
+    const message = error?.message || "Failed to update supplier";
+    res.status(400).json({ message });
   }
 };
 

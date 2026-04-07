@@ -15,6 +15,16 @@ export const getPatients = async (req, res) => {
 export const updatePatient = async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, dob, gender } = req.body;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Invalid email format" });
+  }
+
+  if (phone && !/^09\d{9}$/.test(phone)) {
+    return res.status(400).json({ message: "Contact number must start with 09 and be exactly 11 digits." });
+  }
+
   try {
     const patient = await User.findByIdAndUpdate(
       id,

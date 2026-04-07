@@ -10,16 +10,20 @@ import Doctor from "../models/doctorModel.js";
 // Add Doctor
 export const addDoctor = async (req, res) => {
   try {
-    const { name, email, password, degree, experience, about, fees, address } = req.body;
-    const imageFile = req.file;
+const { name, email, phone, password, degree, experience, about, fees, address } = req.body;
+  const imageFile = req.file;
 
-    // Validate required fields
-    if (!name || !email || !password || !degree || !experience || !about || !fees || !address || !imageFile) {
-      return res.status(400).json({ success: false, message: "Missing details or image" });
-    }
+  // Validate required fields
+  if (!name || !email || !password || !degree || !experience || !about || !fees || !address || !imageFile) {
+    return res.status(400).json({ success: false, message: "Missing details or image" });
+  }
 
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({ success: false, message: "Invalid Email" });
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ success: false, message: "Invalid Email" });
+  }
+
+  if (phone && !/^09\d{9}$/.test(phone)) {
+    return res.status(400).json({ success: false, message: "Contact number must start with 09 and be exactly 11 digits." });
     }
 
     if (password.length < 8) {
@@ -42,6 +46,7 @@ export const addDoctor = async (req, res) => {
     const doctor = new doctorModel({
       name,
       email,
+      phone,
       password: hashedPassword,
       degree,
       experience,
@@ -146,11 +151,9 @@ export const checkAdminExists = async (req, res) => {
 // ✅ Create first admin account (ONE-TIME REGISTRATION)
 export const createAdmin = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+     const { name, email, password, phone } = req.body;
 
-    console.log("📝 Admin registration attempt:", { name, email });
-    console.log("📦 Full request body:", JSON.stringify(req.body, null, 2)); // ✅ DEBUG
-
+     console.log("📝 Admin registration attempt:", { name, email, phone });
     // Check if admin already exists
     const existingAdmin = await User.findOne({ role: "admin" });
     
@@ -167,6 +170,20 @@ export const createAdmin = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
+      });
+    }
+
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format",
+      });
+    }
+
+    if (phone && !/^09\d{9}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Contact number must start with 09 and be exactly 11 digits.",
       });
     }
 
@@ -196,7 +213,7 @@ export const createAdmin = async (req, res) => {
       email,
       password: hashedPassword,
       role: "admin",
-      phone: "000000000",
+      phone: phone || "000000000",
       gender: "Not Selected",
       address: { line1: "", line2: "" },
     };

@@ -60,14 +60,14 @@ const StaffManagement = () => {
     }
 
     // Phone validation
-    if (!/^[0-9]+$/.test(formData.phone)) {
-      toast.error("Phone number must contain only digits");
+    if (!/^09\d{9}$/.test(formData.phone)) {
+      toast.error("Phone number must start with 09 and be exactly 11 digits.");
       return;
     }
 
-    // Gmail-only validation
-    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(formData.email)) {
-      toast.error("Email must be a valid @gmail.com address");
+    // Email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error("Please enter a valid email address.");
       return;
     }
 
@@ -290,7 +290,7 @@ const StaffManagement = () => {
 
               <input
                 type="email"
-                placeholder="Email (@gmail.com)"
+                placeholder="Email"
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
@@ -328,10 +328,11 @@ const StaffManagement = () => {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    phone: e.target.value.replace(/[^0-9]/g, ""),
+                    phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11),
                   })
                 }
                 required
+                maxLength={11}
                 className="w-full border px-3 py-2 rounded"
               />
 
